@@ -1,7 +1,7 @@
 // src/app/page.tsx
 import { Section } from "@/components/section";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
-import NewsFeed from "@/components/news-feed";
+import NewsMergedGrid from "@/components/news-merged-grid";
 
 export default function Home() {
   return (
@@ -14,9 +14,8 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Featured | Latest | News */}
+      {/* Featured | Latest */}
       <div className="grid gap-8 md:grid-cols-3">
-        {/* Featured Athlete */}
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle>Featured Athlete</CardTitle>
@@ -32,7 +31,6 @@ export default function Home() {
           </CardBody>
         </Card>
 
-        {/* Latest Posts */}
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle>Latest Posts</CardTitle>
@@ -47,16 +45,14 @@ export default function Home() {
           </CardBody>
         </Card>
 
-        {/* News Feed (live from RSS) */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>News Feed</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <NewsFeed />
-          </CardBody>
-        </Card>
+        {/* Empty third column to keep grid balanced when News is full-width below */}
+        <div className="hidden md:block" />
       </div>
+
+      {/* Full-width News Gallery */}
+      <Section title="News Feed">
+        <NewsMergedGrid />
+      </Section>
 
       {/* CTA row */}
       <Section title="Get Involved">
