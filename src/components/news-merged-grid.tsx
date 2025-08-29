@@ -14,63 +14,62 @@ function formatDate(d?: string) {
 }
 
 export default async function NewsMergedGrid() {
-  const items = await getMergedNews(10);
+  // Cap at 8 (server + render safety)
+  const items = ((await getMergedNews(8)) ?? []).slice(0, 8);
 
   if (!items.length) {
     return <div className="text-sm subtle">Couldn’t load the news feed right now.</div>;
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
       {items.map((item, idx) => {
         const hasImage = Boolean(item.image);
+
         return (
           <a
             key={`${idx}-${item.link}`}
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="card overflow-hidden hover:opacity-95 transition"
             title={item.title}
+            className="
+              block overflow-hidden rounded-lg border
+              bg-white dark:bg-neutral-900
+              hover:shadow-sm transition
+            "
           >
-            {/* Media area */}
-            <div className="relative aspect-[16/9] w-full overflow-hidden">
+            {/* Smaller media area: fixed height for denser cards */}
+            <div className="relative w-full h-28 sm:h-32 overflow-hidden">
               {hasImage ? (
                 <img
                   src={item.image!}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                // Styled fallback (no image available)
-                <div className="flex h-full w-full items-center justify-center bg-[var(--surface)]">
-                  {/* subtle pattern */}
-                  <div className="absolute inset-0 opacity-30"
-                    style={{
-                      backgroundImage:
-                        'radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0)',
-                      backgroundSize: '12px 12px',
-                    }}
-                  />
-                  {/* source badge */}
-                  <span className="relative inline-flex items-center rounded-md border border-[var(--border)] bg-[color-mix(in_oklab,var(--background),white_3%)] px-2 py-1 text-xs font-medium text-[var(--foreground)]">
+                <div className="absolute inset-0 flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
+                  {/* source badge as fallback */}
+                  <span className="relative inline-flex items-center rounded-md border border-neutral-300/60 dark:border-neutral-700/60 bg-white/70 dark:bg-black/30 px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-200">
                     {item.source}
                   </span>
                 </div>
               )}
-              {/* optional gradient for better text contrast on busy images */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[color-mix(in_oklab,var(--background),transparent_0%)] to-transparent" />
             </div>
 
-            {/* Text area */}
-            <div className="p-4">
-              <div className="mb-1 text-xs subtle">
-                {item.source}
-                {formatDate(item.pubDate) ? ` • ${formatDate(item.pubDate)}` : ''}
+            {/* Compact text area */}
+            <div className="p-2">
+              <div className="mb-1 text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center justify-between gap-2">
+                <span className="truncate">{item.source}</span>
+                {formatDate(item.pubDate) ? (
+                  <time className="shrink-0">{formatDate(item.pubDate)}</time>
+                ) : null}
               </div>
-              <div className="font-medium leading-snug line-clamp-2">{item.title}</div>
+              <div className="text-[13px] leading-snug font-medium line-clamp-2">
+                {item.title}
+              </div>
             </div>
           </a>
         );

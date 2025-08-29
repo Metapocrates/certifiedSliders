@@ -2,77 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Light/Dark tokens */
-:root {
-  --background: #0b0c10;
-  /* page background */
-  --surface: #111317;
-  /* card background */
-  --border: #22262e;
-  --foreground: #e7e9ee;
-  /* body text */
-  --muted: #98a2b3;
-  --primary: #6ee7b7;
-  /* teal-mint accent */
-  --primary-ink: #0b3b2f;
-}
-
-@media (prefers-color-scheme: light) {
+/* ===== Base layer: design tokens & element resets ===== */
+@layer base {
   :root {
-    --background: #ffffff;
-    --surface: #f8fafc;
-    --border: #e5e7eb;
-    --foreground: #0b0c10;
-    --muted: #475569;
-    --primary: #0ea5e9;
-    /* sky-500 */
-    --primary-ink: #052c3a;
+    /* HSL tokens (used by Tailwind via theme colors) */
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 215 20.2% 65.1%;
+    --radius: 1rem;
+    /* for rounded utilities if you want */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 215 20.2% 65.1%;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Make borders use the tokenized color by default */
+  * {
+    @apply border-border;
   }
 }
 
-html,
-body {
-  height: 100%;
-}
+/* ===== Component layer: small reusable primitives ===== */
+/* src/app/globals.css */
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-/* Utility-ish components */
 @layer components {
-  .container {
-    @apply mx-auto w-full max-w-6xl px-4;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    @apply rounded-2xl;
-  }
-
   .btn {
-    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition;
-    background: var(--primary);
-    color: var(--primary-ink);
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50;
   }
 
-  .btn:hover {
-    filter: brightness(0.95);
+  .btn:focus-visible {
+    @apply ring-2;
+    /* ring width */
+    --tw-ring-color: hsl(var(--ring));
+    /* ring color */
   }
 
-  .subtle {
-    color: var(--muted);
+  .select {
+    @apply w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none;
   }
 
-  .section-title {
-    @apply text-xl font-semibold;
+  .select:focus-visible {
+    @apply ring-2;
+    --tw-ring-color: hsl(var(--ring));
   }
+}
+
+
+/* ===== Utilities layer: tiny handy helpers ===== */
+@layer utilities {
+  .container {
+    @apply px-4;
+  }
+}
+
+/* Selection color */
+::selection {
+  background-color: hsl(var(--foreground) / 0.15);
 }
