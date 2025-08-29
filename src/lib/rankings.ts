@@ -1,3 +1,4 @@
+import "server-only";
 import { supabaseServer } from "@/utils/supabase-server";
 
 export type RankingRow = {
@@ -14,7 +15,7 @@ export type RankingRow = {
     wind_legal: boolean | null;
     timing: "FAT" | "HT" | string | null;
     meet_name: string | null;
-    meet_date: string | null; // ISO
+    meet_date: string | null;
     proof_url: string | null;
 };
 
@@ -54,7 +55,7 @@ export async function fetchRankings(q: RankingsQuery) {
                 "timing",
                 "meet_name",
                 "meet_date",
-                "proof_url",
+                "proof_url"
             ].join(","),
             { count: "exact" }
         );
@@ -80,33 +81,14 @@ export async function fetchRankings(q: RankingsQuery) {
             break;
     }
 
-    // 👇 Key fix: tell Supabase the shape of the rows
     const { data, error, count } = await query.returns<RankingRow[]>().range(from, to);
-
-    if (error) {
-        console.error("fetchRankings error", error);
-        throw error;
-    }
+    if (error) throw error;
 
     return {
         rows: data ?? [],
         total: count ?? 0,
         page,
         perPage,
-        pageCount: Math.max(1, Math.ceil((count ?? 0) / perPage)),
+        pageCount: Math.max(1, Math.ceil((count ?? 0) / perPage))
     };
 }
-
-export const DEFAULT_EVENTS = [
-    "100m", "200m", "400m", "800m", "1600m", "3200m",
-    "110mH", "400mH", "300mH",
-    "Long Jump", "Triple Jump", "High Jump", "Pole Vault",
-    "Shot Put", "Discus",
-];
-
-export const STATES = [
-    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA",
-    "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT",
-    "VA", "WA", "WV", "WI", "WY",
-];

@@ -1,4 +1,4 @@
-// Minimal server-side Supabase client for App Router
+import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
@@ -11,8 +11,8 @@ export function supabaseServer() {
             cookies: {
                 get(name: string) {
                     return cookieStore.get(name)?.value;
-                },
-            },
+                }
+            }
         }
     );
 }
