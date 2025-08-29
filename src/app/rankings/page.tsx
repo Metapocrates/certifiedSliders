@@ -4,6 +4,11 @@ import Pagination from "@/components/Pagination";
 import { fetchRankings } from "@/lib/rankings";
 
 export const revalidate = 60;
+// src/app/rankings/page.tsx
+export const dynamic = "force-dynamic"; // ⬅ add this
+
+// ...rest of the file unchanged
+
 
 export default async function RankingsPage({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
   const event = getStr(searchParams.event) ?? "110mH";
