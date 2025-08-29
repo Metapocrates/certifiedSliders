@@ -1,11 +1,16 @@
-import { NextResponse } from 'next/server';
-import { searchAthletes } from '@/lib/data';
+import { NextResponse } from "next/server";
+import { supabaseServer } from "@/utils/supabase-server";
 
-export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const q = searchParams.get('q') ?? '';
-    const state = searchParams.get('state') ?? undefined;
-    const year = searchParams.get('year') ? Number(searchParams.get('year')) : undefined;
-    const rows = await searchAthletes(q, state, year);
-    return NextResponse.json(rows, { headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate=300' } });
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET() {
+    const supabase = supabaseServer();
+    const { data, error } = await supabase
+        .from("mv_best_event")
+        .select("athlete_id, full_name, school_name, school_state, class_year, gender")
+        .limit(50);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ rows: data ?? [] });
 }
