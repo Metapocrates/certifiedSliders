@@ -13,8 +13,8 @@ function fmtMark(row: RankingRow) {
 }
 
 function fmtAdj(row: RankingRow) {
-  if (row.mark_seconds_adj == null) return "—";
-  const s = row.mark_seconds_adj;
+  if (row.mark_seconds == null) return "—";
+  const s = row.mark_seconds;
   const minutes = Math.floor(s / 60);
   const secs = s % 60;
   return minutes > 0

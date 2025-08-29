@@ -7,16 +7,16 @@ export type RankingRow = {
     school_name: string | null;
     school_state: string | null;
     class_year: number | null;
-    gender: "male" | "female" | string;
-    event: string;
+    gender?: string | null;
+    event?: string | null;
     mark: string | null;
     mark_seconds: number | null;
-    mark_seconds_adj: number | null;
-    wind_legal: boolean | null;
-    timing: "FAT" | "HT" | string | null;
     meet_name: string | null;
     meet_date: string | null;
     proof_url: string | null;
+    timing?: "FAT" | "HT" | string | null;
+    wind_legal?: boolean | null;
+    mark_seconds_adj?: number | null;
 };
 
 export type RankingsQuery = {
@@ -37,58 +37,33 @@ export async function fetchRankings(q: RankingsQuery) {
 
     const supabase = supabaseServer();
 
-    let query = supabase
-        .from("mv_best_event")
-        .select(
-            [
-                "athlete_id",
-                "full_name",
-                "school_name",
-                "school_state",
-                "class_year",
-                "gender",
-                "event",
-                "mark",
-                "mark_seconds",
-                "mark_seconds_adj",
-                "wind_legal",
-                "timing",
-                "meet_name",
-                "meet_date",
-                "proof_url"
-            ].join(","),
-            { count: "exact" }
-        );
+    let base = supabase.from("mv_best_event").select("*", { count: "exact" });
 
-    if (q.event) query = query.eq("event", q.event);
-    if (q.gender) query = query.eq("gender", q.gender);
-    if (q.classYear) query = query.eq("class_year", q.classYear);
-    if (q.state) query = query.eq("school_state", q.state);
-
-    switch (q.sort) {
+    const sort = q.sort ?? "time";
+    switch (sort) {
         case "name":
-            query = query.order("full_name", { ascending: true });
+            base = base.order("full_name", { ascending: true });
             break;
         case "date":
-            query = query.order("meet_date", { ascending: false });
+            base = base.order("meet_date", { ascending: false });
             break;
         case "time_adj":
-            query = query.order("mark_seconds_adj", { ascending: true, nullsFirst: false });
+            base = base.order("mark_seconds_adj", { ascending: true, nullsFirst: false });
             break;
         case "time":
         default:
-            query = query.order("mark_seconds", { ascending: true, nullsFirst: false });
+            base = base.order("mark_seconds", { ascending: true, nullsFirst: false });
             break;
     }
 
-    const { data, error, count } = await query.returns<RankingRow[]>().range(from, to);
+    const { data, error, count } = await base.range(from, to);
     if (error) throw error;
 
     return {
-        rows: data ?? [],
+        rows: (data ?? []) as RankingRow[],
         total: count ?? 0,
         page,
         perPage,
-        pageCount: Math.max(1, Math.ceil((count ?? 0) / perPage))
+        pageCount: Math.max(1, Math.ceil((count ?? 0) / perPage)),
     };
 }
