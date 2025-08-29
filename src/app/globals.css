@@ -1,3 +1,4 @@
+/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,7 +6,7 @@
 /* ===== Base layer: design tokens & element resets ===== */
 @layer base {
   :root {
-    /* HSL tokens (used by Tailwind via theme colors) */
+    /* HSL tokens consumed by Tailwind via theme colors */
     --background: 0 0% 100%;
     --foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -14,7 +15,6 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 215 20.2% 65.1%;
     --radius: 1rem;
-    /* for rounded utilities if you want */
   }
 
   .dark {
@@ -39,20 +39,23 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Make borders use the tokenized color by default */
+  /* Default border color */
   * {
     @apply border-border;
   }
 }
 
 /* ===== Component layer: small reusable primitives ===== */
-/* src/app/globals.css */
-
 @layer components {
+  .card {
+    @apply rounded-2xl border bg-background shadow-sm;
+  }
+
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50;
   }
 
+  /* Variants moved out of @apply to avoid focus-visible errors */
   .btn:focus-visible {
     @apply ring-2;
     /* ring width */
@@ -68,8 +71,14 @@
     @apply ring-2;
     --tw-ring-color: hsl(var(--ring));
   }
-}
 
+  .subtle {
+    @apply text-sm;
+    /* keep Tailwind sizing */
+    color: hsl(var(--muted-foreground));
+    /* set the color directly */
+  }
+}
 
 /* ===== Utilities layer: tiny handy helpers ===== */
 @layer utilities {

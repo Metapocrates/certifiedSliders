@@ -10,15 +10,12 @@ module.exports = {
   ],
   theme: {
     extend: {
-      borderRadius: {
-        xl: "var(--radius)",
-        "2xl": "calc(var(--radius) + 0.5rem)",
-      },
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
         muted: "hsl(var(--muted))",
         "muted-foreground": "hsl(var(--muted-foreground))",
+        // (you likely already have these)
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
