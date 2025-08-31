@@ -1,58 +1,90 @@
-"use client";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
-import { DEFAULT_EVENTS, STATES } from "@/lib/rankings-constants";
+'use client';
 
-export default function RankingsFilters() {
+import { useRouter, useSearchParams } from 'next/navigation';
+
+const EVENTS = ['100m','200m','400m','800m','1600m','3200m','110H','300H']; // tweak if needed
+const GENDERS = ['M','F'];
+const SORTS = [
+  { v: 'time', label: 'Best Time' },
+  { v: 'time_adj', label: 'Adj. Time' },
+  { v: 'name', label: 'Name' },
+  { v: 'date', label: 'Most Recent' },
+];
+
+export default function RankingsFilters({ initial }: { initial: Record<string, string | undefined> }) {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const event = sp.get("event") ?? "110mH";
-  const gender = sp.get("gender") ?? "male";
-  const classYear = sp.get("classYear") ?? "";
-  const state = sp.get("state") ?? "";
-  const sort = sp.get("sort") ?? "time";
-
-  const onChange = (key: string, value: string) => {
-    const params = new URLSearchParams(sp.toString());
-    if (value) params.set(key, value); else params.delete(key);
-    params.delete("page");
-    router.push(`/rankings?${params.toString()}`);
-  };
-
-  const years = useMemo(() => {
-    const now = new Date().getFullYear();
-    return Array.from({ length: 6 }, (_, i) => now + 1 - i);
-  }, []);
+  function setParam(k: string, v?: string) {
+    const next = new URLSearchParams(sp);
+    if (v && v.length) next.set(k, v); else next.delete(k);
+    next.delete('page'); // reset to page 1 on any filter change
+    router.push(`/rankings?${next.toString()}`);
+  }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-      <select className="select" value={event} onChange={(e) => onChange("event", e.target.value)}>
-        {DEFAULT_EVENTS.map((e) => (<option key={e} value={e}>{e}</option>))}
-      </select>
+    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6 items-end">
+      <label className="flex flex-col">
+        <span className="text-xs text-muted-foreground">Event</span>
+        <select
+          className="input"
+          value={initial.event ?? ''}
+          onChange={(e) => setParam('event', e.target.value || undefined)}
+        >
+          <option value="">All</option>
+          {EVENTS.map((e) => (
+            <option key={e} value={e}>{e}</option>
+          ))}
+        </select>
+      </label>
 
-      <select className="select" value={gender} onChange={(e) => onChange("gender", e.target.value)}>
-        <option value="male">Boys</option>
-        <option value="female">Girls</option>
-      </select>
+      <label className="flex flex-col">
+        <span className="text-xs text-muted-foreground">Gender</span>
+        <select
+          className="input"
+          value={initial.gender ?? ''}
+          onChange={(e) => setParam('gender', e.target.value || undefined)}
+        >
+          <option value="">All</option>
+          {GENDERS.map((g) => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+      </label>
 
-      <select className="select" value={classYear} onChange={(e) => onChange("classYear", e.target.value)}>
-        <option value="">All Classes</option>
-        {years.map((y) => (<option key={y} value={y}>{y}</option>))}
-      </select>
+      <label className="flex flex-col">
+        <span className="text-xs text-muted-foreground">Class Year</span>
+        <input
+          className="input"
+          inputMode="numeric"
+          placeholder="e.g. 2028"
+          defaultValue={initial.classYear ?? ''}
+          onBlur={(e) => setParam('classYear', e.currentTarget.value || undefined)}
+        />
+      </label>
 
-      <select className="select" value={state} onChange={(e) => onChange("state", e.target.value)}>
-        <option value="">All States</option>
-        {STATES.map((s) => (<option key={s} value={s}>{s}</option>))}
-      </select>
+      <label className="flex flex-col">
+        <span className="text-xs text-muted-foreground">State</span>
+        <input
+          className="input"
+          placeholder="e.g. CA"
+          defaultValue={initial.state ?? ''}
+          onBlur={(e) => setParam('state', e.currentTarget.value.toUpperCase() || undefined)}
+        />
+      </label>
 
-      <select className="select" value={sort} onChange={(e) => onChange("sort", e.target.value)}>
-        <option value="time">Best Time (raw)</option>
-        <option value="name">Name</option>
-        <option value="date">Most Recent</option>
-      </select>
-
-      <div className="flex items-center text-sm opacity-70">Filters update instantly</div>
+      <label className="flex flex-col">
+        <span className="text-xs text-muted-foreground">Sort</span>
+        <select
+          className="input"
+          value={initial.sort ?? 'time'}
+          onChange={(e) => setParam('sort', e.target.value)}
+        >
+          {SORTS.map((s) => (
+            <option key={s.v} value={s.v}>{s.label}</option>
+          ))}
+        </select>
+      </label>
     </div>
   );
 }
