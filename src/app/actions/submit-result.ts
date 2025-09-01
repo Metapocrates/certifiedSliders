@@ -1,7 +1,8 @@
 "use server";
 
 import { z } from "zod";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server";
+
 import { normalizeMark } from "@/lib/mark";
 
 const SubmitSchema = z.object({
@@ -24,7 +25,7 @@ export async function submitResultAction(
     _prev: SubmitResultState | null,
     formData: FormData
 ): Promise<SubmitResultState> {
-    const supabase = createSupabaseServer();
+    const supabase = supabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, error: "You must be signed in." };
 

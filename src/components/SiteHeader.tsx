@@ -1,11 +1,12 @@
 // src/components/SiteHeader.tsx
 // ──────────────────────────────────────────────────────────────────────────────
 import Link from "next/link";
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server";
+
 import SignInOutButton from "@/components/auth/SignInOutButton";
 
 export async function SiteHeader() {
-  const supabase = createSupabaseServer();
+  const supabase = supabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   return (

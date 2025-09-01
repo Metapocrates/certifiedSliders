@@ -1,4 +1,5 @@
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { supabaseServer } from "@/lib/supabase/server";
+
 
 export type EventRow = {
     id: string;
@@ -13,7 +14,7 @@ export type EventRow = {
 };
 
 export async function getEvents(): Promise<EventRow[]> {
-    const supabase = createSupabaseServer();
+    const supabase = supabaseServer();
     const { data, error } = await supabase
         .from("events")
         .select("*")
