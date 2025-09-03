@@ -1,43 +1,43 @@
-'use client';
+import "server-only";
+import Link from "next/link";
+import SignOutButtonClient from "@/components/SignOutButtonClient";
+import { supabaseServer } from "@/lib/supabase/server";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
+export default async function Header() {
+  const supabase = supabaseServer();
 
-export default function Header() {
-  const [isAuthed, setIsAuthed] = useState(false);
-  const router = useRouter();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => setIsAuthed(!!session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setIsAuthed(!!s));
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const signOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
-  };
+  let isAdmin = false;
+  if (user) {
+    const { data: adminRow } = await supabase
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isAdmin = !!adminRow;
+  }
 
   return (
     <header className="border-b">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6 md:px-8">
+      <div className="mx-auto max-w-6xl p-4 flex items-center justify-between">
         <Link href="/" className="font-semibold">Certified Sliders</Link>
-        <nav className="flex items-center gap-4 text-sm">
-          <Link href="/rankings" className="hover:underline">Rankings</Link>
-          <Link href="/dev" className="hover:underline">Dev</Link>
-          {isAuthed ? (
-            <>
-              <Link href="/me" className="hover:underline">Me</Link>
-              <Link href="/submit-result" className="hover:underline">Submit Result</Link>
-              <button onClick={signOut} className="hover:underline">Sign out</button>
-            </>
+
+        <nav className="flex items-center gap-3">
+          {isAdmin && (
+            <Link href="/admin/ratings" className="rounded border px-3 py-1.5">
+              Admin
+            </Link>
+          )}
+
+          {!user ? (
+            <Link href="/login" className="rounded bg-black px-3 py-1.5 text-white">
+              Sign in
+            </Link>
           ) : (
-            <Link href="/signin" className="hover:underline">Sign in</Link>
+            <SignOutButtonClient />
           )}
         </nav>
       </div>

@@ -1,24 +1,44 @@
-// src/components/SiteHeader.tsx
-// ──────────────────────────────────────────────────────────────────────────────
+import "server-only";
 import Link from "next/link";
-import { supabaseServer } from "@/lib/supabase/server";
+import SignOutButtonClient from "./SignOutButtonClient";
+import { supabaseServer } from "../lib/supabase/server";
 
-import SignInOutButton from "@/components/auth/SignInOutButton";
-
-export async function SiteHeader() {
+export default async function SiteHeader() {
   const supabase = supabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let isAdmin = false;
+  if (user) {
+    const { data: adminRow } = await supabase
+      .from("admin_users")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isAdmin = !!adminRow;
+  }
 
   return (
-    <header className="border-b bg-white/80 backdrop-blur">
-      <div className="mx-auto max-w-5xl px-4 py-3 flex items-center gap-4">
-        <Link href="/" className="font-semibold tracking-tight">Certified Sliders</Link>
-        <nav className="ml-auto flex items-center gap-4 text-sm">
-          <Link href="/submit-result" className="hover:underline">Submit Result</Link>
-          {user ? (
-            <Link href="/me" className="hover:underline">Me</Link>
-          ) : null}
-          <SignInOutButton />
+    <header className="border-b">
+      <div className="mx-auto max-w-6xl p-4 flex items-center justify-between">
+        <Link href="/" className="font-semibold">Certified Sliders</Link>
+
+        <nav className="flex items-center gap-3">
+          {isAdmin && (
+            <Link href="/admin/ratings" className="rounded border px-3 py-1.5">
+              Admin
+            </Link>
+          )}
+
+          {!user ? (
+            <Link href="/login" className="rounded bg-black px-3 py-1.5 text-white">
+              Sign in
+            </Link>
+          ) : (
+            <SignOutButtonClient />
+          )}
         </nav>
       </div>
     </header>

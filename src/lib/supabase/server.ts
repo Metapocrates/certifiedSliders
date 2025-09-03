@@ -2,26 +2,16 @@
 import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-/**
- * Creates a Supabase client that works in Next.js Server Components.
- */
+/** Supabase client for Next.js Server Components */
 export function supabaseServer() {
     const cookieStore = cookies();
 
     const get = (name: string) => cookieStore.get(name)?.value;
     const set = (name: string, value: string, options: CookieOptions) => {
-        try {
-            cookieStore.set({ name, value, ...options });
-        } catch {
-            // In RSC, cookies may be readonly; ignore errors
-        }
+        try { cookieStore.set({ name, value, ...options }); } catch { }
     };
     const remove = (name: string, options: CookieOptions) => {
-        try {
-            cookieStore.set({ name, value: "", ...options, maxAge: 0 });
-        } catch {
-            // noop
-        }
+        try { cookieStore.set({ name, value: "", ...options, maxAge: 0 }); } catch { }
     };
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
