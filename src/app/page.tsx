@@ -1,86 +1,53 @@
-// src/app/page.tsx
-import { Section } from "@/components/section";
-import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
-import NewsMergedGrid from "@/components/news-merged-grid";
+import Link from "next/link";
+import { createSupabaseServer } from "@/lib/supabase/compat";
 
-export default function Home() {
+export default async function HomePage() {
+  const supabase = createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  let username: string | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle();
+    username = data?.username ?? null;
+  }
+
   return (
-    <div className="grid gap-10">
-      {/* Hero */}
-      <section className="grid gap-3">
-        <h1 className="text-3xl font-bold">Certified Sliders</h1>
-        <p className="subtle">
-          Track &amp; Field blog • rankings • athlete profiles
-        </p>
-      </section>
+    <div className="container py-12">
+      <h1 className="text-3xl md:text-4xl font-bold">Welcome to Certified Sliders</h1>
+      <p className="mt-3 text-gray-600 max-w-prose">
+        Build your athlete profile, upload a photo, and submit results for verification.
+      </p>
 
-      {/* Featured | Latest */}
-      <div className="grid gap-8 md:grid-cols-3">
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Featured Athlete</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-xl bg-[var(--border)]" />
-              <div>
-                <div className="font-medium">Coming soon</div>
-                <div className="text-sm subtle">Top performer highlight</div>
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>Latest Posts</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-center justify-between">
-                <span>Welcome to Certified Sliders</span>
-                <span className="subtle">Blog</span>
-              </li>
-            </ul>
-          </CardBody>
-        </Card>
-
-        {/* Empty third column to keep grid balanced when News is full-width below */}
-        <div className="hidden md:block" />
-      </div>
-
-      {/* Full-width News Gallery */}
-      <Section title="News Feed">
-        <NewsMergedGrid />
-      </Section>
-
-      {/* CTA row */}
-      <Section title="Get Involved">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardBody>
-              <div className="mb-2 font-medium">Athletes</div>
-              <p className="subtle mb-4">
-                Claim your profile and add results for verification.
-              </p>
-              <a className="btn" href="/submit">
-                Submit a Result
-              </a>
-            </CardBody>
-          </Card>
-          <Card>
-            <CardBody>
-              <div className="mb-2 font-medium">Coaches</div>
-              <p className="subtle mb-4">
-                Help verify marks and highlight your athletes.
-              </p>
-              <a className="btn" href="/admin/verify">
-                Go to Verify
-              </a>
-            </CardBody>
-          </Card>
+      {!user ? (
+        <div className="mt-6 flex gap-3">
+          <Link href="/signin" className="btn">Sign in to get started</Link>
         </div>
-      </Section>
+      ) : (
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/me" className="btn">Go to My Profile</Link>
+          {username && (
+            <Link href={`/athletes/${username}?view=public#overview`} className="btn">
+              View My Public Page
+            </Link>
+          )}
+          <Link href={`/athletes/${username ?? ""}#edit`} className="btn">
+            Edit My Profile
+          </Link>
+        </div>
+      )}
+
+      <section className="mt-12">
+        <h2 className="text-xl font-semibold mb-3">What you can do</h2>
+        <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+          <li>Create or update your profile details.</li>
+          <li>Upload a profile photo.</li>
+          <li>Submit meet results for verification (owner sees pending; public sees verified only).</li>
+        </ul>
+      </section>
     </div>
   );
 }

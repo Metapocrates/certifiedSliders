@@ -1,45 +1,69 @@
-import "server-only";
+// Server component
 import Link from "next/link";
-import SignOutButtonClient from "@/components/SignOutButtonClient";
-import { supabaseServer } from "@/lib/supabase/server";
+import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getSessionUser, isAdmin } from "@/lib/auth";
+import { signOut } from "@/app/actions/auth";
 
 export default async function Header() {
-  const supabase = supabaseServer();
+  const supabase = createSupabaseServer();
+  const user = await getSessionUser();
+  const admin = user ? await isAdmin(user.id) : false;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let profile:
+    | { username: string | null; profile_pic_url: string | null }
+    | null = null;
 
-  let isAdmin = false;
   if (user) {
-    const { data: adminRow } = await supabase
-      .from("admin_users")
-      .select("user_id")
-      .eq("user_id", user.id)
+    const { data } = await supabase
+      .from("profiles")
+      .select("username, profile_pic_url")
+      .eq("id", user.id)
       .maybeSingle();
-    isAdmin = !!adminRow;
+    profile = data ?? null;
   }
 
   return (
-    <header className="border-b">
-      <div className="mx-auto max-w-6xl p-4 flex items-center justify-between">
-        <Link href="/" className="font-semibold">Certified Sliders</Link>
+    <header className="border-b bg-white">
+      <div className="container h-14 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="font-semibold tracking-tight">
+            Certified Sliders
+          </Link>
 
-        <nav className="flex items-center gap-3">
-          {isAdmin && (
-            <Link href="/admin/ratings" className="rounded border px-3 py-1.5">
-              Admin
-            </Link>
-          )}
+          {/* Left-side nav */}
+          <nav className="hidden md:flex items-center gap-3">
+            <Link href="/blog" className="text-sm hover:underline">Blog</Link>
+            {admin && (
+              <Link href="/admin/blog/new" className="text-sm hover:underline">
+                New Post
+              </Link>
+            )}
+          </nav>
+        </div>
 
-          {!user ? (
-            <Link href="/login" className="rounded bg-black px-3 py-1.5 text-white">
-              Sign in
+        {/* Right-side auth/profile */}
+        {!user ? (
+          <nav className="flex items-center gap-3">
+            <Link href="/signin" className="btn">Sign in</Link>
+          </nav>
+        ) : (
+          <nav className="flex items-center gap-3">
+            <Link href="/me" className="btn">My Profile</Link>
+
+            <form action={signOut}>
+              <button type="submit" className="btn" title="Sign out">Sign out</button>
+            </form>
+
+            <Link href="/me" className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {profile?.profile_pic_url ? (
+                <img src={profile.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full grid place-items-center text-xs text-gray-500">🙂</div>
+              )}
             </Link>
-          ) : (
-            <SignOutButtonClient />
-          )}
-        </nav>
+          </nav>
+        )}
       </div>
     </header>
   );

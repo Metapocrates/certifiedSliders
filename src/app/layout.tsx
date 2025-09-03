@@ -1,39 +1,18 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import Header from '@/components/Header';
+import type { Metadata } from "next";
+import "./globals.css";
+import Header from "@/components/Header";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Certified Sliders",
-  description: "Track & Field rankings and athlete profiles",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  openGraph: {
-    title: "Certified Sliders",
-    description: "Track & Field rankings and athlete profiles",
-    url: "/",
-    siteName: "Certified Sliders",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Certified Sliders",
-    description: "Track & Field rankings and athlete profiles",
-  },
-  alternates: {
-    canonical: "/",
-  },
-} satisfies import("next").Metadata;
+  description: "Track & Field athlete profiles and results",
+};
 
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-background text-foreground">
+      <body>
         <Header />
-        {children}
+        <main>{children}</main>
       </body>
     </html>
   );

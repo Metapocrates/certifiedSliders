@@ -1,11 +1,10 @@
 "use client";
 
-export default function Error({ error, reset }: { error: Error; reset: () => void }) {
+export default function Error({ error }: { error: Error }) {
   return (
-    <div className="container max-w-3xl mx-auto p-6 space-y-3">
-      <h1 className="text-xl font-semibold">Athlete</h1>
-      <p className="subtle">Something went wrong: {error.message}</p>
-      <button className="btn" onClick={reset}>Try again</button>
+    <div className="container py-10">
+      <h1 className="text-2xl font-semibold">Athlete</h1>
+      <p className="text-red-500 mt-4">Something went wrong: {error.message}</p>
     </div>
   );
 }
