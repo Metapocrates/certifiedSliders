@@ -31,15 +31,17 @@ export async function setFeaturedByUsername(formData: FormData) {
 
     if (!prof?.id) return { ok: false, message: `No profile found for @${uname}.` };
 
-    // Keep a single featured row: clear then set
-    await supabase.from("featured_profiles").delete().neq("profile_id", "00000000-0000-0000-0000-000000000000").catch(() => { });
-    const { error } = await supabase
+    // Clear any existing featured row(s)
+    await supabase
         .from("featured_profiles")
-        .insert({ profile_id: prof.id });
+        .delete()
+        .neq("profile_id", "00000000-0000-0000-0000-000000000000");
 
+    // Set new featured
+    const { error } = await supabase.from("featured_profiles").insert({ profile_id: prof.id });
     if (error) return { ok: false, message: error.message };
 
-    revalidatePath("/"); // home reads featured
+    revalidatePath("/");
     return { ok: true, message: `Featured set to @${prof.username}.` };
 }
 
@@ -49,7 +51,11 @@ export async function clearFeatured() {
     if (!me) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(me.id))) return { ok: false, message: "Admins only." };
 
-    const { error } = await supabase.from("featured_profiles").delete().neq("profile_id", "00000000-0000-0000-0000-000000000000");
+    const { error } = await supabase
+        .from("featured_profiles")
+        .delete()
+        .neq("profile_id", "00000000-0000-0000-0000-000000000000");
+
     if (error) return { ok: false, message: error.message };
 
     revalidatePath("/");

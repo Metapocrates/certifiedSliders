@@ -15,9 +15,23 @@ type Post = {
 
 export default function EditPostForm({ initial }: { initial: Post }) {
   const router = useRouter();
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<string>("");
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDelete] = useTransition();
+
+  async function doDelete() {
+    if (!confirm("Delete this post? This cannot be undone.")) return;
+    startDelete(async () => {
+      const fd = new FormData();
+      fd.set("slug", initial.slug);
+      const res = await deletePost(fd);
+      if (!res?.ok) {
+        setMsg(res?.message ?? "Failed to delete.");
+        return;
+      }
+      router.push("/blog");
+    });
+  }
 
   return (
     <form
@@ -26,8 +40,8 @@ export default function EditPostForm({ initial }: { initial: Post }) {
         startTransition(async () => {
           fd.set("original_slug", initial.slug);
           const res = await updatePost(fd);
-          if (!res.ok) {
-            setMsg(res.message);
+          if (!res?.ok) {
+            setMsg(res?.message ?? "Something went wrong.");
             return;
           }
           setMsg("Saved!");
@@ -101,25 +115,9 @@ export default function EditPostForm({ initial }: { initial: Post }) {
         <button type="submit" disabled={isPending} className="btn">
           {isPending ? "Saving..." : "Save"}
         </button>
-
-        <form
-          action={(fd) => {
-            if (!confirm("Delete this post? This cannot be undone.")) return;
-            startDelete(async () => {
-              fd.set("slug", initial.slug);
-              const res = await deletePost(fd);
-              if (!res.ok) {
-                setMsg(res.message);
-                return;
-              }
-              router.push("/blog");
-            });
-          }}
-        >
-          <button type="submit" disabled={isDeleting} className="btn">
-            {isDeleting ? "Deleting..." : "Delete"}
-          </button>
-        </form>
+        <button type="button" disabled={isDeleting} className="btn" onClick={doDelete}>
+          {isDeleting ? "Deleting..." : "Delete"}
+        </button>
       </div>
 
       {msg && <div className="text-sm mt-1">{msg}</div>}

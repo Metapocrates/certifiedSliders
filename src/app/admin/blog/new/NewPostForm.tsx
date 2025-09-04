@@ -13,15 +13,15 @@ export default function NewPostForm() {
     <form
       action={(fd) => {
         setMsg("");
-        const status = (fd.get("status") as string) || "draft";
         startTransition(async () => {
           const res = await createPost(fd);
-          if (!res.ok) {
-            setMsg(res.message);
+          if (!res?.ok) {
+            setMsg(res?.message ?? "Something went wrong.");
             return;
           }
           setMsg("Saved!");
-          if (status === "published") {
+          // If draft -> preview, if published -> live page
+          if ((fd.get("status") as string) === "published") {
             router.push(`/blog/${res.slug}`);
           } else {
             router.push(`/blog/${res.slug}?preview=1`);
