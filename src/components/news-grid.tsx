@@ -1,63 +1,64 @@
-// src/components/news-grid.tsx
-import 'server-only';
-import { getTrackAndFieldNews } from '@/lib/rss';
+import "server-only";
+import { getMergedNews, type MergedNewsItem } from "@/lib/rss";
 
-export const revalidate = 0;                 // for testing; switch back to 600 later
-export const dynamic = 'force-dynamic';      // for testing; remove later
+export const revalidate = 600;
 
 function formatDate(d?: string) {
-  if (!d) return '';
+  if (!d) return "";
   try {
-    return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
   } catch {
-    return '';
+    return "";
   }
 }
 
 export default async function NewsGrid() {
-  // Get items; if your rss fn ignores the param, we still slice below.
-  const items = (await getTrackAndFieldNews(8)) ?? [];
-  const top = items.slice(0, 8); // ✅ hard cap at 8
-
-  if (!top.length) {
-    return <div className="text-sm subtle">Couldn’t load the news feed right now.</div>;
+  const items = await getMergedNews(8);
+  if (!items.length) {
+    return <div className="text-sm text-neutral-500">Couldn’t load the news feed right now.</div>;
   }
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-      {top.map((item, idx) => (
-        <a
-          key={`${idx}-${item.link}`}
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={item.title}
-          className="block overflow-hidden rounded-lg border bg-white dark:bg-neutral-900 hover:shadow-sm transition"
-        >
-          {item.image ? (
-            <div className="relative w-full h-28 sm:h-32">
-              <img
-                src={item.image}
-                alt=""
-                className="absolute inset-0 h-full w-full object-cover"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
+      {items.map((item: MergedNewsItem, idx: number) => {
+        const hasImage = Boolean(item.image);
+        return (
+          <a
+            key={`${idx}-${item.link}`}
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={item.title}
+            className="block overflow-hidden rounded-lg border bg-white hover:shadow-sm transition"
+          >
+            <div className="relative w-full h-28 sm:h-32 overflow-hidden">
+              {hasImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={item.image!}
+                  alt=""
+                  className="absolute inset-0 h-full w-full object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-neutral-200">
+                  <span className="relative inline-flex items-center rounded-md border border-neutral-300 bg-white/70 px-2 py-1 text-xs font-medium text-neutral-700">
+                    {item.source}
+                  </span>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="w-full h-28 sm:h-32 bg-neutral-200 dark:bg-neutral-800" />
-          )}
-          <div className="p-2">
-            <div className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-1 flex items-center justify-between gap-2">
-              <span className="truncate">{item.source}</span>
-              {formatDate(item.pubDate) ? (
-                <time className="shrink-0">{formatDate(item.pubDate)}</time>
-              ) : null}
+            <div className="p-2">
+              <div className="mb-1 text-[11px] text-neutral-500 flex items-center justify-between gap-2">
+                <span className="truncate">{item.source}</span>
+                {formatDate(item.pubDate) ? <time className="shrink-0">{formatDate(item.pubDate)}</time> : null}
+              </div>
+              <div className="text-[13px] leading-snug font-medium line-clamp-2">{item.title}</div>
             </div>
-            <div className="text-[13px] leading-snug font-medium line-clamp-2">{item.title}</div>
-          </div>
-        </a>
-      ))}
+          </a>
+        );
+      })}
     </div>
   );
 }

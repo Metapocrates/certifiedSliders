@@ -34,9 +34,10 @@ export default async function Header() {
           <nav className="hidden md:flex items-center gap-3">
             <Link href="/blog" className="text-sm hover:underline">Blog</Link>
             {admin && (
-              <Link href="/admin/blog/new" className="text-sm hover:underline">
-                New Post
-              </Link>
+              <>
+                <Link href="/admin/blog/new" className="text-sm hover:underline">New Post</Link>
+                <Link href="/admin/home" className="text-sm hover:underline">Home Manager</Link>
+              </>
             )}
           </nav>
         </div>
