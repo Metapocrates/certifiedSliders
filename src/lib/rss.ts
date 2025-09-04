@@ -10,8 +10,7 @@ export type MergedNewsItem = {
 };
 
 const DEFAULT_FEEDS: string[] = (
-    process.env.RSS_FEEDS ||
-    "https://trackandfieldnews.com/feed/"
+    process.env.RSS_FEEDS || "https://trackandfieldnews.com/feed/"
 )
     .split(",")
     .map((s) => s.trim())
@@ -23,50 +22,57 @@ const parser = new Parser({
 
 function firstImageFromHtml(html?: string): string | null {
     if (!html) return null;
-
-    // direct src
+    // src
     const m1 = /<img[^>]+src=["']([^"']+)["']/i.exec(html);
     if (m1?.[1]) return m1[1];
-
-    // lazy-loading variants
+    // lazy
     const m2 = /<img[^>]+data-(?:src|lazy-src|original)=["']([^"']+)["']/i.exec(html);
     if (m2?.[1]) return m2[1];
-
-    // srcset: take the first URL
+    // srcset (take first)
     const m3 = /<img[^>]+srcset=["']([^"']+)["']/i.exec(html);
-    if (m3?.[1]) {
-        const first = m3[1].split(",")[0]?.trim().split(" ")[0];
-        if (first) return first;
-    }
-
+    if (m3?.[1]) return m3[1].split(",")[0]?.trim().split(" ")[0] || null;
     return null;
 }
 
-async function maybeFetchOgImage(url: string): Promise<string | null> {
-    // Opt-in to avoid extra network: set RSS_ENHANCE_IMAGES=1 in .env.local
-    if (process.env.RSS_ENHANCE_IMAGES !== "1") return null;
-
+function absoluteHttps(raw: string | null | undefined, pageUrl: string): string | null {
+    if (!raw) return null;
     try {
-        const res = await fetch(url, { next: { revalidate: 3600 } });
-        if (!res.ok) return null;
-        const html = await res.text();
-
-        const og =
-            /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(html)?.[1] ||
-            /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i.exec(html)?.[1] ||
-            firstImageFromHtml(html);
-
-        return og || null;
+        if (raw.startsWith("data:")) return raw;               // allow data URIs
+        if (raw.startsWith("//")) return `https:${raw}`;       // protocol-relative → https
+        if (raw.startsWith("/")) {                             // root-relative
+            const u = new URL(pageUrl);
+            return `${u.protocol}//${u.host}${raw}`.replace(/^http:\/\//i, "https://");
+        }
+        // if no scheme (e.g. "images/foo.jpg"), resolve against page
+        if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(raw)) {
+            return new URL(raw, pageUrl).toString().replace(/^http:\/\//i, "https://");
+        }
+        // force http→https
+        if (raw.startsWith("http://")) return raw.replace(/^http:\/\//i, "https://");
+        return raw;
     } catch {
         return null;
     }
 }
 
-/** Fetch all feeds, merge, dedupe by link, sort newest → oldest. */
-export async function getMergedNews(
-    limit = 8,
-    feeds: string[] = DEFAULT_FEEDS
-): Promise<MergedNewsItem[]> {
+async function maybeFetchOgImage(url: string): Promise<string | null> {
+    if (process.env.RSS_ENHANCE_IMAGES !== "1") return null;
+    try {
+        const res = await fetch(url, { next: { revalidate: 3600 } });
+        if (!res.ok) return null;
+        const html = await res.text();
+        const og =
+            /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i.exec(html)?.[1] ||
+            /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i.exec(html)?.[1] ||
+            firstImageFromHtml(html);
+        return absoluteHttps(og || null, url);
+    } catch {
+        return null;
+    }
+}
+
+/** Fetch all feeds, merge, dedupe, newest → oldest. */
+export async function getMergedNews(limit = 8, feeds: string[] = DEFAULT_FEEDS): Promise<MergedNewsItem[]> {
     const xmls = await Promise.all(
         feeds.map(async (url) => {
             try {
@@ -94,14 +100,13 @@ export async function getMergedNews(
                 const link = rawLink.trim();
                 if (!link) continue;
 
-                // Prefer true image enclosures (skip audio)
+                // media/enclosures
                 const enclosure = (it as any)?.enclosure;
                 const encUrl =
                     enclosure?.url && (!enclosure.type || /^image\//i.test(enclosure.type))
                         ? enclosure.url
                         : undefined;
 
-                // Common media namespaces
                 const mediaContent = (() => {
                     const mc = (it as any)["media:content"];
                     if (!mc) return undefined;
@@ -122,7 +127,6 @@ export async function getMergedNews(
                         ? (it as any)["media:group"]["media:content"][0]?.url
                         : undefined);
 
-                // HTML bodies
                 const html =
                     ((it as any)?.["content:encoded"] ||
                         (it as any)?.content ||
@@ -130,24 +134,19 @@ export async function getMergedNews(
                         (it as any)?.contentSnippet ||
                         "") as string;
 
-                const image =
-                    encUrl ||
-                    mediaContent ||
-                    mediaThumb ||
-                    mediaGroup ||
-                    firstImageFromHtml(html) ||
-                    null;
+                const candidate =
+                    encUrl || mediaContent || mediaThumb || mediaGroup || firstImageFromHtml(html) || null;
 
                 items.push({
                     title: (it.title || link).trim(),
                     link,
                     pubDate: (it as any).isoDate || (it as any).pubDate,
                     source: sourceTitle,
-                    image,
+                    image: absoluteHttps(candidate, link),
                 });
             }
         } catch {
-            // ignore parse errors for that feed
+            /* ignore parse errors */
         }
     }
 
@@ -166,10 +165,9 @@ export async function getMergedNews(
         return tb - ta;
     });
 
-    // Limit first, then (optionally) enhance a few with OG image
     deduped = deduped.slice(0, limit);
 
-    // Only enhance the first few to keep it snappy
+    // Enhance a few with OG image if missing
     const enhanceCount = Math.min(deduped.length, 6);
     const enhanced = await Promise.all(
         deduped.map(async (it, idx) => {
