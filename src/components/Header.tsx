@@ -31,15 +31,22 @@ export default async function Header() {
           </Link>
 
           {/* Left-side nav */}
-          <nav className="hidden md:flex items-center gap-3">
-            <Link href="/blog" className="text-sm hover:underline">Blog</Link>
-            {admin && (
-              <>
-                <Link href="/admin/blog/new" className="text-sm hover:underline">New Post</Link>
-                <Link href="/admin/home" className="text-sm hover:underline">Home Manager</Link>
-              </>
-            )}
-          </nav>
+      {/* Left-side nav */}
+<nav className="hidden md:flex items-center gap-3">
+  <Link href="/blog" className="text-sm hover:underline">Blog</Link>
+
+  {admin && (
+    <>
+      {/* NEW: admin results queue */}
+      <Link href="/admin/results" className="text-sm hover:underline">Results Queue</Link>
+
+      {/* existing admin links */}
+      <Link href="/admin/blog/new" className="text-sm hover:underline">New Post</Link>
+      <Link href="/admin/home" className="text-sm hover:underline">Home Manager</Link>
+    </>
+  )}
+</nav>
+
         </div>
 
         {/* Right-side auth/profile */}
@@ -49,6 +56,9 @@ export default async function Header() {
           </nav>
         ) : (
           <nav className="flex items-center gap-3">
+            {/* NEW: Submit Result visible when signed in */}
+            <Link href="/submit-result" className="btn">Submit Result</Link>
+
             <Link href="/me" className="btn">My Profile</Link>
 
             <form action={signOut}>

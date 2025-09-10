@@ -1,11 +1,25 @@
-import SideNav from '@/components/SideNav';
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
+import type { ReactNode } from "react"; // <- type-only import fixes TS1484
+import { redirect } from "next/navigation";
+import { supabaseServer } from "@/lib/supabase/server";
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
-return (
-<div className="mx-auto max-w-6xl w-full gap-6 px-4 sm:px-6 md:px-8 py-6 md:flex">
-<SideNav />
-<main className="flex-1 min-w-0">{children}</main>
-</div>
-);
+/**
+ * All routes under (protected) require an authenticated session.
+ * Server-only check avoids client hydration races & redirect loops.
+ */
+export default async function ProtectedLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const supabase = supabaseServer();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) redirect("/signin");
+
+  return <>{children}</>;
 }

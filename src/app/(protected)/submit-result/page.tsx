@@ -1,9 +1,13 @@
-// Server component (no "use client")
-import { getEvents, type EventRow } from "@/lib/events";
-import { SubmitResultForm } from "./SubmitResultForm";
+// src/app/(protected)/submit-result/page.tsx
+import SubmitResultForm from "./SubmitResultForm";
 
+export const dynamic = "force-dynamic";
 
-export default async function Page() {
-  const events: EventRow[] = await getEvents(); // server-side Supabase call
-  return <SubmitResultForm events={events} />;
+export default function SubmitResultPage() {
+  return (
+    <div className="max-w-xl mx-auto p-6 space-y-4">
+      <h1 className="text-2xl font-semibold">Submit a Proof Link</h1>
+      <SubmitResultForm />
+    </div>
+  );
 }

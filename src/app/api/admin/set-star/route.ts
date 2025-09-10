@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { supabaseServer } from "../../../../lib/supabase/server";
-import { supabaseAdmin } from "../../../../lib/supabase/admin";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const ALLOWED = new Set([3, 4, 5]);
 
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     const before = profile.star_rating;
 
     // 5) Do the UPDATE with the service role (bypasses any RLS weirdness)
-    const admin = supabaseAdmin();
+    const admin = createSupabaseAdmin();
     const { error: updErr } = await admin
         .from("profiles")
         .update({ star_rating })

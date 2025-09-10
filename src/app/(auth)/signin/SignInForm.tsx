@@ -16,22 +16,19 @@ export default function SignInForm() {
     e.preventDefault();
     setMsg("");
     setBusy(true);
+
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email") || "").trim();
     const password = String(fd.get("password") || "");
 
-    console.log("[auth] submit", { mode, email }); // ✅ should appear on submit
-
     try {
       if (mode === "signin") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        console.log("[auth] signIn result", { error, hasSession: !!data?.session });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push("/me");
-        router.refresh();
+        router.push("/me");      // navigate
+        router.refresh();        // force server to see new cookie
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
-        console.log("[auth] signUp result", { error, hasSession: !!data?.session });
         if (error) throw error;
         if (!data.session) {
           setMsg("Check your email to confirm your account.");
@@ -40,9 +37,8 @@ export default function SignInForm() {
           router.refresh();
         }
       }
-    } catch (e: any) {
-      console.error("[auth] error", e);
-      setMsg(e?.message || "Something went wrong. Please try again.");
+    } catch (err: any) {
+      setMsg(err?.message || "Something went wrong. Please try again.");
     } finally {
       setBusy(false);
     }

@@ -1,104 +1,111 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import { submitResultAction } from "@/app/actions/submit-result";
-import type { EventRow } from "@/lib/events";
+import { useState } from "react";
+import ResultCard from "@/components/proofs/ResultCard";
 
-type Props = { events: EventRow[] };
+type IngestResponse = {
+  ok: boolean;
+  status?: string;
+  confidence?: number;
+  proofId?: number;
+  resultId?: number;
+  event?: string | null;
+  mark_seconds?: number | null;
+  timing?: "FAT" | "hand" | null;
+  meet?: string | null;
+  date?: string | null;
+  // match ResultCard expectations
+  error?: string | { message?: string } | null;
+};
 
-export function SubmitResultForm({ events }: Props) {
-  const formRef = useRef<HTMLFormElement>(null);
+function extractErrorText(err: unknown): string {
+  if (!err) return "Unknown error";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) return err.message;
+  if (typeof err === "object") {
+    const o = err as Record<string, any>;
+    if (typeof o.message === "string") return o.message;
+    try {
+      return JSON.stringify(o);
+    } catch {
+      return String(o);
+    }
+  }
+  return String(err);
+}
 
-  // Optional: clear form on navigation or after a success redirect pattern
-  useEffect(() => {
-    // no-op for now
-  }, []);
+export default function SubmitResultForm() {
+  const [url, setUrl] = useState("");
+  const [resp, setResp] = useState<IngestResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errText, setErrText] = useState<string | null>(null);
 
-  const trackEvents = events.filter(e => e.discipline === "track");
-  const fieldEvents = events.filter(e => e.discipline === "field");
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setErrText(null);
+    setResp(null);
+    try {
+      const r = await fetch("/api/proofs/ingest?dry=0", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data: IngestResponse = await r.json();
+      if (!r.ok || !data.ok) {
+        setErrText(extractErrorText(data.error || `HTTP ${r.status}`));
+      } else {
+        setResp(data);
+      }
+    } catch (e: any) {
+      setErrText(extractErrorText(e));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
-    <main className="mx-auto max-w-xl p-6">
-      <h1 className="text-2xl font-semibold mb-4">Submit a Result</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        Track: enter <code>SS.ss</code> or <code>M:SS.ss</code>. Field: enter meters (e.g., <code>6.45</code>) or feet-inches (<code>22-04.5</code>).
-      </p>
+    <div className="space-y-4">
+      <form onSubmit={onSubmit} className="flex flex-col gap-2">
+        <input
+          className="flex-1 rounded border px-3 py-2"
+          placeholder="Paste a result link (e.g. athletic.net/result/..., milesplit.com/performance/...)"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          required
+          type="url"
+        />
+        <p className="text-xs text-gray-500">
+          Use direct result links — not athlete or meet overview pages.
+        </p>
+        <button
+  type="submit"
+  disabled={loading || !url}
+  className="inline-flex items-center justify-center gap-2 rounded bg-black text-white px-4 py-2 disabled:opacity-50"
+>
+  {loading && (
+    <svg
+      className="h-4 w-4 animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"/>
+      <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" strokeWidth="4" />
+    </svg>
+  )}
+  {loading ? "Parsing…" : "Ingest"}
+</button>
 
-      {/* If you want inline success/error, use the redirect+searchParams pattern in Option C below */}
-      <form
-        ref={formRef}
-        // @ts-expect-error Server Action signature is not in your local React types
-        action={submitResultAction}
-        className="space-y-4"
-      >
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="event_id">Event</label>
-          <select id="event_id" name="event_id" className="w-full rounded border p-2" required>
-            {trackEvents.length > 0 && (
-              <optgroup label="Track">
-                {trackEvents.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </optgroup>
-            )}
-            {fieldEvents.length > 0 && (
-              <optgroup label="Field">
-                {fieldEvents.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </optgroup>
-            )}
-          </select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="mark">Mark</label>
-            <input id="mark" name="mark" required placeholder="53.76 / 1:53.21 / 6.45 / 22-04.5" className="w-full rounded border p-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="timing">Timing</label>
-            <select id="timing" name="timing" className="w-full rounded border p-2" defaultValue="FAT">
-              <option value="FAT">FAT</option>
-              <option value="HAND">Hand</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="wind">Wind (m/s)</label>
-            <input id="wind" name="wind" type="number" step="0.1" placeholder="e.g., 2.0 or -1.3" className="w-full rounded border p-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="season">Season</label>
-            <select id="season" name="season" className="w-full rounded border p-2" defaultValue="outdoor">
-              <option value="outdoor">Outdoor</option>
-              <option value="indoor">Indoor</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="meet_name">Meet Name</label>
-          <input id="meet_name" name="meet_name" required placeholder="Sunset Invitational" className="w-full rounded border p-2" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="meet_date">Meet Date</label>
-            <input id="meet_date" name="meet_date" required type="date" className="w-full rounded border p-2" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="proof_url">Proof URL</label>
-            <input id="proof_url" name="proof_url" type="url" placeholder="https://..." className="w-full rounded border p-2" />
-          </div>
-        </div>
-
-        <input type="hidden" name="source" value="user" />
-
-        <div className="pt-2">
-          <button type="submit" className="rounded-xl px-4 py-2 border shadow-sm hover:shadow">
-            Submit
-          </button>
-        </div>
       </form>
-    </main>
+
+      {errText && (
+        <div className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded whitespace-pre-line">
+          {errText}
+        </div>
+      )}
+
+      {resp?.ok && <ResultCard data={resp} />}
+    </div>
   );
 }
