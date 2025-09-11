@@ -1,90 +1,107 @@
-'use client';
+"use client";
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
-const EVENTS = ['100m','200m','400m','800m','1600m','3200m','110H','300H']; // tweak if needed
-const GENDERS = ['M','F'];
-const SORTS = [
-  { v: 'time', label: 'Best Time' },
-  { v: 'time_adj', label: 'Adj. Time' },
-  { v: 'name', label: 'Name' },
-  { v: 'date', label: 'Most Recent' },
+const EVENTS = [
+  // Sprints/Hurdles (add more as you standardize)
+  "100", "200", "400",
+  "110H", "100H", "300H", "400H",
+  "800", "1600", "3200",
+  // Field/other can be added later (we’ll handle times first)
 ];
 
-export default function RankingsFilters({ initial }: { initial: Record<string, string | undefined> }) {
+const GENDERS = [
+  { label: "Any", value: "" },
+  { label: "Boys", value: "M" },
+  { label: "Girls", value: "F" },
+];
+
+const CLASS_YEARS = ["", "2026", "2027", "2028", "2029", "2030"];
+
+export default function RankingsFilters({
+  initial,
+}: {
+  initial: { event: string; gender: string; classYear: string };
+}) {
   const router = useRouter();
   const sp = useSearchParams();
 
-  function setParam(k: string, v?: string) {
-    const next = new URLSearchParams(sp);
-    if (v && v.length) next.set(k, v); else next.delete(k);
-    next.delete('page'); // reset to page 1 on any filter change
-    router.push(`/rankings?${next.toString()}`);
+  const [event, setEvent] = useState(initial.event);
+  const [gender, setGender] = useState(initial.gender);
+  const [classYear, setClassYear] = useState(initial.classYear);
+
+  const basePath = useMemo(() => "/rankings", []);
+
+  function apply() {
+    const params = new URLSearchParams(sp.toString());
+    if (event) params.set("event", event); else params.delete("event");
+    if (gender) params.set("gender", gender); else params.delete("gender");
+    if (classYear) params.set("classYear", classYear); else params.delete("classYear");
+    router.push(`${basePath}?${params.toString()}`);
+  }
+
+  function reset() {
+    setEvent("");
+    setGender("");
+    setClassYear("");
+    router.push(basePath);
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6 items-end">
-      <label className="flex flex-col">
-        <span className="text-xs text-muted-foreground">Event</span>
+    <div className="flex flex-wrap gap-3 items-end">
+      <div className="flex flex-col">
+        <label className="text-xs font-medium mb-1">Event</label>
         <select
-          className="input"
-          value={initial.event ?? ''}
-          onChange={(e) => setParam('event', e.target.value || undefined)}
+          className="border rounded-md px-3 py-2"
+          value={event}
+          onChange={(e) => setEvent(e.target.value)}
         >
-          <option value="">All</option>
-          {EVENTS.map((e) => (
-            <option key={e} value={e}>{e}</option>
+          <option value="">Any</option>
+          {EVENTS.map((ev) => (
+            <option key={ev} value={ev}>{ev}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label className="flex flex-col">
-        <span className="text-xs text-muted-foreground">Gender</span>
+      <div className="flex flex-col">
+        <label className="text-xs font-medium mb-1">Gender</label>
         <select
-          className="input"
-          value={initial.gender ?? ''}
-          onChange={(e) => setParam('gender', e.target.value || undefined)}
+          className="border rounded-md px-3 py-2"
+          value={gender}
+          onChange={(e) => setGender(e.target.value)}
         >
-          <option value="">All</option>
           {GENDERS.map((g) => (
-            <option key={g} value={g}>{g}</option>
+            <option key={g.value} value={g.value}>{g.label}</option>
           ))}
         </select>
-      </label>
+      </div>
 
-      <label className="flex flex-col">
-        <span className="text-xs text-muted-foreground">Class Year</span>
-        <input
-          className="input"
-          inputMode="numeric"
-          placeholder="e.g. 2028"
-          defaultValue={initial.classYear ?? ''}
-          onBlur={(e) => setParam('classYear', e.currentTarget.value || undefined)}
-        />
-      </label>
-
-      <label className="flex flex-col">
-        <span className="text-xs text-muted-foreground">State</span>
-        <input
-          className="input"
-          placeholder="e.g. CA"
-          defaultValue={initial.state ?? ''}
-          onBlur={(e) => setParam('state', e.currentTarget.value.toUpperCase() || undefined)}
-        />
-      </label>
-
-      <label className="flex flex-col">
-        <span className="text-xs text-muted-foreground">Sort</span>
+      <div className="flex flex-col">
+        <label className="text-xs font-medium mb-1">Class Year</label>
         <select
-          className="input"
-          value={initial.sort ?? 'time'}
-          onChange={(e) => setParam('sort', e.target.value)}
+          className="border rounded-md px-3 py-2"
+          value={classYear}
+          onChange={(e) => setClassYear(e.target.value)}
         >
-          {SORTS.map((s) => (
-            <option key={s.v} value={s.v}>{s.label}</option>
+          {CLASS_YEARS.map((y) => (
+            <option key={y || "any"} value={y}>{y || "Any"}</option>
           ))}
         </select>
-      </label>
+      </div>
+
+      <button
+        className="rounded-md px-4 py-2 bg-black text-white"
+        onClick={apply}
+      >
+        Apply
+      </button>
+      <button
+        className="rounded-md px-4 py-2 border"
+        onClick={reset}
+      >
+        Reset
+      </button>
     </div>
   );
 }

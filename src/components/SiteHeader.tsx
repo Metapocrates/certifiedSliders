@@ -1,37 +1,34 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { supabaseServer } from "@/lib/supabase/server";
 
-/** Server action: sign out and refresh cookies correctly */
+/** Server action: sign out via the existing server client helper */
 async function signOutAction() {
   "use server";
-
-  const cookieStore = cookies();
-  const get = (name: string) => cookieStore.get(name)?.value;
-  const set = (name: string, value: string, options: CookieOptions) => {
-    cookieStore.set({ name, value, ...options });
-  };
-  const remove = (name: string, options: CookieOptions) => {
-    cookieStore.set({ name, value: "", ...options, maxAge: 0 });
-  };
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createServerClient(url, anon, { cookies: { get, set, remove } });
-
+  const supabase = supabaseServer();
   await supabase.auth.signOut();
-  // no redirect here; the page will reload and header will re-render as signed-out
+  // no redirect here; page will re-render and header will show signed-out state
 }
 
 export default async function SiteHeader() {
+  const supabase = supabaseServer();
   const {
     data: { session },
-  } = await supabaseServer().auth.getSession();
+  } = await supabase.auth.getSession();
 
   const user = session?.user;
+
+  // Optional admin check
+  let isAdmin = false;
+  if (user) {
+    const { data: adminRow } = await supabase
+      .from("admins")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    isAdmin = !!adminRow;
+  }
 
   return (
     <header className="w-full border-b bg-white">
@@ -40,17 +37,30 @@ export default async function SiteHeader() {
           CertifiedSliders
         </Link>
 
-        <nav className="flex items-center gap-3">
-          {/* Put any public links here */}
+        <nav className="flex items-center gap-4">
+          {/* Public links */}
           <Link href="/results" className="text-sm hover:underline">
             Results
+          </Link>
+          <Link href="/blog" className="text-sm hover:underline">
+            Blog
           </Link>
 
           {user ? (
             <>
+              {isAdmin && (
+                <Link href="/admin/results" className="text-sm hover:underline">
+                  Admin
+                </Link>
+              )}
               <Link href="/me" className="text-sm hover:underline">
                 My Profile
               </Link>
+              
+              <Link href="/settings" className="text-sm hover:underline">
+                Settings
+              </Link>
+              
               <form action={signOutAction}>
                 <button type="submit" className="text-sm underline">
                   Sign out
