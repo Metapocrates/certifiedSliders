@@ -1,76 +1,46 @@
+// src/components/SiteHeader.tsx
+import Link from "next/link";
+import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getSessionUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
-import Link from "next/link";
-import { supabaseServer } from "@/lib/supabase/server";
 
-/** Server action: sign out via the existing server client helper */
-async function signOutAction() {
-  "use server";
-  const supabase = supabaseServer();
-  await supabase.auth.signOut();
-  // no redirect here; page will re-render and header will show signed-out state
+async function getIsAdmin() {
+  const user = await getSessionUser();
+  if (!user) return { user, isAdmin: false };
+  const supabase = createSupabaseServer();
+  const { data } = await supabase
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  return { user, isAdmin: Boolean(data) };
 }
 
 export default async function SiteHeader() {
-  const supabase = supabaseServer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  const user = session?.user;
-
-  // Optional admin check
-  let isAdmin = false;
-  if (user) {
-    const { data: adminRow } = await supabase
-      .from("admins")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    isAdmin = !!adminRow;
-  }
+  const { user, isAdmin } = await getIsAdmin();
 
   return (
-    <header className="w-full border-b bg-white">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+    <header className="border-b">
+      <div className="container mx-auto px-4 py-3 flex items-center gap-4">
         <Link href="/" className="font-semibold">
-          CertifiedSliders
+          Certified Sliders
         </Link>
 
-        <nav className="flex items-center gap-4">
-          {/* Public links */}
-          <Link href="/results" className="text-sm hover:underline">
-            Results
-          </Link>
-          <Link href="/blog" className="text-sm hover:underline">
-            Blog
-          </Link>
+        <nav className="ml-auto flex items-center gap-4 text-sm">
+          <Link href="/rankings" className="hover:underline">Rankings</Link>
+          <Link href="/submit-result" className="hover:underline">Submit Result</Link>
+          <Link href="/me" className="hover:underline">Me</Link>
 
+          {isAdmin ? (
+            <Link href="/admin" className="hover:underline">Admin</Link>
+          ) : null}
           {user ? (
-            <>
-              {isAdmin && (
-                <Link href="/admin/results" className="text-sm hover:underline">
-                  Admin
-                </Link>
-              )}
-              <Link href="/me" className="text-sm hover:underline">
-                My Profile
-              </Link>
-              
-              <Link href="/settings" className="text-sm hover:underline">
-                Settings
-              </Link>
-              
-              <form action={signOutAction}>
-                <button type="submit" className="text-sm underline">
-                  Sign out
-                </button>
-              </form>
-            </>
+            <form action="/auth/signout" method="post">
+              <button className="hover:underline">Sign out</button>
+            </form>
           ) : (
-            <Link href="/signin" className="text-sm underline">
-              Sign in
-            </Link>
+            <Link href="/signin" className="hover:underline">Sign in</Link>
           )}
         </nav>
       </div>

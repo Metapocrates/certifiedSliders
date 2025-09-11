@@ -3,13 +3,12 @@
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 // import type { Database } from "@/types/supabase"; // if you generated types
 
-// Create ONE browser client up front.
+// One browser client singleton
 const client = createClientComponentClient(/*<Database>*/);
 
-/** Preferred import for new code */
 export const supabaseBrowser = client;
 
-/** Back-compat: old code can still call createClient(), but this returns the singleton. */
+// Back-compat
 export function createClient() {
     return client;
 }
