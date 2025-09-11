@@ -1,21 +1,15 @@
-'use client';
+"use client";
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+// import type { Database } from "@/types/supabase"; // if you generated types
 
-// Optional: add your typed Database import here if you generated types.
-// import type { Database } from './types';
+// Create ONE browser client up front.
+const client = createClientComponentClient(/*<Database>*/);
 
+/** Preferred import for new code */
+export const supabaseBrowser = client;
+
+/** Back-compat: old code can still call createClient(), but this returns the singleton. */
 export function createClient() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    // If either env var is missing, fail loudly to help debugging:
-    if (!url || !anon) {
-        throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    }
-    return createSupabaseClient(/*<Database>*/ url, anon, {
-        auth: {
-            persistSession: true,
-            autoRefreshToken: true,
-        },
-    });
+    return client;
 }

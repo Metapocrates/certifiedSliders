@@ -1,43 +1,66 @@
-import "server-only";
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
-import SignOutButtonClient from "./SignOutButtonClient";
-import { supabaseServer } from "../lib/supabase/server";
+import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { supabaseServer } from "@/lib/supabase/server";
+
+/** Server action: sign out and refresh cookies correctly */
+async function signOutAction() {
+  "use server";
+
+  const cookieStore = cookies();
+  const get = (name: string) => cookieStore.get(name)?.value;
+  const set = (name: string, value: string, options: CookieOptions) => {
+    cookieStore.set({ name, value, ...options });
+  };
+  const remove = (name: string, options: CookieOptions) => {
+    cookieStore.set({ name, value: "", ...options, maxAge: 0 });
+  };
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabase = createServerClient(url, anon, { cookies: { get, set, remove } });
+
+  await supabase.auth.signOut();
+  // no redirect here; the page will reload and header will re-render as signed-out
+}
 
 export default async function SiteHeader() {
-  const supabase = supabaseServer();
-
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabaseServer().auth.getSession();
 
-  let isAdmin = false;
-  if (user) {
-    const { data: adminRow } = await supabase
-      .from("admin_users")
-      .select("user_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    isAdmin = !!adminRow;
-  }
+  const user = session?.user;
 
   return (
-    <header className="border-b">
-      <div className="mx-auto max-w-6xl p-4 flex items-center justify-between">
-        <Link href="/" className="font-semibold">Certified Sliders</Link>
+    <header className="w-full border-b bg-white">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <Link href="/" className="font-semibold">
+          CertifiedSliders
+        </Link>
 
         <nav className="flex items-center gap-3">
-          {isAdmin && (
-            <Link href="/admin/ratings" className="rounded border px-3 py-1.5">
-              Admin
-            </Link>
-          )}
+          {/* Put any public links here */}
+          <Link href="/results" className="text-sm hover:underline">
+            Results
+          </Link>
 
-          {!user ? (
-            <Link href="/login" className="rounded bg-black px-3 py-1.5 text-white">
+          {user ? (
+            <>
+              <Link href="/me" className="text-sm hover:underline">
+                My Profile
+              </Link>
+              <form action={signOutAction}>
+                <button type="submit" className="text-sm underline">
+                  Sign out
+                </button>
+              </form>
+            </>
+          ) : (
+            <Link href="/signin" className="text-sm underline">
               Sign in
             </Link>
-          ) : (
-            <SignOutButtonClient />
           )}
         </nav>
       </div>

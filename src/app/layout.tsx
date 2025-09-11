@@ -1,18 +1,13 @@
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import "./globals.css";
-import Header from "@/components/Header";
+import SiteHeader from "@/components/SiteHeader";
 
-export const metadata: Metadata = {
-  title: "Certified Sliders",
-  description: "Track & Field athlete profiles and results",
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <Header />
-        <main>{children}</main>
+        <SiteHeader />
+        {children}
       </body>
     </html>
   );
