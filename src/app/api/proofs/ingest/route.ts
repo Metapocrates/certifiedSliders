@@ -7,6 +7,7 @@ import type { ParsedProof, ProofSource } from "@/lib/proofs/types";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser } from "@/lib/auth";
+import { IS_DEV, PROOF_BYPASS } from "@/lib/flags";
 
 export const runtime = "nodejs";
 const AUTO_VERIFY_MIN = 0.85 as const;
@@ -27,16 +28,12 @@ async function adjustTime(
         if (!error && data && typeof (data as any).seconds === "number") {
             return data as { seconds: number };
         }
-        // fallthrough to passthrough on RPC errors
     } catch { }
     return { seconds };
 }
 
-// Serialize any thrown value into a readable string + extra fields (if present)
 function serializeError(e: unknown) {
-    if (e instanceof Error) {
-        return { message: e.message, stack: e.stack };
-    }
+    if (e instanceof Error) return { message: e.message, stack: e.stack };
     if (typeof e === "string") return { message: e };
     if (e && typeof e === "object") {
         const pg = e as Record<string, any>;
@@ -55,6 +52,18 @@ function inferSeason(iso?: string): "INDOOR" | "OUTDOOR" {
     if (!iso) return "OUTDOOR";
     const m = Number(iso.slice(5, 7));
     return m === 12 || m <= 3 ? "INDOOR" : "OUTDOOR";
+}
+
+async function userIsAdmin(
+    supa: ReturnType<typeof createSupabaseServer>,
+    userId: string
+) {
+    const { data } = await supa
+        .from("admins")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+    return Boolean(data);
 }
 
 // ----------------- main handler -----------------
@@ -78,7 +87,49 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Identify provider by URL (raw can be 'unknown' without touching your ProofSource)
+        const supa = createSupabaseServer();
+        const admin = createSupabaseAdmin();
+
+        // ---------- EARLY DUPLICATE CHECKS ----------
+        // 1) Current user already submitted this URL?
+        const { data: existingUserResult } = await supa
+            .from("results")
+            .select("id, status, event, mark_seconds, mark_seconds_adj, meet_name, meet_date")
+            .eq("athlete_id", user.id)
+            .eq("proof_url", url)
+            .maybeSingle();
+
+        if (existingUserResult) {
+            return NextResponse.json({
+                ok: true,
+                duplicate: true,
+                status: existingUserResult.status,
+                resultId: existingUserResult.id,
+                event: existingUserResult.event,
+                mark_seconds: existingUserResult.mark_seconds,
+                mark_seconds_adj: existingUserResult.mark_seconds_adj,
+                meet: existingUserResult.meet_name,
+                date: existingUserResult.meet_date,
+            });
+        }
+
+        // 2) Anyone submitted this URL?
+        const { data: existingAny } = await admin
+            .from("results")
+            .select("id")
+            .eq("proof_url", url)
+            .maybeSingle();
+
+        if (existingAny) {
+            return NextResponse.json({
+                ok: true,
+                duplicate: true,
+                message: "This link has already been submitted.",
+            });
+        }
+        // --------------------------------------------
+
+        // Identify provider
         type ProviderRaw = "athleticnet" | "milesplit" | "unknown";
         const host = new URL(url).hostname.toLowerCase();
         const providerRaw: ProviderRaw =
@@ -90,13 +141,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: false, error: "Unsupported source" }, { status: 400 });
         }
 
-        // Now narrow to your app’s ProofSource type
         const provider: ProofSource = providerRaw;
 
-        // RLS-aware client (acts as the signed-in user)
-        const supa = createSupabaseServer();
-
-        // If Athletic.net, require pre-verification via external_identities
+        // Athletic.net verification gate (with dev/admin bypass)
         if (provider === "athleticnet") {
             const { data: ext, error: extErr } = await supa
                 .from("external_identities")
@@ -104,9 +151,13 @@ export async function POST(req: NextRequest) {
                 .eq("user_id", user.id)
                 .eq("provider", "athleticnet")
                 .eq("verified", true)
-                .single();
+                .maybeSingle();
 
-            if (!ext || extErr) {
+            let adminBypass = false;
+            try { adminBypass = await userIsAdmin(supa, user.id); } catch { }
+            const bypass = PROOF_BYPASS || (IS_DEV && adminBypass);
+
+            if ((!ext || extErr) && !bypass) {
                 return NextResponse.json({
                     ok: true,
                     status: "blocked_until_verified",
@@ -116,7 +167,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 1) Parse -> { source, parsed }
+        // 1) Parse
         const { source, parsed } = (await parseBySource(url)) as {
             source: ProofSource;
             parsed: ParsedProof;
@@ -132,7 +183,7 @@ export async function POST(req: NextRequest) {
             n.timing ?? null
         );
 
-        // 4) Confidence (normalize to 0–1; support 0–100 incoming; fallback 0)
+        // 4) Confidence -> 0..1
         const rawConf =
             (parsed as any)?.confidence ??
             (parsed as any)?.meta?.confidence ??
@@ -140,12 +191,10 @@ export async function POST(req: NextRequest) {
             0;
         const confidence: number =
             typeof rawConf === "number"
-                ? rawConf > 1
-                    ? rawConf / 100
-                    : rawConf
+                ? rawConf > 1 ? rawConf / 100 : rawConf
                 : 0;
 
-        // ---- Dry-run mode: no DB writes
+        // ---- Dry-run: no DB writes
         if (dryRun) {
             return NextResponse.json({
                 ok: true,
@@ -154,8 +203,8 @@ export async function POST(req: NextRequest) {
                 dryRun: true,
                 event: n.event,
                 mark_seconds: n.markSeconds,
-                timing: n.timing,
                 mark_seconds_adj: adjSeconds,
+                timing: n.timing,
                 meet: n.meetName,
                 date: n.meetDate,
                 source,
@@ -163,13 +212,13 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // 5) Insert result using RLS client (athlete_id must equal auth.uid())
+        // 5) Insert result with user client (RLS)
         const { data: resultRow, error: rErr } = await supa
             .from("results")
             .insert({
-                athlete_id: user.id,                     // <<< never null
+                athlete_id: user.id,
                 event: n.event,
-                mark: n.markText ?? null,                // raw for audit
+                mark: n.markText ?? null,
                 mark_seconds: n.markSeconds,
                 mark_seconds_adj: adjSeconds,
                 mark_metric: null,
@@ -177,7 +226,7 @@ export async function POST(req: NextRequest) {
                 wind: n.wind ?? null,
                 season: inferSeason(n.meetDate ?? undefined),
                 status: confidence >= AUTO_VERIFY_MIN ? "verified" : "pending",
-                source: source,                          // from parser
+                source,
                 proof_url: url,
                 meet_name: n.meetName ?? null,
                 meet_date: n.meetDate ?? null,
@@ -187,30 +236,56 @@ export async function POST(req: NextRequest) {
 
         if (rErr) throw rErr;
 
-        // 6) Insert proof log (via RLS; if your proofs table is admin-only, swap to admin client)
-        const { data: proofRow, error: pErr } = await supa
-            .from("proofs")
-            .insert({
-                source: source,
-                url,
-                status: confidence >= AUTO_VERIFY_MIN ? "verified" : "pending",
-                confidence,                              // 0–1
-                result_id: resultRow.id,
-                payload: n,                              // JSON for audit/debug
-            })
-            .select("id")
-            .single();
+        // 6) Insert proof with admin client (bypass RLS), enum-safe "pending"
+        let proofId: string | null = null;
+        try {
+            const { data: proofRow, error: pErr } = await admin
+                .from("proofs")
+                .insert({
+                    source,
+                    url,
+                    status: "pending",     // your enum accepts "pending"
+                    confidence,
+                    result_id: resultRow.id,
+                    // payload: n,          // add column first if you want this
+                })
+                .select("id")
+                .single();
+            if (pErr) throw pErr;
+            proofId = proofRow?.id ?? null;
+        } catch (e: any) {
+            // 23505 = unique_violation (idx_proofs_url_hash)
+            if (e?.code === "23505") {
+                return NextResponse.json({
+                    ok: true,
+                    duplicate: true,
+                    status: resultRow.status,
+                    resultId: resultRow.id,
+                    event: n.event,
+                    mark_seconds: n.markSeconds,
+                    mark_seconds_adj: adjSeconds,
+                    meet: n.meetName,
+                    date: n.meetDate,
+                    message: "This link was already submitted.",
+                });
+            }
+            throw e;
+        }
 
-        if (pErr) throw pErr;
+        // 7) If auto-verified, refresh rankings MV now
+        if (resultRow.status === "verified") {
+            try { await admin.rpc("refresh_mv_best_event"); } catch { }
+        }
 
         return NextResponse.json({
             ok: true,
             status: resultRow.status,
             confidence,
-            proofId: proofRow.id,
+            proofId,
             resultId: resultRow.id,
             event: n.event,
             mark_seconds: n.markSeconds,
+            mark_seconds_adj: adjSeconds,
             timing: n.timing,
             meet: n.meetName,
             date: n.meetDate,

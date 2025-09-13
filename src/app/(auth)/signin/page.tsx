@@ -61,9 +61,13 @@ export default function SignInPage() {
           email: emailPw,
           password,
         });
+        
         if (error) throw error;
-        router.push("/me");
-        router.refresh();
+        await fetch("/auth/callback", { method: "POST" });  // <— add this
+router.push("/me");
+router.refresh();
+
+     
       }
     } catch (e: any) {
       setErr(e?.message ?? "Sign-in failed.");
