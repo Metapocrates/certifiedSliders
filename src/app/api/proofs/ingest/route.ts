@@ -213,28 +213,34 @@ export async function POST(req: NextRequest) {
         }
 
         // 5) Insert result with user client (RLS)
+        // 5) Upsert result using RLS client (one per athlete+url)
+        //    onConflict requires the unique index from Step 1.
         const { data: resultRow, error: rErr } = await supa
             .from("results")
-            .insert({
-                athlete_id: user.id,
-                event: n.event,
-                mark: n.markText ?? null,
-                mark_seconds: n.markSeconds,
-                mark_seconds_adj: adjSeconds,
-                mark_metric: null,
-                timing: n.timing ?? null,
-                wind: n.wind ?? null,
-                season: inferSeason(n.meetDate ?? undefined),
-                status: confidence >= AUTO_VERIFY_MIN ? "verified" : "pending",
-                source,
-                proof_url: url,
-                meet_name: n.meetName ?? null,
-                meet_date: n.meetDate ?? null,
-            })
+            .upsert(
+                {
+                    athlete_id: user.id,
+                    event: n.event,
+                    mark: n.markText ?? null,
+                    mark_seconds: n.markSeconds,
+                    mark_seconds_adj: adjSeconds,
+                    mark_metric: null,
+                    timing: n.timing ?? null,
+                    wind: n.wind ?? null,
+                    season: inferSeason(n.meetDate ?? undefined),
+                    status: confidence >= AUTO_VERIFY_MIN ? "verified" : "pending",
+                    source,
+                    proof_url: url,
+                    meet_name: n.meetName ?? null,
+                    meet_date: n.meetDate ?? null,
+                },
+                { onConflict: "athlete_id,proof_url" }
+            )
             .select("id, status")
             .single();
 
         if (rErr) throw rErr;
+
 
         // 6) Insert proof with admin client (bypass RLS), enum-safe "pending"
         let proofId: string | null = null;

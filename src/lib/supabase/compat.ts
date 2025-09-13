@@ -2,27 +2,22 @@
 import { cookies } from "next/headers";
 import {
     createClientComponentClient,
-    createServerActionClient,
     createServerComponentClient,
     createRouteHandlerClient,
+    // NOTE: do NOT import createServerActionClient on Next 15 — not needed
 } from "@supabase/auth-helpers-nextjs";
 
-// Server components / pages
+// Server components/pages
 export function createSupabaseServer() {
-    return createServerComponentClient({ cookies });
+    return createServerComponentClient({ cookies } as any);
 }
 
-// Server actions (form actions)
-export function createSupabaseAction() {
-    return createServerActionClient({ cookies });
-}
-
-// Route handlers (app/api/*)
+// Route handlers (GET/POST in app/api/*)
 export function createSupabaseRoute() {
-    return createRouteHandlerClient({ cookies });
+    return createRouteHandlerClient({ cookies } as any);
 }
 
-// Client components
-export function createSupabaseClient() {
+// Client components (use in "use client" files)
+export function createSupabaseBrowser() {
     return createClientComponentClient();
 }
