@@ -1,8 +1,10 @@
+// src/app/athlete/[id]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import AthleteBestCard from "@/components/AthleteBestCard";
 import ResultsTable from "@/components/ResultsTable";
+import { dedupeResults } from "@/lib/results/dedupe";
 
 type Params = { id: string };
 
@@ -13,8 +15,12 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     .select("full_name, school_name, school_state")
     .eq("id", params.id)
     .maybeSingle();
+
   const title = data?.full_name ? `${data.full_name} – Certified Sliders` : "Athlete – Certified Sliders";
-  const desc = data?.school_name ? `${data.full_name ?? "Athlete"} | ${data.school_name}${data.school_state ? ", " + data.school_state : ""}` : "Athlete profile";
+  const desc = data?.school_name
+    ? `${data.full_name ?? "Athlete"} | ${data.school_name}${data.school_state ? ", " + data.school_state : ""}`
+    : "Athlete profile";
+
   return { title, description: desc };
 }
 
@@ -36,23 +42,27 @@ async function getAthleteData(athleteId: string) {
       .from("results")
       .select("id, event, mark, mark_seconds, mark_seconds_adj, timing, wind, season, meet_name, meet_date, proof_url, status, source")
       .eq("athlete_id", athleteId)
-      .order("mark_seconds_adj", { ascending: true, nullsFirst: false })
-      .order("meet_date", { ascending: false }),
+      .eq("status", "verified") // ← only VERIFIED rows
+      .order("meet_date", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
 
   if (profileRes.error) throw profileRes.error;
   if (bestRes.error) throw bestRes.error;
   if (resultsRes.error) throw resultsRes.error;
 
+  // De-dupe same performance (event + date + adjusted-or-raw seconds)
+  const verifiedDeduped = dedupeResults(resultsRes.data ?? []);
+
   return {
     profile: profileRes.data,
     best: bestRes.data ?? [],
-    results: resultsRes.data ?? [],
+    resultsVerified: verifiedDeduped,
   };
 }
 
 export default async function AthletePage({ params }: { params: Params }) {
-  const { profile, best, results } = await getAthleteData(params.id);
+  const { profile, best, resultsVerified } = await getAthleteData(params.id);
 
   if (!profile) notFound();
 
@@ -93,7 +103,7 @@ export default async function AthletePage({ params }: { params: Params }) {
         <div className="lg:col-span-2">
           <h2 className="text-lg font-medium mb-2">Verified Results</h2>
           <ResultsTable
-            rows={results.filter(r => r.status === "verified")}
+            rows={resultsVerified}
             bestByEvent={Object.fromEntries(best.map(b => [b.event, b.mark_seconds_adj]))}
           />
         </div>

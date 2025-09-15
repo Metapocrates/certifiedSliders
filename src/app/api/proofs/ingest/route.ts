@@ -90,8 +90,7 @@ export async function POST(req: NextRequest) {
         const supa = createSupabaseServer();
         const admin = createSupabaseAdmin();
 
-        // ---------- EARLY DUPLICATE CHECKS ----------
-        // 1) Current user already submitted this URL?
+        // ---------- EARLY DUPLICATE CHECKS (allow upgrade) ----------
         const { data: existingUserResult } = await supa
             .from("results")
             .select("id, status, event, mark_seconds, mark_seconds_adj, meet_name, meet_date")
@@ -99,7 +98,8 @@ export async function POST(req: NextRequest) {
             .eq("proof_url", url)
             .maybeSingle();
 
-        if (existingUserResult) {
+        // If it's already VERIFIED, short-circuit to the receipt
+        if (existingUserResult?.status === "verified") {
             return NextResponse.json({
                 ok: true,
                 duplicate: true,
@@ -112,22 +112,25 @@ export async function POST(req: NextRequest) {
                 date: existingUserResult.meet_date,
             });
         }
+        // Otherwise, fall through to parse + upsert so we can upgrade pending/blocked.
 
-        // 2) Anyone submitted this URL?
-        const { data: existingAny } = await admin
+        // Has SOMEONE ELSE submitted this URL? (don’t leak details)
+        const { data: existingAnyOther } = await admin
             .from("results")
             .select("id")
             .eq("proof_url", url)
+            .neq("athlete_id", user.id)
             .maybeSingle();
 
-        if (existingAny) {
+        if (existingAnyOther) {
             return NextResponse.json({
                 ok: true,
                 duplicate: true,
                 message: "This link has already been submitted.",
             });
         }
-        // --------------------------------------------
+        // ----------------------------------------------------------------
+
 
         // Identify provider
         type ProviderRaw = "athleticnet" | "milesplit" | "unknown";
@@ -212,9 +215,7 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // 5) Insert result with user client (RLS)
         // 5) Upsert result using RLS client (one per athlete+url)
-        //    onConflict requires the unique index from Step 1.
         const { data: resultRow, error: rErr } = await supa
             .from("results")
             .upsert(
@@ -234,7 +235,7 @@ export async function POST(req: NextRequest) {
                     meet_name: n.meetName ?? null,
                     meet_date: n.meetDate ?? null,
                 },
-                { onConflict: "athlete_id,proof_url" }
+                { onConflict: "athlete_id,proof_url" } // ← uses the unique index you just added
             )
             .select("id, status")
             .single();
@@ -242,41 +243,36 @@ export async function POST(req: NextRequest) {
         if (rErr) throw rErr;
 
 
-        // 6) Insert proof with admin client (bypass RLS), enum-safe "pending"
+        // 6) Ensure a proof row exists (admin client; bypasses RLS)
         let proofId: string | null = null;
-        try {
+
+        // Reuse an existing proof for this result+url if present
+        const { data: existingProof } = await admin
+            .from("proofs")
+            .select("id")
+            .eq("result_id", resultRow.id)
+            .eq("url", url)
+            .maybeSingle();
+
+        if (existingProof) {
+            proofId = existingProof.id;
+        } else {
             const { data: proofRow, error: pErr } = await admin
                 .from("proofs")
                 .insert({
                     source,
                     url,
-                    status: "pending",     // your enum accepts "pending"
+                    status: "pending",   // keep enum-compatible
                     confidence,
                     result_id: resultRow.id,
-                    // payload: n,          // add column first if you want this
+                    // payload: n,        // only if you added this column
                 })
                 .select("id")
                 .single();
             if (pErr) throw pErr;
             proofId = proofRow?.id ?? null;
-        } catch (e: any) {
-            // 23505 = unique_violation (idx_proofs_url_hash)
-            if (e?.code === "23505") {
-                return NextResponse.json({
-                    ok: true,
-                    duplicate: true,
-                    status: resultRow.status,
-                    resultId: resultRow.id,
-                    event: n.event,
-                    mark_seconds: n.markSeconds,
-                    mark_seconds_adj: adjSeconds,
-                    meet: n.meetName,
-                    date: n.meetDate,
-                    message: "This link was already submitted.",
-                });
-            }
-            throw e;
         }
+
 
         // 7) If auto-verified, refresh rankings MV now
         if (resultRow.status === "verified") {

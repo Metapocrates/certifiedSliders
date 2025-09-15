@@ -1,7 +1,9 @@
+// src/app/(protected)/me/actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { createSupabaseAdmin } from "@/lib/supabase/admin"; // ← NEW
 import { getSessionUser } from "@/lib/auth";
 
 function makeDefaultUsername(email?: string, userId?: string) {
@@ -75,8 +77,7 @@ export async function updateProfileAction(formData: FormData) {
         classYearRaw && !Number.isNaN(Number(classYearRaw))
             ? Number(classYearRaw)
             : null;
-    const gender =
-        genderRaw === "M" || genderRaw === "F" ? genderRaw : null;
+    const gender = genderRaw === "M" || genderRaw === "F" ? genderRaw : null;
 
     const { error } = await supabase
         .from("profiles")
@@ -96,5 +97,45 @@ export async function updateProfileAction(formData: FormData) {
     revalidatePath("/me");
     // You may also revalidate athlete page:
     // revalidatePath(`/athlete/${user.id}`);
+    return { ok: true };
+}
+
+/** Remove one of the current user's *pending* submissions. */
+export async function deletePendingResultAction(formData: FormData) {
+    const user = await getSessionUser();
+    if (!user) throw new Error("Not signed in");
+
+    const resultId = Number(formData.get("resultId"));
+    if (!Number.isFinite(resultId)) throw new Error("Bad result id");
+
+    const admin = createSupabaseAdmin();
+
+    // Fetch to verify ownership + status
+    const { data: row, error: selErr } = await admin
+        .from("results")
+        .select("athlete_id, status")
+        .eq("id", resultId)
+        .maybeSingle();
+
+    if (selErr) throw selErr;
+    if (!row) throw new Error("Result not found");
+    if (row.athlete_id !== user.id) throw new Error("Not allowed");
+    if (row.status !== "pending" && row.status !== "blocked_until_verified") {
+        throw new Error("Only pending items can be removed");
+    }
+
+    // Delete and refresh
+    const { error: delErr } = await admin.from("results").delete().eq("id", resultId);
+    if (delErr) throw delErr;
+
+    try {
+        await admin.rpc("refresh_mv_best_event");
+    } catch {
+        // ignore
+    }
+
+    revalidatePath("/me");
+    revalidatePath("/admin");
+
     return { ok: true };
 }

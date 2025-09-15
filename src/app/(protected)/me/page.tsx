@@ -1,5 +1,7 @@
+// src/app/(protected)/me/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { ensureProfileAction, updateProfileAction } from "./actions";
+import MySubmissions from "@/components/MySubmissions"; // ← NEW
 
 export const dynamic = "force-dynamic";
 
@@ -178,6 +180,13 @@ export default async function MePage() {
           </form>
         </div>
       </div>
+
+      {/* Submit + pending items */}
+      <div className="flex items-center justify-between mt-8">
+        <h2 className="text-lg font-medium">Submit a result</h2>
+        <a href="/submit-result" className="rounded-md px-3 py-1.5 border text-sm">Open form</a>
+      </div>
+      <MySubmissions athleteId={user.id} />
 
       <div className="text-xs subtle">
         Signed in as <span className="font-mono">{user.email}</span>
