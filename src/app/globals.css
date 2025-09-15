@@ -1,93 +1,104 @@
-/* src/app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ===== Base layer: design tokens & element resets ===== */
-@layer base {
-  :root {
-    /* HSL tokens consumed by Tailwind via theme colors */
-    --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 215 20.2% 65.1%;
-    --radius: 1rem;
-  }
+/* ---------- Brand tokens ---------- */
+:root {
+  /* Brand core */
+  --cs-scarlet: #C8102E;
+  --cs-gray-950: #0b0c10;
+  --cs-gray-900: #12141a;
+  --cs-gray-800: #1e232b;
+  --cs-gray-700: #2b3038;
+  --cs-gray-500: #5b6472;
+  --cs-gray-300: #9aa3b2;
+  --cs-gray-100: #f1f5f9;
+  --cs-yellow: #F5C518;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 215 20.2% 65.1%;
-  }
+  /* Light theme surfaces */
+  --bg: #ffffff;
+  --bg-muted: #f7f9fc;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --border: #e5e7eb;
+  --card: #ffffff;
+  --link: var(--cs-scarlet);
+  --accent: var(--cs-yellow);
+}
 
-  html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    scroll-behavior: smooth;
-  }
+/* Dark mode overrides (using the .dark class approach) */
+.dark {
+  --bg: var(--cs-gray-950);
+  --bg-muted: var(--cs-gray-900);
+  --text: #eef2f7;
+  --text-muted: #b7c0cf;
+  --border: #262b33;
+  --card: var(--cs-gray-900);
+  --link: #ff5c72;
+  /* scarlet tint for dark */
+  --accent: var(--cs-yellow);
+}
 
-  body {
-    @apply min-h-screen bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-  }
+/* Base elements pick up variables */
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
 
-  /* Default border color */
-  * {
-    @apply border-border;
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    /* Only applies if you don’t force .light on html */
   }
 }
 
-/* ===== Component layer: small reusable primitives ===== */
-@layer components {
-  .card {
-    @apply rounded-2xl border bg-background shadow-sm;
-  }
-
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50;
-  }
-
-  /* Variants moved out of @apply to avoid focus-visible errors */
-  .btn:focus-visible {
-    @apply ring-2;
-    /* ring width */
-    --tw-ring-color: hsl(var(--ring));
-    /* ring color */
-  }
-
-  .select {
-    @apply w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none;
-  }
-
-  .select:focus-visible {
-    @apply ring-2;
-    --tw-ring-color: hsl(var(--ring));
-  }
-
-  .subtle {
-    @apply text-sm;
-    /* keep Tailwind sizing */
-    color: hsl(var(--muted-foreground));
-    /* set the color directly */
-  }
-}
-
-/* ===== Utilities layer: tiny handy helpers ===== */
+/* Utility layer: semantic classes */
 @layer utilities {
-  .container {
-    @apply px-4;
+  .bg-app {
+    background: var(--bg);
   }
-}
 
-/* Selection color */
-::selection {
-  background-color: hsl(var(--foreground) / 0.15);
+  .bg-muted {
+    background: var(--bg-muted);
+  }
+
+  .bg-card {
+    background: var(--card);
+  }
+
+  .text-app {
+    color: var(--text);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  .border-app {
+    border-color: var(--border);
+  }
+
+  .link {
+    color: var(--link);
+  }
+
+  .accent {
+    color: var(--accent);
+  }
+
+  .bg-accent {
+    background-color: var(--accent);
+  }
+
+  .bg-scarlet {
+    background-color: var(--cs-scarlet);
+  }
+
+  .text-scarlet {
+    color: var(--cs-scarlet);
+  }
+
+  .text-ink {
+    color: var(--text);
+  }
 }

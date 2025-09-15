@@ -49,7 +49,8 @@ export default async function MySubmissions({ athleteId }: { athleteId: string }
             </tr>
           </thead>
           <tbody>
-            {rows.map(r => {
+           {rows.map((r: any) => {
+
               const secs = r.mark_seconds_adj ?? r.mark_seconds ?? null;
               const actionable = r.status === "pending" || r.status === "blocked_until_verified";
               return (

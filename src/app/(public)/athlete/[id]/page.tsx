@@ -1,4 +1,4 @@
-// src/app/athlete/[id]/page.tsx
+// src/app/(public)/athlete/[id]/page.tsx
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
@@ -83,7 +83,9 @@ export default async function AthletePage({ params }: { params: Params }) {
           <h1 className="text-2xl font-semibold">
             {profile.full_name ?? "Athlete"}
             {typeof profile.star_rating === "number" ? (
-              <span className="ml-2 text-amber-500 align-middle">{("★").repeat(profile.star_rating)}</span>
+              <span className="ml-2 text-amber-500 align-middle">
+                {"★".repeat(profile.star_rating)}
+              </span>
             ) : null}
           </h1>
           <div className="text-sm text-muted-foreground">
@@ -103,8 +105,10 @@ export default async function AthletePage({ params }: { params: Params }) {
         <div className="lg:col-span-2">
           <h2 className="text-lg font-medium mb-2">Verified Results</h2>
           <ResultsTable
-            rows={resultsVerified}
-            bestByEvent={Object.fromEntries(best.map(b => [b.event, b.mark_seconds_adj]))}
+            rows={resultsVerified as any} // ← satisfy ResultsTable's Row[] type for now
+            bestByEvent={Object.fromEntries(
+              best.map((b: { event: string; mark_seconds_adj: number | null }) => [b.event, b.mark_seconds_adj])
+            )}
           />
         </div>
       </div>

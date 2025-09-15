@@ -2,6 +2,22 @@
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { dedupeResults } from "@/lib/results/dedupe";
 
+// Local shim so this file compiles until we wire the canonical DB types.
+// It shadows any missing import of `ResultRow` in this file only.
+type ResultRow = {
+  id?: number | string;
+  meet_name?: string | null;
+  [key: string]: any; // allow other fields already used in the component
+};
+
+// Temporary local extension to satisfy TS for fields we actually render.
+// We'll replace this with the canonical DB type later.
+type ResultRowWithUi = ResultRow & {
+  id?: number | string;          // results.id (bigint) or view id
+  meet_name?: string | null;     // results.meet_name / mv_best_event.meet_name
+};
+
+
 function fmtSeconds(s: number | null | undefined) {
   if (s == null) return "—";
   if (s >= 60) {
@@ -44,7 +60,8 @@ export default async function VerifiedResultsList({
     return <div className="text-sm text-red-700">Failed to load results.</div>;
   }
 
-  const rows = dedupeResults(data ?? []);
+const rows: ResultRowWithUi[] = (dedupeResults(data ?? []) as unknown as ResultRowWithUi[]);
+
 
   if (!rows.length) {
     return <div className="text-sm subtle">No verified results yet.</div>;
