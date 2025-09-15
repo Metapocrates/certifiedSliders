@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -12,20 +13,26 @@ export default function SiteHeader({
   signedIn?: boolean;
 }) {
   const pathname = usePathname();
-
   const linkClass = (href: string) =>
     pathname === href ? "text-scarlet" : "text-ink-muted hover:text-ink";
 
   return (
     <header className="sticky top-0 z-50 border-b border-app bg-app/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        {/* Brand */}
-        <Link href="/" className="flex items-center gap-2 font-extrabold tracking-wide">
-          <span className="text-ink text-xl">CERTIFIED</span>
-          <span className="text-scarlet text-xl">SLIDERS</span>
+        {/* Brand: logo links to home */}
+        <Link href="/" className="flex items-center gap-2" aria-label="Certified Sliders home">
+          <Image
+            src="/brand/logo.png"
+            alt="Certified Sliders"
+            width={140}
+            height={40}
+            priority
+            className="h-8 w-auto"
+          />
+          <span className="sr-only">Certified Sliders</span>
         </Link>
 
-        {/* Nav */}
+        {/* Primary nav + actions */}
         <nav className="flex items-center gap-4 text-sm font-medium">
           <Link href="/submit-result" className={linkClass("/submit-result")}>
             Submit Result
@@ -50,11 +57,8 @@ export default function SiteHeader({
               Sign in
             </Link>
           )}
-          <nav className="flex items-center gap-4 text-sm font-medium">
-  {/* ...your existing links... */}
-  <ThemeToggle />
-</nav>
-
+          {/* Theme toggle at the end */}
+          <ThemeToggle />
         </nav>
       </div>
     </header>
