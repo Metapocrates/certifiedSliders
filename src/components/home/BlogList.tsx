@@ -1,6 +1,18 @@
+// src/components/home/BlogList.tsx
 // Server component
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+
+// Minimal shape for blog cards
+type BlogCard = {
+  id: string;
+  slug: string;
+  title?: string | null;
+  excerpt?: string | null;
+  cover_url?: string | null;
+  published_at?: string | null;
+  [key: string]: unknown;
+};
 
 export default async function BlogList() {
   const supabase = createSupabaseServer();
@@ -30,15 +42,21 @@ export default async function BlogList() {
     );
   }
 
+  const typedPosts: BlogCard[] = posts as unknown as BlogCard[];
+
   return (
     <div className="space-y-4">
       <h3 className="font-semibold">Blog</h3>
       <div className="grid gap-4 md:grid-cols-3">
-        {posts.map((p) => (
-          <Link key={p.id} href={`/blog/${p.slug}`} className="rounded-xl border overflow-hidden">
+        {typedPosts.map((p: BlogCard) => (
+          <Link
+            key={p.id}
+            href={`/blog/${p.slug}`}
+            className="rounded-xl border overflow-hidden"
+          >
             {p.cover_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.cover_url} alt="" className="w-full h-32 object-cover" />
+              <img src={p.cover_url} alt={p.title ?? ""} className="w-full h-32 object-cover" />
             ) : null}
             <div className="p-3">
               <div className="font-medium">{p.title}</div>
