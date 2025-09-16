@@ -1,6 +1,17 @@
+// src/components/home/NewsFeed.tsx
 // Server component
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+
+// Minimal shape for news items
+type NewsItem = {
+  id: string;
+  title?: string | null;
+  url?: string | null;
+  source?: string | null;
+  published_at?: string | null;
+  [key: string]: unknown;
+};
 
 export default async function NewsFeed() {
   const supabase = createSupabaseServer();
@@ -29,14 +40,16 @@ export default async function NewsFeed() {
     );
   }
 
+  const items: NewsItem[] = news as unknown as NewsItem[];
+
   return (
     <div className="p-4 rounded-xl border">
       <h3 className="font-semibold mb-3">News</h3>
       <ul className="space-y-2">
-        {news.map((n) => (
+        {items.map((n: NewsItem) => (
           <li key={n.id} className="text-sm">
             {n.url ? (
-              <a href={n.url} target="_blank" className="underline">
+              <a href={n.url} target="_blank" rel="noreferrer" className="underline">
                 {n.title}
               </a>
             ) : (
