@@ -6,53 +6,53 @@
 :root {
   /* Brand core */
   --cs-scarlet: #C8102E;
-  --cs-gray-950: #0b0c10;
-  --cs-gray-900: #12141a;
-  --cs-gray-800: #1e232b;
-  --cs-gray-700: #2b3038;
-  --cs-gray-500: #5b6472;
-  --cs-gray-300: #9aa3b2;
-  --cs-gray-100: #f1f5f9;
   --cs-yellow: #F5C518;
 
-  /* Light theme surfaces */
-  --bg: #ffffff;
-  --bg-muted: #f7f9fc;
-  --text: #111827;
+  /* Neutral palette */
+  --cs-charcoal-950: #121212;
+  --cs-charcoal-900: #1c1c1c;
+  --cs-charcoal-800: #2a2a2a;
+  --cs-gray-500: #6b7280;
+  --cs-gray-300: #d1d5db;
+
+  /* Light theme (beige) */
+  --bg: #f9f7f4;
+  /* body background */
+  --bg-muted: #f1ede9;
+  /* subtle sections */
+  --text: #1f2937;
+  /* slate gray ink */
   --text-muted: #4b5563;
   --border: #e5e7eb;
   --card: #ffffff;
+  /* cards still white */
   --link: var(--cs-scarlet);
   --accent: var(--cs-yellow);
 }
 
-/* Dark mode overrides (using the .dark class approach) */
+/* Dark mode (charcoal) */
 .dark {
-  --bg: var(--cs-gray-950);
-  --bg-muted: var(--cs-gray-900);
-  --text: #eef2f7;
-  --text-muted: #b7c0cf;
-  --border: #262b33;
-  --card: var(--cs-gray-900);
+  --bg: var(--cs-charcoal-950);
+  --bg-muted: var(--cs-charcoal-900);
+  --text: #e5e5e5;
+  /* off-white text */
+  --text-muted: #a1a1aa;
+  /* gray-muted text */
+  --border: #2a2a2a;
+  --card: var(--cs-charcoal-900);
   --link: #ff5c72;
-  /* scarlet tint for dark */
+  /* scarlet tint */
   --accent: var(--cs-yellow);
 }
 
-/* Base elements pick up variables */
+/* Base elements */
 html,
 body {
   background: var(--bg);
   color: var(--text);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    /* Only applies if you don’t force .light on html */
-  }
-}
-
-/* Utility layer: semantic classes */
+/* Utility layer */
 @layer utilities {
   .bg-app {
     background: var(--bg);
@@ -96,9 +96,5 @@ body {
 
   .text-scarlet {
     color: var(--cs-scarlet);
-  }
-
-  .text-ink {
-    color: var(--text);
   }
 }

@@ -17,7 +17,9 @@ export default function SiteHeader({
     pathname === href ? "text-scarlet" : "text-ink-muted hover:text-ink";
 
   return (
-    <header className="sticky top-0 z-50 border-b border-app bg-app/80 backdrop-blur">
+  <header className="sticky top-0 z-50 border-b border-app bg-muted backdrop-blur-md">
+
+
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Brand: logo links to home */}
         <Link href="/" className="flex items-center gap-2" aria-label="Certified Sliders home">

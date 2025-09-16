@@ -6,8 +6,12 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { ThemeProvider } from "next-themes";
 
 export const metadata: Metadata = {
-  title: "Certified Sliders",
-  description: "HS T&F rankings",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://certifiedsliders.vercel.app"),
+  title: {
+    default: "Certified Sliders",
+    template: "%s – Certified Sliders",
+  },
+  description: "HS Track & Field rankings and verified results.",
   icons: {
     icon: [
       { url: "/favicon.ico" },
@@ -17,6 +21,19 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png" }]
   },
   manifest: "/site.webmanifest",
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "Certified Sliders",
+    description: "HS Track & Field rankings and verified results.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Certified Sliders" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Certified Sliders",
+    description: "HS Track & Field rankings and verified results.",
+    images: ["/og.png"],
+  },
 };
 
 export default async function RootLayout({
