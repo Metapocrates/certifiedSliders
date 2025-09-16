@@ -55,7 +55,7 @@ export default async function NewsFeed() {
             ) : (
               <span className="font-medium">{n.title}</span>
             )}
-            {n.source ? <span className="text-gray-500"> — {n.source}</span> : null}
+            {n.source ? <span className="text-muted"> — {n.source}</span> : null}
           </li>
         ))}
       </ul>

@@ -82,7 +82,7 @@ const rows: ResultRowWithUi[] = (dedupeResults(data ?? []) as unknown as ResultR
           {rows.map((r) => {
             const seconds = r.mark_seconds_adj ?? r.mark_seconds ?? null;
             return (
-              <tr key={r.id} className="bg-white card">
+              <tr key={r.id} className="bg-card card">
                 <td className="py-2 pr-3">{r.event ?? "—"}</td>
                 <td className="py-2 pr-3">{fmtSeconds(seconds)}</td>
                 <td className="py-2 pr-3">{r.meet_name ?? "—"}</td>

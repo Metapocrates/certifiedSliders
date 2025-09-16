@@ -52,7 +52,7 @@ export default async function ExternalNewsFeed() {
               <span className="font-medium">{it.title}</span>
             )}
             {it.isoDate ? (
-              <span className="text-gray-500"> — {new Date(it.isoDate).toLocaleDateString()}</span>
+              <span className="text-muted"> — {new Date(it.isoDate).toLocaleDateString()}</span>
             ) : null}
           </li>
         ))}

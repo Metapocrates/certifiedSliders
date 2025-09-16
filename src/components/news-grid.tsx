@@ -29,7 +29,7 @@ export default async function NewsGrid() {
             target="_blank"
             rel="noopener noreferrer"
             title={item.title}
-            className="block overflow-hidden rounded-lg border bg-white hover:shadow-sm transition"
+            className="block overflow-hidden rounded-lg border bg-card hover:shadow-sm transition"
           >
             <div className="relative w-full h-28 sm:h-32 overflow-hidden">
               {hasImage ? (
@@ -43,7 +43,7 @@ export default async function NewsGrid() {
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-neutral-200">
-                  <span className="relative inline-flex items-center rounded-md border border-neutral-300 bg-white/70 px-2 py-1 text-xs font-medium text-neutral-700">
+                  <span className="relative inline-flex items-center rounded-md border border-neutral-300 bg-card/70 px-2 py-1 text-xs font-medium text-neutral-700">
                     {item.source}
                   </span>
                 </div>

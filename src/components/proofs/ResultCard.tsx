@@ -40,7 +40,7 @@ export default function ResultCard({ data }: Props) {
     null;
 
   return (
-    <div className="rounded border bg-white p-4 shadow-sm space-y-2">
+    <div className="rounded border bg-card p-4 shadow-sm space-y-2">
       {errText && (
         <div className="text-sm text-red-700 border border-red-200 bg-red-50 p-3 rounded whitespace-pre-line">
           {errText}
@@ -64,7 +64,7 @@ export default function ResultCard({ data }: Props) {
               {meet || "Unknown meet"}{date ? ` • ${date}` : ""}
             </div>
           )}
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-muted">
             Result #{resultId} • Proof #{proofId}
           </div>
           <div className="pt-2">

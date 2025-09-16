@@ -35,7 +35,7 @@ export default async function NewsMergedGrid() {
             title={item.title}
             className="
               block overflow-hidden rounded-lg border
-              bg-white dark:bg-neutral-900
+              bg-card dark:bg-neutral-900
               hover:shadow-sm transition
             "
           >
@@ -52,7 +52,7 @@ export default async function NewsMergedGrid() {
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
                   {/* source badge as fallback */}
-                  <span className="relative inline-flex items-center rounded-md border border-neutral-300/60 dark:border-neutral-700/60 bg-white/70 dark:bg-black/30 px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-200">
+                  <span className="relative inline-flex items-center rounded-md border border-neutral-300/60 dark:border-neutral-700/60 bg-card/70 dark:bg-black/30 px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-200">
                     {item.source}
                   </span>
                 </div>

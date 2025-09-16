@@ -109,7 +109,7 @@ export default function ManualResultForm() {
         </div>
 
         <button type="submit"
-                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                className="rounded-md bg-black px-4 py-2 text-sm font-medium text-app disabled:opacity-50"
                 disabled={loading}>
           {loading ? 'Saving…' : 'Submit for verification'}
         </button>

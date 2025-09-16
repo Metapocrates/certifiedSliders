@@ -101,7 +101,7 @@ export default function SubmitResultForm() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button disabled={loading} className="rounded-md px-4 py-2 bg-black text-white">
+          <button disabled={loading} className="rounded-md px-4 py-2 bg-black text-app">
             {loading ? "Submitting…" : "Submit"}
           </button>
           {resp || err ? (
@@ -121,7 +121,7 @@ export default function SubmitResultForm() {
 
       {/* Success / Duplicate / Blocked summaries */}
       {resp ? (
-        <div className="mt-6 rounded-md border p-4 bg-white">
+        <div className="mt-6 rounded-md border p-4 bg-card">
           {/* Duplicate helper */}
           {resp.duplicate ? (
             <div className="mb-3 text-sm">

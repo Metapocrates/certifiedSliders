@@ -34,7 +34,7 @@ export default async function NewsMergedGrid() {
               target="_blank"
               rel="noopener noreferrer"
               title={item.title}
-              className="block overflow-hidden rounded-2xl border bg-white hover:shadow-md transition"
+              className="block overflow-hidden rounded-2xl border bg-card hover:shadow-md transition"
             >
               {/* Taller media area for stronger images */}
               <div className="relative w-full h-44 md:h-56 overflow-hidden bg-neutral-100">
@@ -49,7 +49,7 @@ export default async function NewsMergedGrid() {
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="relative inline-flex items-center rounded-md border border-neutral-300 bg-white/80 px-2 py-1 text-xs font-medium text-neutral-700">
+                    <span className="relative inline-flex items-center rounded-md border border-neutral-300 bg-card/80 px-2 py-1 text-xs font-medium text-neutral-700">
                       {item.source}
                     </span>
                   </div>

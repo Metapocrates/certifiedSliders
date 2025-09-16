@@ -91,7 +91,7 @@ export default function RankingsFilters({
       </div>
 
       <button
-        className="rounded-md px-4 py-2 bg-black text-white"
+        className="rounded-md px-4 py-2 bg-black text-app"
         onClick={apply}
       >
         Apply

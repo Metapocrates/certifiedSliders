@@ -54,7 +54,7 @@ export default async function MySubmissions({ athleteId }: { athleteId: string }
               const secs = r.mark_seconds_adj ?? r.mark_seconds ?? null;
               const actionable = r.status === "pending" || r.status === "blocked_until_verified";
               return (
-                <tr key={r.id} className="bg-white card">
+                <tr key={r.id} className="bg-card card">
                   <td className="py-2 pr-3">{r.event ?? "—"}</td>
                   <td className="py-2 pr-3">{fmtSeconds(secs)}</td>
                   <td className="py-2 pr-3">{r.meet_name ?? "—"}</td>

@@ -23,7 +23,7 @@ export default async function Header() {
   }
 
   return (
-    <header className="border-b bg-white">
+    <header className="border-b bg-card">
       <div className="container h-14 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="font-semibold tracking-tight">
@@ -70,7 +70,7 @@ export default async function Header() {
               {profile?.profile_pic_url ? (
                 <img src={profile.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full grid place-items-center text-xs text-gray-500">🙂</div>
+                <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
               )}
             </Link>
           </nav>

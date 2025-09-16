@@ -64,7 +64,7 @@ export default async function BlogIndexPage() {
             <div className="p-4">
               <div className="font-semibold">{p.title}</div>
               {p.published_at ? (
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-muted mt-1">
                   {new Date(p.published_at).toLocaleDateString()}
                 </div>
               ) : null}

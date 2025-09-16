@@ -45,7 +45,7 @@ export default async function MePage() {
           We’ll create your profile so your results can attach to your public page.
         </p>
         <form action={ensureProfileAction}>
-          <button className="rounded-md px-4 py-2 bg-black text-white">Create my profile</button>
+          <button className="rounded-md px-4 py-2 bg-black text-app">Create my profile</button>
         </form>
         <div className="text-xs subtle">
           Signed in as <span className="font-mono">{user.email}</span>
@@ -175,7 +175,7 @@ export default async function MePage() {
             </div>
 
             <div className="sm:col-span-2">
-              <button className="rounded-md px-4 py-2 bg-black text-white">Save</button>
+              <button className="rounded-md px-4 py-2 bg-black text-app">Save</button>
             </div>
           </form>
         </div>

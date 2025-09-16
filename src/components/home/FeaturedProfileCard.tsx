@@ -60,11 +60,11 @@ export default async function FeaturedProfileCard() {
         {profile.profile_pic_url ? (
           <img src={profile.profile_pic_url} alt="" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full grid place-items-center text-xs text-gray-500">🙂</div>
+          <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-gray-500">Featured Profile</div>
+        <div className="text-sm text-muted">Featured Profile</div>
         <div className="text-lg font-semibold truncate">{profile.display_name}</div>
         <div className="text-sm text-gray-600 truncate">
           {profile.school_name} ({profile.school_state}) · ⭐ {profile.star_rating ?? "Unrated"}

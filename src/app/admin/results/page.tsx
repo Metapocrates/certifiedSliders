@@ -96,7 +96,7 @@ export default async function AdminResultsPage() {
                   <div className="text-gray-600">
                     {r.meet_name ?? "—"} {r.meet_date ? `• ${r.meet_date}` : ""}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted">
                     Result #{r.id} • Source: {r.source} •{" "}
                     {new Date(r.created_at).toLocaleString()}
                   </div>
@@ -130,7 +130,7 @@ export default async function AdminResultsPage() {
                   <form action={approveResult.bind(null, r.id)}>
                     <button
                       type="submit"
-                      className="rounded-md bg-green-600 px-3 py-1 text-sm text-white"
+                      className="rounded-md bg-green-600 px-3 py-1 text-sm text-app"
                     >
                       Approve
                     </button>
@@ -138,7 +138,7 @@ export default async function AdminResultsPage() {
                   <form action={rejectResult.bind(null, r.id)}>
                     <button
                       type="submit"
-                      className="rounded-md bg-red-600 px-3 py-1 text-sm text-white"
+                      className="rounded-md bg-red-600 px-3 py-1 text-sm text-app"
                     >
                       Reject
                     </button>

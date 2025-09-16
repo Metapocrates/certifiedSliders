@@ -41,7 +41,7 @@ export default function ResetRequestPage() {
             required
           />
         </div>
-        <button type="submit" className="rounded bg-black px-4 py-2 text-white" disabled={busy}>
+        <button type="submit" className="rounded bg-black px-4 py-2 text-app" disabled={busy}>
           {busy ? "Sending…" : "Send reset link"}
         </button>
         {msg ? <p className="text-sm mt-2">{msg}</p> : null}

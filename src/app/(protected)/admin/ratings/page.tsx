@@ -122,7 +122,7 @@ export default function AdminRatingsPage() {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-muted">
             Loaded {athletes.length} athletes. Start with smaller data; we’ll make this
             searchable later if needed.
           </p>
@@ -173,7 +173,7 @@ export default function AdminRatingsPage() {
               5★
             </label>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-muted">
             Allowed values: Unrated, 3★, 4★, 5★. Updates revalidate the athlete page.
           </p>
         </div>
@@ -181,7 +181,7 @@ export default function AdminRatingsPage() {
         <button
           type="submit"
           disabled={busy || !username}
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+          className="rounded bg-black px-4 py-2 text-app disabled:opacity-50"
         >
           {busy ? "Saving…" : "Save"}
         </button>

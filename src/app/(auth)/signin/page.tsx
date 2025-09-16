@@ -118,13 +118,13 @@ router.refresh();
       {/* Mode toggle */}
       <div className="mb-6 flex gap-2">
         <button
-          className={`px-3 py-1.5 border rounded ${mode === "password" ? "bg-black text-white" : ""}`}
+          className={`px-3 py-1.5 border rounded ${mode === "password" ? "bg-black text-app" : ""}`}
           onClick={() => switchMode("password")}
         >
           Email & Password
         </button>
         <button
-          className={`px-3 py-1.5 border rounded ${mode === "magic" ? "bg-black text-white" : ""}`}
+          className={`px-3 py-1.5 border rounded ${mode === "magic" ? "bg-black text-app" : ""}`}
           onClick={() => switchMode("magic")}
         >
           Magic Link
@@ -177,7 +177,7 @@ router.refresh();
 
             <button
               disabled={pendingPw}
-              className="rounded-md px-4 py-2 bg-black text-white w-full"
+              className="rounded-md px-4 py-2 bg-black text-app w-full"
             >
               {pendingPw ? "Working…" : isSignup ? "Create account" : "Sign in"}
             </button>
@@ -245,7 +245,7 @@ router.refresh();
           </div>
           <button
             disabled={pendingMagic}
-            className="rounded-md px-4 py-2 bg-black text-white w-full"
+            className="rounded-md px-4 py-2 bg-black text-app w-full"
           >
             {pendingMagic ? "Sending…" : "Send magic link"}
           </button>

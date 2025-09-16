@@ -78,7 +78,7 @@ export default function EditPostForm({ initial }: { initial: Post }) {
           className="input min-h-[80px]"
           maxLength={300}
         />
-        <span className="text-xs text-gray-500">Shown on lists. Max 300 chars.</span>
+        <span className="text-xs text-muted">Shown on lists. Max 300 chars.</span>
       </label>
 
       <label className="grid gap-1">

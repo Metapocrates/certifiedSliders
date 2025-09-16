@@ -63,12 +63,12 @@ export default function ProofIngestForm() {
           <button
             type="submit"
             disabled={!url || loading}
-            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-md bg-black px-4 py-2 text-sm font-medium text-app disabled:opacity-50"
           >
             {loading ? 'Validating…' : 'Submit'}
           </button>
         </form>
-        <p className="mt-2 text-xs text-gray-500">
+        <p className="mt-2 text-xs text-muted">
           We only fetch the page you share. No background crawling.
         </p>
       </div>

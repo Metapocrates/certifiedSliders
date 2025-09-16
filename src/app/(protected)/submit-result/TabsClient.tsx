@@ -12,13 +12,13 @@ export default function TabsClient() {
       <div className="flex gap-2">
         <button
           onClick={() => setTab('link')}
-          className={`rounded-md border px-3 py-1 text-sm ${tab === 'link' ? 'bg-black text-white' : ''}`}
+          className={`rounded-md border px-3 py-1 text-sm ${tab === 'link' ? 'bg-black text-app' : ''}`}
         >
           Paste link (Athletic.net / MileSplit)
         </button>
         <button
           onClick={() => setTab('manual')}
-          className={`rounded-md border px-3 py-1 text-sm ${tab === 'manual' ? 'bg-black text-white' : ''}`}
+          className={`rounded-md border px-3 py-1 text-sm ${tab === 'manual' ? 'bg-black text-app' : ''}`}
         >
           Manual entry (with proof)
         </button>

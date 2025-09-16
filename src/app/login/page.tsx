@@ -79,7 +79,7 @@ export default function LoginPage() {
           </div>
           <button
             onClick={handleSignOut}
-            className="mt-2 rounded bg-black px-3 py-1.5 text-white disabled:opacity-50"
+            className="mt-2 rounded bg-black px-3 py-1.5 text-app disabled:opacity-50"
             disabled={busy}
           >
             {busy ? "…" : "Sign out"}
@@ -92,14 +92,14 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => setMode("signin")}
-            className={`rounded px-3 py-1.5 border ${mode === "signin" ? "bg-gray-900 text-white" : "bg-white"}`}
+            className={`rounded px-3 py-1.5 border ${mode === "signin" ? "bg-muted text-app" : "bg-card"}`}
           >
             Sign in
           </button>
           <button
             type="button"
             onClick={() => setMode("signup")}
-            className={`rounded px-3 py-1.5 border ${mode === "signup" ? "bg-gray-900 text-white" : "bg-white"}`}
+            className={`rounded px-3 py-1.5 border ${mode === "signup" ? "bg-muted text-app" : "bg-card"}`}
           >
             Sign up
           </button>
@@ -129,14 +129,14 @@ export default function LoginPage() {
             placeholder="min 6 characters"
             required
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-muted">
             Enable Email/Password in Supabase → Auth → Providers.
           </p>
         </div>
 
         <button
           type="submit"
-          className="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+          className="rounded bg-black px-4 py-2 text-app disabled:opacity-50"
           disabled={busy}
         >
           {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}

@@ -154,7 +154,7 @@ export default async function AdminPage() {
                     <form action={verifyResultAction} className="inline">
                       <input type="hidden" name="resultId" value={r.id} />
                       <input type="hidden" name="decision" value="verify" />
-                      <button className="rounded-md px-3 py-1.5 bg-emerald-600 text-white">
+                      <button className="rounded-md px-3 py-1.5 bg-emerald-600 text-app">
                         Verify
                       </button>
                     </form>

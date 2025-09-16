@@ -73,7 +73,7 @@ export default function ResultsTable({
               bestByEvent[r.event!] === secondsAdj;
 
             return (
-              <tr key={r.id} className="bg-white card">
+              <tr key={r.id} className="bg-card card">
                 <td className="py-2 pr-3">
                   {r.event ?? "—"}{" "}
                   {isBest ? (

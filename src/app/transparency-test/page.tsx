@@ -10,9 +10,9 @@ export default function TransparencyTest() {
       }}
     >
       <div className="flex items-center gap-8">
-        <div className="text-sm text-white/80">favicon-32x32.png</div>
+        <div className="text-sm text-app/80">favicon-32x32.png</div>
         <img src="/favicon-32x32.png" width={64} height={64} alt="favicon 32" />
-        <div className="text-sm text-white/80">apple-touch-icon.png</div>
+        <div className="text-sm text-app/80">apple-touch-icon.png</div>
         <img src="/apple-touch-icon.png" width={128} height={128} alt="apple icon" />
       </div>
     </div>

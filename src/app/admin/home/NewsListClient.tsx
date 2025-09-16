@@ -27,7 +27,7 @@ export default function NewsListClient({ items }: { items: News[] }) {
                     <span className="font-medium">{n.title}</span>
                   )}
                 </div>
-                <div className="text-gray-500">
+                <div className="text-muted">
                   {new Date(n.published_at).toLocaleString()} {n.source ? `— ${n.source}` : ""}
                 </div>
               </div>

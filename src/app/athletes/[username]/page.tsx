@@ -116,14 +116,14 @@ export default async function AthletePage({ params, searchParams }: Props) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full grid place-items-center text-sm text-gray-500">
+            <div className="w-full h-full grid place-items-center text-sm text-muted">
               No photo
             </div>
           )}
         </div>
         <div>
           <h1 className="text-3xl font-bold">{profile.display_name}</h1>
-          <div className="text-sm text-gray-500 mt-1">@{profile.username}</div>
+          <div className="text-sm text-muted mt-1">@{profile.username}</div>
           <div className="mt-2 text-sm">
             <span className="inline-block mr-3">⭐ {profile.star_rating ?? "Unrated"}</span>
             {profile.class_year ? (
@@ -139,7 +139,7 @@ export default async function AthletePage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="mt-8 border-b border-gray-200 flex gap-6">
+      <div className="mt-8 border-b border-app flex gap-6">
         <a href="#overview" className="py-2 text-sm font-medium">
           Overview
         </a>
@@ -206,7 +206,7 @@ export default async function AthletePage({ params, searchParams }: Props) {
         ) : null}
 
         {!verified?.length ? (
-          <div className="text-sm text-gray-500">No verified results yet.</div>
+          <div className="text-sm text-muted">No verified results yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
