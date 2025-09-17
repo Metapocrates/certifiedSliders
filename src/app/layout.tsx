@@ -34,6 +34,10 @@ export const metadata: Metadata = {
     description: "HS Track & Field rankings and verified results.",
     images: ["/og.png"],
   },
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf0e6" }, // your light bg (beige)
+    { media: "(prefers-color-scheme: dark)",  color: "#1c1c1c" }, // your dark bg (charcoal)
+  ],
 };
 
 export default async function RootLayout({
