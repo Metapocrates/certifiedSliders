@@ -14,7 +14,10 @@ export default function SiteHeader({
 }) {
   const pathname = usePathname();
   const linkClass = (href: string) =>
-    pathname === href ? "text-scarlet" : "text-ink-muted hover:text-ink";
+  pathname === href
+    ? "relative text-scarlet after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-scarlet"
+    : "text-ink-muted hover:text-ink";
+
 
   return (
   <header className="sticky top-0 z-50 border-b border-app bg-muted backdrop-blur-md">
@@ -45,6 +48,10 @@ export default function SiteHeader({
           <Link href="/me" className={linkClass("/me")}>
             Me
           </Link>
+          <Link href="/blog" className={linkClass("/blog")}>
+  Blog
+</Link>
+
           {isAdmin && (
             <Link href="/admin" className={linkClass("/admin")}>
               Admin
