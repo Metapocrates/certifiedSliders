@@ -1,44 +1,37 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { createSupabaseServer } from "@/lib/supabase/compat";
-import { getSessionUser } from "@/lib/auth";
+import { createSupabaseServer } from '@/lib/supabase/compat';
+import { getSessionUser } from '@/lib/auth';
 
-async function assertIsAdmin(userId: string) {
-    const supabase = createSupabaseServer();
-    const { data, error } = await supabase
-        .from("admins")
-        .select("user_id")
-        .eq("user_id", userId)
-        .maybeSingle();
-    if (error || !data) {
-        throw new Error("Admin access required.");
+export async function setStarRatingAction(formData: FormData) {
+    const athleteId = String(formData.get('athleteId') || '');
+    const newRating = Number(formData.get('newRating') || 0);
+    const reason = String(formData.get('reason') || '');
+
+    if (!athleteId) {
+        return { ok: false, error: 'Missing athleteId' };
     }
-}
+    if (!Number.isInteger(newRating) || newRating < 0 || newRating > 5) {
+        return { ok: false, error: 'newRating must be an integer 0..5' };
+    }
 
-export async function verifyResultAction(formData: FormData) {
     const user = await getSessionUser();
-    if (!user) throw new Error("Not signed in.");
-    await assertIsAdmin(user.id);
-
-    const resultIdRaw = formData.get("resultId");
-    const decision = formData.get("decision"); // "verify" | "reject"
-
-    const resultId = Number(resultIdRaw);
-    if (!Number.isFinite(resultId)) throw new Error("Invalid result id.");
-    const verified = decision === "verify";
+    if (!user) {
+        return { ok: false, error: 'Unauthorized' };
+    }
 
     const supabase = createSupabaseServer();
-    const { error } = await supabase.rpc("verify_result", {
-        p_result_id: resultId,
-        p_verified: verified,
-        p_admin: user.id,
+
+    // SECURITY DEFINER RPC enforces admin and writes the audit row
+    const { error } = await supabase.rpc('set_star_rating', {
+        p_athlete_id: athleteId,
+        p_new_rating: newRating,
+        p_reason: reason || null,
     });
 
-    if (error) throw error;
+    if (error) {
+        return { ok: false, error: error.message || 'RPC failed' };
+    }
 
-    // Best effort cache bust
-    revalidatePath("/rankings");
-    // You can also revalidate athlete pages if you want, but we’d need athlete_id.
     return { ok: true };
 }

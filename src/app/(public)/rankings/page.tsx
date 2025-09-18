@@ -23,11 +23,13 @@ type RankingRow = {
 
 type ProfileLite = {
   id: string;
+  username: string | null;             // ⬅️ added
   full_name: string | null;
   class_year: number | null;
   gender: "M" | "F" | string | null;
   school_name: string | null;
   school_state: string | null;
+  star_rating: number | null;          // ⬅️ added earlier
 };
 
 type SearchParams = {
@@ -65,7 +67,9 @@ async function fetchRankings(params: SearchParams): Promise<RankingsRow[]> {
   // gender & classYear filtered after profiles fetch
   const cy = coerceClassYear(params.classYear);
 
-  query = query.order("mark_seconds_adj", { ascending: true, nullsFirst: false }).limit(200);
+  query = query
+    .order("mark_seconds_adj", { ascending: true, nullsFirst: false })
+    .limit(200);
 
   const { data: mvRows, error: mvErr } = await query;
   if (mvErr) throw mvErr;
@@ -73,19 +77,22 @@ async function fetchRankings(params: SearchParams): Promise<RankingsRow[]> {
   const rows: RankingRow[] = (mvRows ?? []) as unknown as RankingRow[];
   if (!rows.length) return [];
 
-  // 2) Fetch profiles for athlete metadata
+  // 2) Fetch profiles for athlete metadata (now includes username + star_rating)
   const athleteIds = Array.from(
     new Set(rows.map((r: RankingRow) => r.athlete_id as string))
   );
 
   const { data: profiles, error: profErr } = await supabase
     .from("profiles")
-    .select("id, full_name, class_year, gender, school_name, school_state")
+    .select(
+      "id, username, full_name, class_year, gender, school_name, school_state, star_rating" // ⬅️ added username
+    )
     .in("id", athleteIds);
 
   if (profErr) throw profErr;
 
-  const profileArray: ProfileLite[] = (profiles ?? []) as unknown as ProfileLite[];
+  const profileArray: ProfileLite[] =
+    (profiles ?? []) as unknown as ProfileLite[];
   const pmap = new Map<string, ProfileLite>(
     profileArray.map((p: ProfileLite) => [p.id, p])
   );
@@ -93,8 +100,9 @@ async function fetchRankings(params: SearchParams): Promise<RankingsRow[]> {
   // 3) Merge + apply gender/class filters now that we have profile data
   let merged: RankingsRow[] = rows.map((r: RankingRow) => {
     const p = pmap.get(r.athlete_id);
-    return {
+    const obj = {
       athlete_id: r.athlete_id,
+      username: (p?.username ?? "unknown") as string,     // ⬅️ added
       full_name: (p?.full_name ?? "—") as string,
       class_year: (p?.class_year ?? null) as number | null,
       gender: (p?.gender ?? "—") as "M" | "F" | string,
@@ -109,7 +117,9 @@ async function fetchRankings(params: SearchParams): Promise<RankingsRow[]> {
       meet_name: (r.meet_name ?? null) as string | null,
       meet_date: (r.meet_date ?? null) as string | null,
       proof_url: (r.proof_url ?? null) as string | null,
+      star_rating: (p?.star_rating ?? 0) as number | null, // ⬅️ added
     };
+    return obj as unknown as RankingsRow;
   });
 
   if (params.gender === "M" || params.gender === "F") {
@@ -140,7 +150,9 @@ export default async function RankingsPage({
       <h1 className="text-2xl font-semibold mb-4">Rankings</h1>
       <RankingsFilters initial={initialParams} />
       <div className="mt-6">
-        <Suspense fallback={<div className="text-sm subtle">Loading rankings…</div>}>
+        <Suspense
+          fallback={<div className="text-sm subtle">Loading rankings…</div>}
+        >
           <RankingsTable rows={rows} />
         </Suspense>
       </div>

@@ -1,14 +1,11 @@
-import "server-only";
-import type { ReactNode } from "react";
 import Link from "next/link";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex">
       <aside className="w-60 border-r p-4 space-y-4">
         <h2 className="text-lg font-semibold">Admin</h2>
         <nav className="flex flex-col gap-2">
-          <Link href="/admin">Dashboard</Link>
           <Link href="/admin/ratings">Star Ratings</Link>
           <Link href="/admin/featured">Featured Profiles</Link>
         </nav>

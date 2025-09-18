@@ -4,6 +4,7 @@ import Link from "next/link";
 import AvatarUploadForm from "./parts/AvatarUploadForm";
 import EditProfileForm from "./parts/EditProfileForm";
 import SubmitResultForm from "./parts/SubmitResultForm";
+import StarRating from '@/components/StarRating';
 
 type Props = {
   params: { username: string };
@@ -26,6 +27,12 @@ export default async function AthletePage({ params, searchParams }: Props) {
     return (
       <div className="container py-10">
         <h1 className="text-2xl font-semibold">Athlete</h1>
+        <h1 className="text-2xl font-bold">
+  {profile.full_name ?? profile.username}
+</h1>
+
+<StarRating value={profile.star_rating} size="lg" showLabel />
+
         <p className="text-red-500 mt-4">Error loading profile: {error.message}</p>
       </div>
     );

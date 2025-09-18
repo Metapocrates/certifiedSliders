@@ -1,12 +1,12 @@
-"use client";
+import StarInline from '@/components/StarInline';
 
-import Link from "next/link";
-
+/** Row shape consumed by the table */
 export type RankingsRow = {
   athlete_id: string;
+  username: string;               // ⬅️ required for profile links
   full_name: string;
   class_year: number | null;
-  gender: "M" | "F" | string;
+  gender: 'M' | 'F' | string;
   school_name: string;
   school_state: string;
   event: string;
@@ -16,84 +16,99 @@ export type RankingsRow = {
   wind: number | null;
   season: string | null;
   meet_name: string | null;
-  meet_date: string | null; // ISO string (date)
+  meet_date: string | null;       // ISO date string
   proof_url: string | null;
+  /** ⭐ added: show stars inline on rankings */
+  star_rating: number | null;
+};
+
+type Props = {
+  rows: RankingsRow[];
 };
 
 function fmtMark(row: RankingsRow) {
-  // Prefer original mark text if available; otherwise format seconds as mm:ss.ss or s.ss
+  // Prefer normalized text if present; otherwise format seconds
   if (row.mark) return row.mark;
-  const s = row.mark_seconds_adj ?? row.mark_seconds;
-  if (s == null) return "—";
-  if (s >= 60) {
-    const m = Math.floor(s / 60);
-    const rem = s - m * 60;
-    return `${m}:${rem.toFixed(2).padStart(5, "0")}`;
+  if (row.mark_seconds_adj ?? row.mark_seconds) {
+    const s = (row.mark_seconds_adj ?? row.mark_seconds) as number;
+    // mm:ss.ss for >= 60, otherwise ss.ss
+    if (s >= 60) {
+      const mm = Math.floor(s / 60);
+      const ss = (s % 60).toFixed(2).padStart(5, '0');
+      return `${mm}:${ss}`;
+    }
+    return s.toFixed(2);
   }
-  return s.toFixed(2);
+  return '—';
 }
 
-function fmtDate(d?: string | null) {
-  if (!d) return "—";
-  try {
-    return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-  } catch {
-    return "—";
-  }
+function fmtWind(w: number | null) {
+  if (w === null || w === undefined) return '—';
+  const sign = w > 0 ? '+' : '';
+  return `${sign}${w.toFixed(1)}`;
 }
 
-export default function RankingsTable({ rows }: { rows: RankingsRow[] }) {
-  if (!rows.length) {
-    return <div className="text-sm text-muted-foreground">No results match those filters yet.</div>;
+function fmtMeet(row: RankingsRow) {
+  const when = row.meet_date ? new Date(row.meet_date).toLocaleDateString() : '';
+  if (row.meet_name && when) return `${row.meet_name} • ${when}`;
+  if (row.meet_name) return row.meet_name;
+  if (when) return when;
+  return '—';
+}
+
+export default function RankingsTable({ rows }: Props) {
+  if (!rows?.length) {
+    return <div className="text-sm subtle">No rankings found for this filter.</div>;
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="table">
         <thead>
-          <tr className="text-left border-b">
-            <th className="py-2 pr-3">#</th>
-            <th className="py-2 pr-3">Athlete</th>
-            <th className="py-2 pr-3">Class</th>
-            <th className="py-2 pr-3">Gender</th>
-            <th className="py-2 pr-3">School</th>
-            <th className="py-2 pr-3">Event</th>
-            <th className="py-2 pr-3">Best</th>
-            <th className="py-2 pr-3">Wind</th>
-            <th className="py-2 pr-3">Meet</th>
-            <th className="py-2 pr-3">Date</th>
-            <th className="py-2 pr-3">Proof</th>
+          <tr>
+            <th>#</th>
+            <th>Athlete</th>
+            <th>Class</th>
+            <th>School</th>
+            <th>Event</th>
+            <th>Mark</th>
+            <th>Wind</th>
+            <th>Meet / Date</th>
+            <th>Proof</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, idx) => (
-            <tr key={`${r.athlete_id}-${r.event}`} className="border-b last:border-b-0">
-              <td className="py-2 pr-3">{idx + 1}</td>
-              <td className="py-2 pr-3">
-                <Link
-                  href={`/athlete/${r.athlete_id}`}
-                  className="underline underline-offset-2"
-                >
-                  {r.full_name || "Athlete"}
-                </Link>
+            <tr key={`${r.athlete_id}-${r.event}-${idx}`}>
+              <td>{idx + 1}</td>
+              <td>
+                <a href={`/athletes/${r.username}`} className="link">
+                  {r.full_name}
+                </a>
+                <StarInline value={r.star_rating} className="ml-2 align-middle" />
               </td>
-              <td className="py-2 pr-3">{r.class_year ?? "—"}</td>
-              <td className="py-2 pr-3">{r.gender}</td>
-              <td className="py-2 pr-3">
+              <td>{r.class_year ?? '—'}</td>
+              <td>
                 {r.school_name}
-                {r.school_state ? `, ${r.school_state}` : ""}
+                {r.school_state ? `, ${r.school_state}` : ''}
               </td>
-              <td className="py-2 pr-3">{r.event}</td>
-              <td className="py-2 pr-3 font-medium">{fmtMark(r)}</td>
-              <td className="py-2 pr-3">{r.wind == null ? "—" : (r.wind >= 0 ? `+${r.wind}` : `${r.wind}`)}</td>
-              <td className="py-2 pr-3">{r.meet_name ?? "—"}</td>
-              <td className="py-2 pr-3">{fmtDate(r.meet_date)}</td>
-              <td className="py-2 pr-3">
+              <td>{r.event}</td>
+              <td>{fmtMark(r)}</td>
+              <td>{fmtWind(r.wind)}</td>
+              <td>{fmtMeet(r)}</td>
+              <td>
                 {r.proof_url ? (
-                  <a className="underline underline-offset-2" href={r.proof_url} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={r.proof_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link"
+                  >
                     open
                   </a>
-                ) : "—"}
+                ) : (
+                  '—'
+                )}
               </td>
             </tr>
           ))}
@@ -102,5 +117,3 @@ export default function RankingsTable({ rows }: { rows: RankingsRow[] }) {
     </div>
   );
 }
-
-export { RankingsTable };

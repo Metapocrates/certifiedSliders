@@ -1,18 +1,11 @@
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
+import "server-only";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import { supabaseServer } from "@/lib/supabase/server";
+import { createSupabaseServer } from "@/lib/supabase/compat";
 
-// src/app/(protected)/layout.tsx
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // No auth checks or redirects here — let pages decide.
+export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/");
   return <>{children}</>;
 }
-
-
