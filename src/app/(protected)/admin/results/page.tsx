@@ -1,7 +1,9 @@
 // src/app/admin/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser } from "@/lib/auth";
-import { verifyResultAction } from "../(protected)/admin/actions";
+import { verifyResultAction } from './actions';
+
+
 
 
 type PendingRow = {
@@ -154,7 +156,7 @@ export default async function AdminPage() {
                     <form action={verifyResultAction} className="inline">
                       <input type="hidden" name="resultId" value={r.id} />
                       <input type="hidden" name="decision" value="verify" />
-                      <button className="rounded-md px-3 py-1.5 bg-emerald-600 text-app">
+                      <button className="rounded-md px-3 py-1.5 bg-emerald-600 text-white">
                         Verify
                       </button>
                     </form>

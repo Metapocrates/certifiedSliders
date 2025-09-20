@@ -33,7 +33,7 @@ export async function ensureProfileAction() {
     if (selErr) throw selErr;
     if (existing) {
         revalidatePath("/me");
-        return { ok: true, created: false };
+        return { ok: true, created: false as const };
     }
 
     // Create it
@@ -52,7 +52,7 @@ export async function ensureProfileAction() {
     if (insErr) throw insErr;
 
     revalidatePath("/me");
-    return { ok: true, created: true, username };
+    return { ok: true, created: true as const, username };
 }
 
 /** Update the current user's profile fields from the form. */
@@ -74,10 +74,8 @@ export async function updateProfileAction(formData: FormData) {
     const classYearRaw = toNull(formData.get("class_year"));
 
     const class_year =
-        classYearRaw && !Number.isNaN(Number(classYearRaw))
-            ? Number(classYearRaw)
-            : null;
-    const gender = genderRaw === "M" || genderRaw === "F" ? genderRaw : null;
+        classYearRaw && !Number.isNaN(Number(classYearRaw)) ? Number(classYearRaw) : null;
+    const gender = genderRaw === "M" || genderRaw === "F" ? (genderRaw as "M" | "F") : null;
 
     const { error } = await supabase
         .from("profiles")
@@ -95,9 +93,7 @@ export async function updateProfileAction(formData: FormData) {
     if (error) throw error;
 
     revalidatePath("/me");
-    // You may also revalidate athlete page:
-    // revalidatePath(`/athlete/${user.id}`);
-    return { ok: true };
+    return { ok: true as const };
 }
 
 /** Remove one of the current user's *pending* submissions. */
@@ -137,5 +133,29 @@ export async function deletePendingResultAction(formData: FormData) {
     revalidatePath("/me");
     revalidatePath("/admin");
 
-    return { ok: true };
+    return { ok: true as const };
+}
+
+/** Banner data: does the signed-in user meet any 3★/4★/5★ cutoff? */
+type RankableRow = {
+    event: string;
+    eligible_star: number | null;
+    mark_seconds_adj: number | null;
+    mark_metric: number | null;
+    meet_name: string | null;
+    meet_date: string | null;
+    proof_url: string | null;
+};
+
+export async function getMyRankableAction() {
+    const supabase = createSupabaseServer();
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth?.user) return { ok: false as const, error: "Not signed in." };
+
+    const { data, error } = await supabase.rpc("current_user_rankable");
+    if (error) return { ok: false as const, error: error.message };
+
+    const rows = (data ?? []) as RankableRow[];
+    const maxStar = rows.reduce((m, r) => Math.max(m, r.eligible_star ?? 0), 0);
+    return { ok: true as const, maxStar, rows };
 }

@@ -14,7 +14,9 @@ const GENDERS = [
 
 export default async function MePage() {
   const supabase = createSupabaseServer();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
   if (!session) {
     return (
@@ -31,7 +33,9 @@ export default async function MePage() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, username, full_name, class_year, gender, school_name, school_state, bio, profile_pic_url, star_rating")
+    .select(
+      "id, username, full_name, class_year, gender, school_name, school_state, bio, profile_pic_url, star_rating"
+    )
     .eq("id", user.id)
     .maybeSingle();
   if (error) throw error;
@@ -54,14 +58,46 @@ export default async function MePage() {
     );
   }
 
+  // ── RANKABLE BANNER DATA (server-side) ──────────────────────────────────────
+  // Uses the RPC created earlier: current_user_rankable()
+  let maxStar = 0;
+  try {
+    const { data: rankable } = await supabase.rpc("current_user_rankable");
+    if (Array.isArray(rankable)) {
+      maxStar = rankable.reduce(
+        (m, r) => Math.max(m, (r as any).eligible_star ?? 0),
+        0
+      );
+    }
+  } catch {
+    // Ignore banner if RPC not available yet
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   const publicLink = `/athlete/${profile.id}`;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">My Profile</h1>
-        <a href={publicLink} className="text-sm underline underline-offset-2">View public page</a>
+        <a href={publicLink} className="text-sm underline underline-offset-2">
+          View public page
+        </a>
       </div>
+
+      {/* ── RANKABLE BANNER (renders only if maxStar >= 3) ─────────────────── */}
+      {maxStar >= 3 && (
+        <div className="rounded-xl border p-4">
+          <p className="font-medium">
+            🎉 Congrats! You’ve posted a result that might warrant a{" "}
+            {maxStar}★ Certified Sliders star rating.
+          </p>
+          <p className="text-sm opacity-80">
+            Our team will review your data and update your profile if you meet the criteria.
+          </p>
+        </div>
+      )}
+      {/* ───────────────────────────────────────────────────────────────────── */}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: avatar + meta */}
@@ -84,7 +120,10 @@ export default async function MePage() {
           </div>
           {typeof profile.star_rating === "number" ? (
             <div className="text-sm">
-              Star rating: <span className="text-amber-500">{("★").repeat(profile.star_rating)}</span>
+              Star rating:{" "}
+              <span className="text-amber-500">
+                {"★".repeat(profile.star_rating)}
+              </span>
             </div>
           ) : null}
           <div className="text-xs subtle">
@@ -104,7 +143,9 @@ export default async function MePage() {
                 className="w-full border rounded-md px-3 py-2"
                 placeholder="your-handle"
               />
-              <div className="text-xs subtle mt-1">Used in mentions and internal tools.</div>
+              <div className="text-xs subtle mt-1">
+                Used in mentions and internal tools.
+              </div>
             </div>
 
             <div>
@@ -125,7 +166,9 @@ export default async function MePage() {
                 className="w-full border rounded-md px-3 py-2"
               >
                 {GENDERS.map((g) => (
-                  <option key={g.value} value={g.value}>{g.label}</option>
+                  <option key={g.value} value={g.value}>
+                    {g.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -138,7 +181,9 @@ export default async function MePage() {
                 className="w-full border rounded-md px-3 py-2"
               >
                 {CLASS_YEARS.map((y) => (
-                  <option key={y || "any"} value={y}>{y || "—"}</option>
+                  <option key={y || "any"} value={y}>
+                    {y || "—"}
+                  </option>
                 ))}
               </select>
             </div>
@@ -184,7 +229,9 @@ export default async function MePage() {
       {/* Submit + pending items */}
       <div className="flex items-center justify-between mt-8">
         <h2 className="text-lg font-medium">Submit a result</h2>
-        <a href="/submit-result" className="rounded-md px-3 py-1.5 border text-sm">Open form</a>
+        <a href="/submit-result" className="rounded-md px-3 py-1.5 border text-sm">
+          Open form
+        </a>
       </div>
       <MySubmissions athleteId={user.id} />
 
