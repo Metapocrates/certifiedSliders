@@ -5,8 +5,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 type Gender = "M" | "F" | "U";
 
 function adminClient() {
-    const supabase = createSupabaseServer();
-    return supabase;
+    return createSupabaseServer();
 }
 
 async function assertAdmin(supabase: ReturnType<typeof createSupabaseServer>) {
@@ -25,10 +24,10 @@ export async function listStandardsAction() {
     const supabase = adminClient();
     await assertAdmin(supabase);
     const { data, error } = await supabase
-        .from("rating_standards")
-        .select("event, class_year, gender, is_time, star3, star4, star5, source, notes, updated_at")
+        .from("rating_standards_grade")
+        .select("event, grade, gender, is_time, star3, star4, star5, source, notes, updated_at")
         .order("event", { ascending: true })
-        .order("class_year", { ascending: true })
+        .order("grade", { ascending: true })
         .order("gender", { ascending: true });
 
     if (error) return { ok: false as const, error: error.message };
@@ -37,7 +36,7 @@ export async function listStandardsAction() {
 
 export async function upsertStandardAction(input: {
     event: string;
-    classYear: number;
+    grade: 9 | 10 | 11 | 12;
     gender: Gender;
     isTime: boolean;
     star3: number | null;
@@ -51,7 +50,7 @@ export async function upsertStandardAction(input: {
 
     const payload = {
         event: input.event.trim(),
-        class_year: Number(input.classYear),
+        grade: Number(input.grade) as 9 | 10 | 11 | 12,
         gender: input.gender,
         is_time: !!input.isTime,
         star3: input.star3,
@@ -62,8 +61,8 @@ export async function upsertStandardAction(input: {
     };
 
     const { error } = await supabase
-        .from("rating_standards")
-        .upsert(payload, { onConflict: "event,class_year,gender" });
+        .from("rating_standards_grade")
+        .upsert(payload, { onConflict: "event,grade,gender" });
 
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const };
@@ -71,17 +70,17 @@ export async function upsertStandardAction(input: {
 
 export async function deleteStandardAction(key: {
     event: string;
-    classYear: number;
+    grade: 9 | 10 | 11 | 12;
     gender: Gender;
 }) {
     const supabase = adminClient();
     await assertAdmin(supabase);
 
     const { error } = await supabase
-        .from("rating_standards")
+        .from("rating_standards_grade")
         .delete()
         .eq("event", key.event)
-        .eq("class_year", key.classYear)
+        .eq("grade", key.grade)
         .eq("gender", key.gender);
 
     if (error) return { ok: false as const, error: error.message };

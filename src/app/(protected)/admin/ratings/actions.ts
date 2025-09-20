@@ -1,5 +1,4 @@
-// Path: src/app/(protected)/admin/ratings/actions.ts
-// (or src/app/admin/ratings/actions.ts — match your page.tsx location)
+// src/app/(protected)/admin/ratings/actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -7,45 +6,64 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 
 type Gender = "M" | "F" | "U";
 type Star = 3 | 4 | 5;
+type Grade = 9 | 10 | 11 | 12;
 
-type StandardRow = { event: string; class_year: number; gender: Gender };
-type EligibleRow = {
+type StandardsGradeRow = { event: string; gender: Gender };
+type YearRow = { class_year: number | null };
+
+type EligibleRPCRow = {
     athlete_id: string;
     username: string;
     full_name: string | null;
-    mark_seconds_adj: number | null;
-    mark_metric: number | null;
+    best_time: number | null;
+    best_mark: number | null;
+    eligible_star: number | null;
 };
 
-/** Load available events/classYears/genders from rating_standards */
 export async function getStandardsMetaAction() {
     const supabase = createSupabaseServer();
-    const { data, error } = await supabase
-        .from("rating_standards")
-        .select("event, class_year, gender")
+
+    const { data: std, error: stdErr } = await supabase
+        .from("rating_standards_grade")
+        .select("event, gender")
         .order("event", { ascending: true });
 
-    if (error) return { ok: false as const, error: error.message };
+    if (stdErr) return { ok: false as const, error: stdErr.message };
 
-    const rows = (data ?? []) as StandardRow[];
+    const stdRows = (std ?? []) as StandardsGradeRow[];
 
-    const events = Array.from(new Set(rows.map((r) => r.event)));
-    const classYears = Array.from(new Set(rows.map((r) => r.class_year))).sort((a, b) => a - b);
-    const genders = Array.from(new Set(rows.map((r) => r.gender)));
+    const events = Array.from(new Set(stdRows.map((r: StandardsGradeRow) => r.event)));
+    const genders = Array.from(new Set(stdRows.map((r: StandardsGradeRow) => r.gender))) as Gender[];
 
-    return { ok: true as const, events, classYears, genders };
+    const { data: years, error: yrErr } = await supabase
+        .from("profiles")
+        .select("class_year")
+        .not("class_year", "is", null);
+
+    if (yrErr) return { ok: false as const, error: yrErr.message };
+
+    const yearRows = (years ?? []) as YearRow[];
+    const classYears = Array.from(
+        new Set(
+            yearRows
+                .map((r: YearRow) => (r.class_year == null ? null : Number(r.class_year)))
+                .filter((n): n is number => Number.isFinite(n))
+        )
+    ).sort((a: number, b: number) => a - b);
+
+    const grades: Grade[] = [9, 10, 11, 12];
+
+    return { ok: true as const, events, genders, classYears, grades };
 }
 
-/** List athletes who meet the selected cutoff using the eligible_athletes RPC */
-export async function getEligibleAthletesAction(params: {
+export async function getEligibleAthletesByGradeAction(params: {
     event: string;
+    grade: Grade;
     classYear: number;
     gender: Gender;
-    star: Star;
 }) {
     const supabase = createSupabaseServer();
 
-    // Admin gate
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) return { ok: false as const, error: "Not signed in." };
 
@@ -56,30 +74,29 @@ export async function getEligibleAthletesAction(params: {
         .maybeSingle();
     if (!adminRow) return { ok: false as const, error: "Admins only." };
 
-    const { data, error } = await supabase.rpc("eligible_athletes", {
+    const { data, error } = await supabase.rpc("eligible_athletes_by_grade", {
         p_event: params.event,
+        p_grade: params.grade,
         p_class_year: params.classYear,
         p_gender: params.gender,
-        p_star: params.star,
     });
 
     if (error) return { ok: false as const, error: error.message };
 
-    const rows = (data ?? []) as EligibleRow[];
+    const rows = (data ?? []) as EligibleRPCRow[];
 
     return {
         ok: true as const,
-        athletes: rows.map((r) => ({
+        athletes: rows.map((r: EligibleRPCRow) => ({
             id: r.athlete_id,
             username: r.username,
             fullName: r.full_name,
-            markSecondsAdj: r.mark_seconds_adj,
-            markMetric: r.mark_metric,
+            eligibleStar: r.eligible_star ?? 0,
         })),
     };
 }
 
-/** Save the chosen star rating for a username; logs history via trigger + optional note insert */
+/** Server-side guard: cannot assign > eligibleStar for the selected (event,grade,classYear). */
 export async function setStarRatingAction(formData: FormData) {
     const supabase = createSupabaseServer();
 
@@ -96,22 +113,47 @@ export async function setStarRatingAction(formData: FormData) {
 
     const username = String(formData.get("username") || "").trim();
     const ratingStr = String(formData.get("rating") || "").trim();
-    const note = (formData.get("note") ? String(formData.get("note")) : "").trim();
+    const event = String(formData.get("event") || "").trim();
+    const gradeStr = String(formData.get("grade") || "").trim();
+    const classYearStr = String(formData.get("classYear") || "").trim();
+    const gender = (String(formData.get("gender") || "U").trim() as Gender);
 
-    if (!username) return { ok: false as const, error: "Username is required." };
-    if (!ratingStr) return { ok: false as const, error: "Rating is required." };
+    if (!username || !ratingStr || !event || !gradeStr || !classYearStr) {
+        return { ok: false as const, error: "Missing required fields." };
+    }
 
-    const newRating = Number(ratingStr);
+    const newRating = Number(ratingStr) as Star;
+    const grade = Number(gradeStr) as Grade;
+    const classYear = Number(classYearStr);
+
     if (![3, 4, 5].includes(newRating)) return { ok: false as const, error: "Rating must be 3, 4, or 5." };
+    if (![9, 10, 11, 12].includes(grade)) return { ok: false as const, error: "Bad grade." };
 
     const { data: profile, error: profErr } = await supabase
         .from("profiles")
-        .select("id, username, full_name, star_rating")
+        .select("id, username, full_name, star_rating, class_year, gender")
         .eq("username", username)
         .single();
     if (profErr) return { ok: false as const, error: `Athlete not found: ${profErr.message}` };
 
-    const oldRating = profile.star_rating ?? null;
+    const { data: eligibleRows, error: eligErr } = await supabase.rpc("eligible_athletes_by_grade", {
+        p_event: event,
+        p_grade: grade,
+        p_class_year: classYear,
+        p_gender: gender,
+    });
+    if (eligErr) return { ok: false as const, error: `Eligibility check failed: ${eligErr.message}` };
+
+    const rows = (eligibleRows ?? []) as EligibleRPCRow[];
+    const row = rows.find((r: EligibleRPCRow) => r.athlete_id === profile.id);
+    const eligibleStar = row?.eligible_star ?? 0;
+
+    if (eligibleStar < newRating) {
+        return {
+            ok: false as const,
+            error: `This athlete is only eligible up to ${eligibleStar || 0}★ for the selected grade/event.`,
+        };
+    }
 
     const { data: updated, error: updErr } = await supabase
         .from("profiles")
@@ -121,17 +163,17 @@ export async function setStarRatingAction(formData: FormData) {
         .single();
     if (updErr) return { ok: false as const, error: `Update failed: ${updErr.message}` };
 
+    // Optional history note
+    const noteRaw = formData.get("note");
+    const note = typeof noteRaw === "string" ? noteRaw.trim() : "";
     if (note) {
-        const { error: noteErr } = await supabase
-            .from("ratings_history")
-            .insert({
-                athlete_id: profile.id,
-                old_rating: oldRating,
-                new_rating: newRating,
-                updated_by: auth.user.id,
-                note,
-            });
-        if (noteErr) console.warn("ratings_history note insert failed:", noteErr);
+        await supabase.from("ratings_history").insert({
+            athlete_id: profile.id,
+            old_rating: profile.star_rating ?? null,
+            new_rating: newRating,
+            updated_by: auth.user.id,
+            note,
+        });
     }
 
     revalidatePath(`/athletes/${profile.username}`);
@@ -140,9 +182,9 @@ export async function setStarRatingAction(formData: FormData) {
 
     return {
         ok: true as const,
-        username: updated.username,
-        fullName: profile.full_name ?? null,
-        oldRating,
-        newRating: updated.star_rating,
+        username: updated.username as string,
+        fullName: (profile.full_name ?? null) as string | null,
+        oldRating: (profile.star_rating ?? null) as number | null,
+        newRating: updated.star_rating as number,
     };
 }

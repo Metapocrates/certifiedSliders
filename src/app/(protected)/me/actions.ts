@@ -56,11 +56,14 @@ export async function ensureProfileAction() {
 }
 
 /** Update the current user's profile fields from the form. */
+// src/app/(protected)/me/actions.ts
+import { redirect } from "next/navigation"; // ← add this
+
 export async function updateProfileAction(formData: FormData) {
     const user = await getSessionUser();
     if (!user) throw new Error("Not signed in");
 
-    const supabase = createSupabaseServer();
+    const admin = createSupabaseAdmin();
 
     const toNull = (v: FormDataEntryValue | null) =>
         v === null || v === undefined || String(v).trim() === "" ? null : String(v);
@@ -70,31 +73,27 @@ export async function updateProfileAction(formData: FormData) {
     const school_name = toNull(formData.get("school_name"));
     const school_state = toNull(formData.get("school_state"));
     const bio = toNull(formData.get("bio"));
-    const genderRaw = toNull(formData.get("gender")); // expect "M" | "F" | null
+    const genderRaw = toNull(formData.get("gender")); // "M" | "F" | null
     const classYearRaw = toNull(formData.get("class_year"));
 
     const class_year =
         classYearRaw && !Number.isNaN(Number(classYearRaw)) ? Number(classYearRaw) : null;
     const gender = genderRaw === "M" || genderRaw === "F" ? (genderRaw as "M" | "F") : null;
 
-    const { error } = await supabase
+    const { error } = await admin
         .from("profiles")
-        .update({
-            username,
-            full_name,
-            school_name,
-            school_state,
-            bio,
-            gender,
-            class_year,
-        })
+        .update({ username, full_name, school_name, school_state, bio, gender, class_year })
         .eq("id", user.id);
 
     if (error) throw error;
 
     revalidatePath("/me");
-    return { ok: true as const };
+    revalidatePath(`/athletes/${username ?? ""}`);
+
+    // ← show confirmation by reloading with a flag
+    redirect("/me?updated=1");
 }
+
 
 /** Remove one of the current user's *pending* submissions. */
 export async function deletePendingResultAction(formData: FormData) {

@@ -1,56 +1,59 @@
+// src/app/(protected)/admin/ratings/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   getStandardsMetaAction,
-  getEligibleAthletesAction,
+  getEligibleAthletesByGradeAction,
   setStarRatingAction,
 } from "./actions";
 
 type Gender = "M" | "F" | "U";
 type Star = 3 | 4 | 5;
+type Grade = 9 | 10 | 11 | 12;
+
+const GRADE_LABEL: Record<Grade, string> = {
+  9: "Freshman",
+  10: "Sophomore",
+  11: "Junior",
+  12: "Senior",
+};
 
 export default function AdminRatingsPage() {
-  // Meta (from rating_standards)
-  const [meta, setMeta] = useState<{ events: string[]; classYears: number[]; genders: Gender[] } | null>(null);
+  const [meta, setMeta] = useState<{ events: string[]; classYears: number[]; genders: Gender[]; grades: Grade[] } | null>(null);
 
-  // Filters
   const [event, setEvent] = useState<string>("");
+  const [grade, setGrade] = useState<Grade | "">("");
   const [classYear, setClassYear] = useState<number | "">("");
   const [gender, setGender] = useState<Gender>("U");
-  const [star, setStar] = useState<Star>(3);
 
-  // Eligible list + selection
-  const [eligible, setEligible] = useState<{ username: string; fullName: string | null }[]>([]);
+  const [eligible, setEligible] = useState<{ username: string; fullName: string | null; eligibleStar: number }[]>([]);
   const [username, setUsername] = useState<string>("");
 
-  // Optional admin note + result
+  const [star, setStar] = useState<Star>(3);
   const [note, setNote] = useState("");
-  const [result, setResult] = useState<
-    | { ok: true; username: string; fullName: string | null; oldRating: number | null; newRating: number }
-    | { ok: false; error: string }
-    | null
-  >(null);
-
+  const [result, setResult] = useState<any>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Load standards metadata once
+  // Load meta
   useEffect(() => {
     let alive = true;
     (async () => {
       const res = await getStandardsMetaAction();
       if (!alive) return;
-
       if (res.ok) {
-        const genders = (res.genders as Gender[]).length ? (res.genders as Gender[]) : (["U"] as Gender[]);
-        setMeta({ events: res.events, classYears: res.classYears, genders });
-
-        // Sensible defaults
-        setEvent((prev) => (prev || res.events[0] || ""));
+        setMeta({
+          events: res.events,
+          classYears: res.classYears,
+          genders: (res.genders as Gender[]).length ? (res.genders as Gender[]) : (["U"] as Gender[]),
+          grades: (res.grades as Grade[]) ?? ([9, 10, 11, 12] as Grade[]),
+        });
+        setEvent((prev) => prev || res.events[0] || "");
         setClassYear((prev) => (prev || res.classYears[0] || "") as any);
-        setGender((prev) => (genders.includes(prev) ? prev : genders[0]));
+        setGender((prev) => ((res.genders as Gender[]).includes(prev) ? prev : ((res.genders as Gender[])[0] || "U")));
+        setGrade((prev) => (prev || (res.grades?.[0] as Grade) || "") as any);
       } else {
-        setMeta({ events: [], classYears: [], genders: ["U"] as Gender[] });
+        setMeta({ events: [], classYears: [], genders: ["U"] as Gender[], grades: [9, 10, 11, 12] as Grade[] });
       }
     })();
     return () => {
@@ -58,168 +61,166 @@ export default function AdminRatingsPage() {
     };
   }, []);
 
-  const canQuery = useMemo(() => Boolean(event && classYear && star), [event, classYear, star]);
+  const canQuery = useMemo(() => Boolean(event && classYear && grade), [event, classYear, grade]);
 
-  // Fetch eligible athletes when filters change
+  // Fetch eligible (with eligibleStar)
   useEffect(() => {
     if (!canQuery) return;
     let alive = true;
-
     startTransition(async () => {
-      const res = await getEligibleAthletesAction({
+      const res = await getEligibleAthletesByGradeAction({
         event,
         classYear: Number(classYear),
+        grade: Number(grade) as Grade,
         gender,
-        star,
       });
       if (!alive) return;
 
       if (res.ok) {
-        const opts = res.athletes.map((a) => ({ username: a.username, fullName: a.fullName }));
-        setEligible(opts);
-        setUsername((prev) => (opts.find((o) => o.username === prev) ? prev : (opts[0]?.username ?? "")));
+        const list = res.athletes as { username: string; fullName: string | null; eligibleStar: number }[];
+        setEligible(list);
+        const first = list[0]?.username ?? "";
+        setUsername((prev) => (list.find((x) => x.username === prev) ? prev : first));
+        // default star to the selected athlete's max eligibility
+        const firstMax = list.find((x) => x.username === (list.find(() => true)?.username))?.eligibleStar ?? 3;
+        setStar((prev) => (prev > firstMax ? (firstMax as Star) : (prev as Star)));
       } else {
         setEligible([]);
         setUsername("");
       }
     });
-
     return () => {
       alive = false;
     };
-  }, [event, classYear, gender, star, canQuery, startTransition]);
+  }, [event, classYear, grade, gender, canQuery, startTransition]);
 
-  // Submit rating
+  // When athlete selection changes, clamp star to their max
+  const selectedEligible = eligible.find((e) => e.username === username);
+  const maxEligible = selectedEligible?.eligibleStar ?? 0;
+
+  useEffect(() => {
+    if (!username) return;
+    if (maxEligible && star > maxEligible) setStar(maxEligible as Star);
+  }, [username, maxEligible]); // eslint-disable-line
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username) return;
+    if (!username || !event || !grade || !classYear) return;
 
     const fd = new FormData();
     fd.append("username", username);
     fd.append("rating", String(star));
+    fd.append("event", event);
+    fd.append("grade", String(grade));
+    fd.append("classYear", String(classYear));
+    fd.append("gender", gender);
     if (note.trim()) fd.append("note", note.trim());
 
     startTransition(async () => {
       const res = await setStarRatingAction(fd);
-      setResult(res as any);
+      setResult(res);
     });
   };
-
-  const noStandards = meta && (meta.events.length === 0 || meta.classYears.length === 0);
 
   return (
     <main className="mx-auto max-w-3xl p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">
-          Admin · Star Ratings <span className="text-xs opacity-60">/ v3</span>
-        </h1>
+        <h1 className="text-2xl font-semibold">Admin · Star Ratings <span className="text-xs opacity-60">/ grade-based</span></h1>
       </div>
-
-      {noStandards && (
-        <div className="mb-4 rounded-lg border p-4 text-sm">
-          No rating standards found. Add rows to <code>rating_standards</code> to enable filtering.
-        </div>
-      )}
 
       <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border p-4">
         {/* Filters */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
           <div>
             <label className="mb-1 block text-sm">Event</label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
+            <select className="w-full rounded-md border px-3 py-2"
               value={event}
               onChange={(e) => setEvent(e.target.value)}
               disabled={!meta || meta.events.length === 0}
-              required
-            >
-              {(meta?.events ?? []).map((ev) => (
-                <option key={ev} value={ev}>
-                  {ev}
-                </option>
+              required>
+              {(meta?.events ?? []).map((ev) => <option key={ev} value={ev}>{ev}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm">Grade</label>
+            <select className="w-full rounded-md border px-3 py-2"
+              value={grade}
+              onChange={(e) => setGrade(Number(e.target.value) as Grade)}
+              disabled={!meta}
+              required>
+              {(meta?.grades ?? [9,10,11,12]).map((g) => (
+                <option key={g} value={g}>{GRADE_LABEL[g as Grade]}</option>
               ))}
             </select>
           </div>
 
           <div>
             <label className="mb-1 block text-sm">Class year</label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
+            <select className="w-full rounded-md border px-3 py-2"
               value={classYear}
               onChange={(e) => setClassYear(Number(e.target.value))}
               disabled={!meta || meta.classYears.length === 0}
-              required
-            >
-              {(meta?.classYears ?? []).map((cy) => (
-                <option key={cy} value={cy}>
-                  {cy}
-                </option>
-              ))}
+              required>
+              {(meta?.classYears ?? []).map((cy) => <option key={cy} value={cy}>{cy}</option>)}
             </select>
           </div>
 
           <div>
             <label className="mb-1 block text-sm">Gender</label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
+            <select className="w-full rounded-md border px-3 py-2"
               value={gender}
               onChange={(e) => setGender(e.target.value as Gender)}
               disabled={!meta || meta.genders.length === 0}
-              required
-            >
-              {(meta?.genders ?? (["U"] as Gender[])).map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
+              required>
+              {(meta?.genders ?? (["U"] as Gender[])).map((g) => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
 
           <div>
             <label className="mb-1 block text-sm">Star</label>
-            <select
-              className="w-full rounded-md border px-3 py-2"
+            <select className="w-full rounded-md border px-3 py-2"
               value={star}
               onChange={(e) => setStar(Number(e.target.value) as Star)}
-              required
-            >
-              <option value={3}>3★</option>
-              <option value={4}>4★</option>
-              <option value={5}>5★</option>
+              required>
+              <option value={3} disabled={maxEligible < 3}>3★</option>
+              <option value={4} disabled={maxEligible < 4}>4★</option>
+              <option value={5} disabled={maxEligible < 5}>5★</option>
             </select>
+            <p className="mt-1 text-xs opacity-70">
+              Max eligible for selected athlete: {maxEligible ? `${maxEligible}★` : "—"}
+            </p>
           </div>
         </div>
 
-        {/* Eligible athletes */}
+        {/* Eligible Athletes */}
         <div>
           <label className="mb-1 block text-sm">Eligible athlete</label>
-          <select
-            className="w-full rounded-md border px-3 py-2"
+          <select className="w-full rounded-md border px-3 py-2"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             disabled={isPending || eligible.length === 0}
-            required
-          >
+            required>
             {eligible.length === 0 ? (
-              <option value="" disabled>
-                No eligible athletes for these filters
-              </option>
+              <option value="" disabled>No eligible athletes for these filters</option>
             ) : (
-              eligible.map((a) => (
-                <option key={a.username} value={a.username}>
-                  {a.fullName ? `${a.fullName} (@${a.username})` : `@${a.username}`}
-                </option>
-              ))
+             eligible.map((a) => (
+  <option key={a.username} value={a.username}>
+    {(a.fullName ? `${a.fullName} ` : "") + `(@${a.username})`} — eligible up to {a.eligibleStar || 0}★
+  </option>
+))
+
             )}
           </select>
-          <p className="mt-1 text-xs opacity-70">Only athletes meeting the selected cutoff are listed.</p>
+          <p className="text-xs opacity-70 mt-1">
+            Eligibility is computed from grade-based cutoffs and best mark in that grade.
+          </p>
         </div>
 
         {/* Optional note */}
         <div>
           <label className="mb-1 block text-sm">Note (optional)</label>
-          <textarea
-            className="w-full rounded-md border px-3 py-2"
+          <textarea className="w-full rounded-md border px-3 py-2"
             placeholder="Context for this change (admin-only)."
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -227,7 +228,7 @@ export default function AdminRatingsPage() {
           />
         </div>
 
-        <button type="submit" disabled={isPending || !username} className="rounded-xl border px-4 py-2 shadow-sm">
+        <button type="submit" disabled={isPending || !username} className="rounded-xl px-4 py-2 border shadow-sm">
           {isPending ? "Saving…" : `Assign ${star}★`}
         </button>
       </form>

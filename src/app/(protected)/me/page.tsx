@@ -1,7 +1,7 @@
 // src/app/(protected)/me/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { ensureProfileAction, updateProfileAction } from "./actions";
-import MySubmissions from "@/components/MySubmissions"; // ← NEW
+import MySubmissions from "@/components/MySubmissions";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +12,13 @@ const GENDERS = [
   { label: "Girls (F)", value: "F" },
 ];
 
-export default async function MePage() {
+export default async function MePage({
+  searchParams,
+}: {
+  searchParams?: { updated?: string };
+}) {
   const supabase = createSupabaseServer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
     return (
@@ -33,9 +35,7 @@ export default async function MePage() {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select(
-      "id, username, full_name, class_year, gender, school_name, school_state, bio, profile_pic_url, star_rating"
-    )
+    .select("id, username, full_name, class_year, gender, school_name, school_state, bio, profile_pic_url, star_rating")
     .eq("id", user.id)
     .maybeSingle();
   if (error) throw error;
@@ -45,11 +45,9 @@ export default async function MePage() {
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-semibold">Create your athlete profile</h1>
-        <p className="text-sm subtle">
-          We’ll create your profile so your results can attach to your public page.
-        </p>
+        <p className="text-sm subtle">We’ll create your profile so your results can attach to your public page.</p>
         <form action={ensureProfileAction}>
-          <button className="rounded-md px-4 py-2 bg-black text-app">Create my profile</button>
+          <button className="rounded-md px-4 py-2 bg-black text-white">Create my profile</button>
         </form>
         <div className="text-xs subtle">
           Signed in as <span className="font-mono">{user.email}</span>
@@ -58,46 +56,44 @@ export default async function MePage() {
     );
   }
 
-  // ── RANKABLE BANNER DATA (server-side) ──────────────────────────────────────
-  // Uses the RPC created earlier: current_user_rankable()
+  // Rankable banner (server-side)
   let maxStar = 0;
   try {
     const { data: rankable } = await supabase.rpc("current_user_rankable");
     if (Array.isArray(rankable)) {
-      maxStar = rankable.reduce(
-        (m, r) => Math.max(m, (r as any).eligible_star ?? 0),
-        0
-      );
+      maxStar = rankable.reduce((m, r) => Math.max(m, (r as any).eligible_star ?? 0), 0);
     }
   } catch {
-    // Ignore banner if RPC not available yet
+    /* ignore if RPC not present yet */
   }
-  // ───────────────────────────────────────────────────────────────────────────
 
-  const publicLink = `/athlete/${profile.id}`;
+  const publicLink = `/athletes/${profile.username}`;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">My Profile</h1>
-        <a href={publicLink} className="text-sm underline underline-offset-2">
-          View public page
-        </a>
+        <a href={publicLink} className="text-sm underline underline-offset-2">View public page</a>
       </div>
 
-      {/* ── RANKABLE BANNER (renders only if maxStar >= 3) ─────────────────── */}
+      {/* Saved banner via ?updated=1 */}
+      {searchParams?.updated === "1" && (
+        <div className="rounded-lg border p-3 text-sm bg-green-50 text-green-800">
+          ✅ Profile saved.
+        </div>
+      )}
+
+      {/* Rankable banner */}
       {maxStar >= 3 && (
         <div className="rounded-xl border p-4">
           <p className="font-medium">
-            🎉 Congrats! You’ve posted a result that might warrant a{" "}
-            {maxStar}★ Certified Sliders star rating.
+            🎉 Congrats! You’ve posted a result that might warrant a {maxStar}★ Certified Sliders star rating.
           </p>
           <p className="text-sm opacity-80">
             Our team will review your data and update your profile if you meet the criteria.
           </p>
         </div>
       )}
-      {/* ───────────────────────────────────────────────────────────────────── */}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: avatar + meta */}
@@ -120,10 +116,7 @@ export default async function MePage() {
           </div>
           {typeof profile.star_rating === "number" ? (
             <div className="text-sm">
-              Star rating:{" "}
-              <span className="text-amber-500">
-                {"★".repeat(profile.star_rating)}
-              </span>
+              Star rating: <span className="text-amber-500">{"★".repeat(profile.star_rating)}</span>
             </div>
           ) : null}
           <div className="text-xs subtle">
@@ -143,9 +136,7 @@ export default async function MePage() {
                 className="w-full border rounded-md px-3 py-2"
                 placeholder="your-handle"
               />
-              <div className="text-xs subtle mt-1">
-                Used in mentions and internal tools.
-              </div>
+              <div className="text-xs subtle mt-1">Used in mentions and internal tools.</div>
             </div>
 
             <div>
@@ -166,9 +157,7 @@ export default async function MePage() {
                 className="w-full border rounded-md px-3 py-2"
               >
                 {GENDERS.map((g) => (
-                  <option key={g.value} value={g.value}>
-                    {g.label}
-                  </option>
+                  <option key={g.value} value={g.value}>{g.label}</option>
                 ))}
               </select>
             </div>
@@ -181,9 +170,7 @@ export default async function MePage() {
                 className="w-full border rounded-md px-3 py-2"
               >
                 {CLASS_YEARS.map((y) => (
-                  <option key={y || "any"} value={y}>
-                    {y || "—"}
-                  </option>
+                  <option key={y || "any"} value={y}>{y || "—"}</option>
                 ))}
               </select>
             </div>
@@ -220,7 +207,7 @@ export default async function MePage() {
             </div>
 
             <div className="sm:col-span-2">
-              <button className="rounded-md px-4 py-2 bg-black text-app">Save</button>
+              <button className="rounded-md px-4 py-2 bg-black text-white">Save</button>
             </div>
           </form>
         </div>
@@ -229,7 +216,10 @@ export default async function MePage() {
       {/* Submit + pending items */}
       <div className="flex items-center justify-between mt-8">
         <h2 className="text-lg font-medium">Submit a result</h2>
-        <a href="/submit-result" className="rounded-md px-3 py-1.5 border text-sm">
+        <a
+          href="/submit-result"
+          className="rounded-md px-3 py-1.5 border text-sm bg-transparent"
+        >
           Open form
         </a>
       </div>
