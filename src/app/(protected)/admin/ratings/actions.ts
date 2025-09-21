@@ -32,8 +32,8 @@ export async function getStandardsMetaAction() {
 
     const stdRows = (std ?? []) as StandardsGradeRow[];
 
-    const events = Array.from(new Set(stdRows.map((r: StandardsGradeRow) => r.event)));
-    const genders = Array.from(new Set(stdRows.map((r: StandardsGradeRow) => r.gender))) as Gender[];
+    const events = Array.from(new Set(stdRows.map((r) => r.event)));
+    const genders = Array.from(new Set(stdRows.map((r) => r.gender))) as Gender[];
 
     const { data: years, error: yrErr } = await supabase
         .from("profiles")
@@ -46,10 +46,10 @@ export async function getStandardsMetaAction() {
     const classYears = Array.from(
         new Set(
             yearRows
-                .map((r: YearRow) => (r.class_year == null ? null : Number(r.class_year)))
+                .map((r) => (r.class_year == null ? null : Number(r.class_year)))
                 .filter((n): n is number => Number.isFinite(n))
         )
-    ).sort((a: number, b: number) => a - b);
+    ).sort((a, b) => a - b);
 
     const grades: Grade[] = [9, 10, 11, 12];
 
@@ -87,13 +87,40 @@ export async function getEligibleAthletesByGradeAction(params: {
 
     return {
         ok: true as const,
-        athletes: rows.map((r: EligibleRPCRow) => ({
+        athletes: rows.map((r) => ({
             id: r.athlete_id,
             username: r.username,
             fullName: r.full_name,
             eligibleStar: r.eligible_star ?? 0,
         })),
     };
+}
+
+// ---------- Helper: resilient history insert ----------
+async function insertRatingHistory(
+    supabase: ReturnType<typeof createSupabaseServer>,
+    baseRecord: Record<string, unknown>,
+    note?: string
+) {
+    // Avoid TS friction with dynamic table names
+    const fromAny = (tbl: string) => (supabase as any).from(tbl);
+
+    // Try both table names, first with note (if given), then without.
+    const attempts: Array<{ table: string; withNote: boolean }> = [
+        { table: "ratings_history", withNote: !!note },
+        { table: "ratings_history", withNote: false },
+        { table: "rating_history", withNote: !!note },
+        { table: "rating_history", withNote: false },
+    ];
+
+    for (const a of attempts) {
+        const payload = a.withNote ? { ...baseRecord, note } : baseRecord;
+        const { error } = await fromAny(a.table).insert(payload);
+        if (!error) return { ok: true as const, table: a.table, withNote: a.withNote };
+        // If it's a permissions or other hard error, keep going but log it
+        console.warn(`[ratings] history insert attempt failed (${a.table}, withNote=${a.withNote}):`, error?.message);
+    }
+    return { ok: false as const };
 }
 
 /** Server-side guard: cannot assign > eligibleStar for the selected (event,grade,classYear). */
@@ -117,6 +144,8 @@ export async function setStarRatingAction(formData: FormData) {
     const gradeStr = String(formData.get("grade") || "").trim();
     const classYearStr = String(formData.get("classYear") || "").trim();
     const gender = (String(formData.get("gender") || "U").trim() as Gender);
+    const noteRaw = formData.get("note");
+    const note = typeof noteRaw === "string" ? noteRaw.trim() : "";
 
     if (!username || !ratingStr || !event || !gradeStr || !classYearStr) {
         return { ok: false as const, error: "Missing required fields." };
@@ -145,7 +174,7 @@ export async function setStarRatingAction(formData: FormData) {
     if (eligErr) return { ok: false as const, error: `Eligibility check failed: ${eligErr.message}` };
 
     const rows = (eligibleRows ?? []) as EligibleRPCRow[];
-    const row = rows.find((r: EligibleRPCRow) => r.athlete_id === profile.id);
+    const row = rows.find((r) => r.athlete_id === profile.id);
     const eligibleStar = row?.eligible_star ?? 0;
 
     if (eligibleStar < newRating) {
@@ -163,17 +192,20 @@ export async function setStarRatingAction(formData: FormData) {
         .single();
     if (updErr) return { ok: false as const, error: `Update failed: ${updErr.message}` };
 
-    // Optional history note
-    const noteRaw = formData.get("note");
-    const note = typeof noteRaw === "string" ? noteRaw.trim() : "";
+    // Optional history (non-blocking). Works whether your table is `ratings_history` or `rating_history`, with or without a `note` column.
+    const baseHistory = {
+        athlete_id: profile.id,
+        old_rating: profile.star_rating ?? null,
+        new_rating: newRating,
+        updated_by: auth.user.id,
+    } as Record<string, unknown>;
+
     if (note) {
-        await supabase.from("ratings_history").insert({
-            athlete_id: profile.id,
-            old_rating: profile.star_rating ?? null,
-            new_rating: newRating,
-            updated_by: auth.user.id,
-            note,
-        });
+        const res = await insertRatingHistory(supabase, baseHistory, note);
+        if (!res.ok) console.warn("[ratings] all history insert attempts failed (note).");
+    } else {
+        const res = await insertRatingHistory(supabase, baseHistory);
+        if (!res.ok) console.warn("[ratings] all history insert attempts failed (no note).");
     }
 
     revalidatePath(`/athletes/${profile.username}`);

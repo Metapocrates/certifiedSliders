@@ -1,82 +1,66 @@
 import Link from "next/link";
-import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getSanity } from "@/lib/sanity.client";
+import { articleListQuery } from "@/lib/sanity.queries";
 
 export const revalidate = 300;
 
-// Minimal shape for blog posts
-type BlogPost = {
-  id: string;
+type Row = {
   slug: string;
-  title?: string | null;
+  title: string;
   excerpt?: string | null;
-  cover_url?: string | null;
-  published_at?: string | null;
-  [key: string]: unknown;
+  premium?: boolean | null;
+  publishedAt?: string | null;
 };
 
-export default async function BlogIndexPage() {
-  const supabase = createSupabaseServer();
-  const { data: posts, error } = await supabase
-    .from("posts")
-    .select("id, slug, title, excerpt, cover_url, published_at")
-    .eq("status", "published")
-    .order("published_at", { ascending: false })
-    .limit(24);
+export default async function BlogIndex() {
+  const client = getSanity();
 
-  if (error) {
+  if (!client) {
     return (
-      <div className="container py-12">
-        <h1 className="text-2xl font-bold mb-4">Blog</h1>
-        <p className="text-red-600">Error: {error.message}</p>
+      <div className="mx-auto max-w-3xl p-6">
+        <h1 className="text-2xl font-semibold mb-2">Blog</h1>
+        <p className="text-gray-600">Coming soon. Headless CMS not configured yet.</p>
       </div>
     );
   }
 
-  if (!posts?.length) {
+  let rows: Row[] = [];
+  try {
+    rows = (await client.fetch(articleListQuery)) as Row[];
+  } catch (e: any) {
     return (
-      <div className="container py-12">
-        <h1 className="text-2xl font-bold mb-2">Blog</h1>
+      <div className="mx-auto max-w-3xl p-6">
+        <h1 className="text-2xl font-semibold mb-2">Blog</h1>
+        <p className="text-red-600 text-sm">Failed to fetch articles: {e?.message ?? "Unknown error"}</p>
+      </div>
+    );
+  }
+
+  if (!rows.length) {
+    return (
+      <div className="mx-auto max-w-3xl p-6">
+        <h1 className="text-2xl font-semibold mb-2">Blog</h1>
         <p className="text-gray-600">No posts yet.</p>
       </div>
     );
   }
 
-  const typedPosts: BlogPost[] = posts as unknown as BlogPost[];
-
   return (
-    <div className="container py-12">
-      <h1 className="text-2xl font-bold mb-6">Blog</h1>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {typedPosts.map((p: BlogPost) => (
-          <Link
-            key={p.id}
-            href={`/blog/${p.slug}`}
-            className="rounded-xl border overflow-hidden block"
-          >
-            {p.cover_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={p.cover_url}
-                alt={p.title ?? ""}
-                className="w-full h-40 object-cover"
-              />
+    <div className="mx-auto max-w-3xl p-6">
+      <h1 className="text-2xl font-semibold mb-4">Blog</h1>
+      <ul className="space-y-4">
+        {rows.map((p) => (
+          <li key={p.slug} className="rounded-xl border p-4">
+            <Link className="text-lg font-semibold underline" href={`/blog/${p.slug}`}>
+              {p.title} {p.premium ? "🔒" : ""}
+            </Link>
+            {p.excerpt ? <p className="text-sm text-gray-600 mt-1">{p.excerpt}</p> : null}
+            {p.publishedAt ? (
+              <p className="text-xs text-gray-500 mt-2">{new Date(p.publishedAt).toLocaleDateString()}</p>
             ) : null}
-            <div className="p-4">
-              <div className="font-semibold">{p.title}</div>
-              {p.published_at ? (
-                <div className="text-xs text-muted mt-1">
-                  {new Date(p.published_at).toLocaleDateString()}
-                </div>
-              ) : null}
-              {p.excerpt ? (
-                <p className="text-sm text-gray-600 mt-2 line-clamp-3">
-                  {p.excerpt}
-                </p>
-              ) : null}
-            </div>
-          </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

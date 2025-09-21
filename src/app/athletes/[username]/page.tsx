@@ -1,10 +1,11 @@
+// src/app/athletes/[username]/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import Link from "next/link";
 import AvatarUploadForm from "./parts/AvatarUploadForm";
 import EditProfileForm from "./parts/EditProfileForm";
 import SubmitResultForm from "./parts/SubmitResultForm";
-import StarRating from '@/components/StarRating';
+import StarRating from "@/components/StarRating";
 
 type Props = {
   params: { username: string };
@@ -27,13 +28,12 @@ export default async function AthletePage({ params, searchParams }: Props) {
     return (
       <div className="container py-10">
         <h1 className="text-2xl font-semibold">Athlete</h1>
-        <h1 className="text-2xl font-bold">
-  {profile.full_name ?? profile.username}
-</h1>
-
-<StarRating value={profile.star_rating} size="lg" showLabel />
-
         <p className="text-red-500 mt-4">Error loading profile: {error.message}</p>
+        <div className="mt-4">
+          <Link href="/rankings" className="underline">
+            ← Back to Rankings
+          </Link>
+        </div>
       </div>
     );
   }
@@ -45,6 +45,11 @@ export default async function AthletePage({ params, searchParams }: Props) {
         <p className="mt-4">
           No athlete found for <span className="font-mono">@{params.username}</span>.
         </p>
+        <div className="mt-4">
+          <Link href="/rankings" className="underline">
+            ← Back to Rankings
+          </Link>
+        </div>
       </div>
     );
   }
@@ -131,15 +136,24 @@ export default async function AthletePage({ params, searchParams }: Props) {
         <div>
           <h1 className="text-3xl font-bold">{profile.display_name}</h1>
           <div className="text-sm text-muted mt-1">@{profile.username}</div>
-          <div className="mt-2 text-sm">
-            <span className="inline-block mr-3">⭐ {profile.star_rating ?? "Unrated"}</span>
+
+          {/* Star rating + quick link to Ratings History */}
+          <div className="mt-2 text-sm flex flex-wrap items-center gap-3">
+            <span className="inline-block">⭐ {profile.star_rating ?? "Unrated"}</span>
+            <Link
+              href={`/athletes/${profile.username}/history`}
+              className="underline hover:opacity-80"
+            >
+              Ratings History
+            </Link>
             {profile.class_year ? (
-              <span className="inline-block mr-3">Class of {profile.class_year}</span>
+              <span className="inline-block">Class of {profile.class_year}</span>
             ) : null}
             <span className="inline-block">
               {profile.school_name} ({profile.school_state})
             </span>
           </div>
+
           {profile.bio ? (
             <p className="mt-3 max-w-prose text-gray-700">{profile.bio}</p>
           ) : null}
