@@ -1,16 +1,12 @@
-// src/app/layout.tsx
 import "./globals.css";
 import type { Metadata } from "next";
 import SiteHeader from "@/components/SiteHeader";
 import { createSupabaseServer } from "@/lib/supabase/compat";
-import { ThemeProvider } from "next-themes";
+import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://certifiedsliders.vercel.app"),
-  title: {
-    default: "Certified Sliders",
-    template: "%s – Certified Sliders",
-  },
+  title: { default: "Certified Sliders", template: "%s – Certified Sliders" },
   description: "HS Track & Field rankings and verified results.",
   icons: {
     icon: [
@@ -35,17 +31,12 @@ export const metadata: Metadata = {
     images: ["/og.png"],
   },
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf0e6" }, // your light bg (beige)
-    { media: "(prefers-color-scheme: dark)",  color: "#1c1c1c" }, // your dark bg (charcoal)
+    { media: "(prefers-color-scheme: light)", color: "#faf0e6" },
+    { media: "(prefers-color-scheme: dark)",  color: "#1c1c1c" },
   ],
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  // Server-side session + admin check
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = createSupabaseServer();
   const { data: authData } = await supabase.auth.getUser();
   const user = authData?.user ?? null;
@@ -63,18 +54,11 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-app text-app">
-        {/* Theming provider: toggles `dark` class on <html> */}
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {/* Header receives props; no client fetching */}
+        <Providers>
           <SiteHeader />
-
-
-          {/* Separation bar (brand accent) */}
           <div className="border-b-4 border-accent" />
-
-          {/* Page content */}
           <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );

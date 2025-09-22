@@ -4,24 +4,23 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
 export default function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-
-  // Avoid SSR/CSR mismatch by rendering the label only after mount
   useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
 
-  const isDark = mounted && resolvedTheme === "dark";
-  const label = isDark ? "☀️ Light" : "🌙 Dark";
+  const current = theme === "system" ? systemTheme : theme;
+  const isDark = current === "dark";
 
   return (
     <button
       type="button"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="rounded-md border border-app bg-card px-3 py-1.5 text-sm text-ink hover:bg-bg-muted"
       aria-label="Toggle theme"
+      className="rounded-md border px-2 py-1 text-sm"
+      onClick={() => setTheme(isDark ? "light" : "dark")}
+      title={isDark ? "Switch to light" : "Switch to dark"}
     >
-      {/* suppress text hydration differences */}
-      <span suppressHydrationWarning>{mounted ? label : "🌙 Dark"}</span>
+      {isDark ? "🌙" : "☀️"}
     </button>
   );
 }

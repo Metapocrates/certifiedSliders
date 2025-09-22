@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
+import ThemeToggle from "@/components/ThemeToggle"; // <-- add
 
 export default async function Header() {
   const supabase = createSupabaseServer();
@@ -24,7 +25,7 @@ export default async function Header() {
 
   return (
     <header className="border-b bg-card">
-      <div className="container h-14 flex items-center justify-between">
+      <div className="container h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-4">
           {/* Brand only */}
           <Link href="/" className="font-semibold tracking-tight">
@@ -46,30 +47,32 @@ export default async function Header() {
           </nav>
         </div>
 
-        {/* Right-side auth/profile */}
-        {!user ? (
-          <nav className="flex items-center gap-3">
+        {/* Right-side auth/profile + theme */}
+        <nav className="flex items-center gap-3">
+          <ThemeToggle /> {/* <-- the toggle shows in prod now */}
+
+          {!user ? (
             <Link href="/login" className="btn">Sign in</Link>
-          </nav>
-        ) : (
-          <nav className="flex items-center gap-3">
-            <Link href="/submit-result" className="btn">Submit Result</Link>
-            <Link href="/me" className="btn">My Profile</Link>
+          ) : (
+            <>
+              <Link href="/submit-result" className="btn">Submit Result</Link>
+              <Link href="/me" className="btn">My Profile</Link>
 
-            <form action={signOut}>
-              <button type="submit" className="btn" title="Sign out">Sign out</button>
-            </form>
+              <form action={signOut}>
+                <button type="submit" className="btn" title="Sign out">Sign out</button>
+              </form>
 
-            <Link href="/me" className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {profile?.profile_pic_url ? (
-                <img src={profile.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
-              )}
-            </Link>
-          </nav>
-        )}
+              <Link href="/me" className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {profile?.profile_pic_url ? (
+                  <img src={profile.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
+                )}
+              </Link>
+            </>
+          )}
+        </nav>
       </div>
     </header>
   );
