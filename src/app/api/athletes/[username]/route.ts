@@ -9,7 +9,7 @@ export async function GET(_req: Request, { params }: { params: { username: strin
     const { data, error } = await supabase
         .from("mv_best_event")
         .select("athlete_id, full_name, school_name, school_state, class_year, gender, event, mark, mark_seconds")
-        .eq("athlete_id", params.username)
+        .eq("athlete_id", params.slug)
         .limit(50);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

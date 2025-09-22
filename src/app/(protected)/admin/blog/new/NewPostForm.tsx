@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createPost } from "@/app/admin/blog/actions";
+import { createPost } from "@/app/(protected)/admin/blog/actions";
+
 
 export default function NewPostForm() {
   const router = useRouter();

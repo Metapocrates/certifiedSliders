@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [who, setWho] = useState<{ id: string; email: string | null } | null>(null);
 
-  // show current session (if already logged in)
+  // Show current session (if already logged in)
   useEffect(() => {
     const supabase = supabaseBrowser();
     supabase.auth.getUser().then(({ data }) => {
@@ -25,6 +25,7 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy) return; // guard against double-fire
     setMsg("");
     setBusy(true);
 
@@ -41,12 +42,14 @@ export default function LoginPage() {
         setMsg("Signed in.");
       }
 
-      // refresh session indicator
+      // Refresh session indicator
       const { data } = await supabase.auth.getUser();
       if (data?.user) setWho({ id: data.user.id, email: data.user.email ?? null });
 
-      // optional: go straight to admin page
-      router.push("/admin/ratings");
+      // ✅ Redirect: honor ?next=/... if present and safe; else go home
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      const next = nextParam && /^\/(?!\/)/.test(nextParam) ? nextParam : "/";
+      window.location.href = next;
     } catch (err: any) {
       setMsg(err?.message || "Auth error");
     } finally {
@@ -55,12 +58,16 @@ export default function LoginPage() {
   }
 
   async function handleSignOut() {
+    if (busy) return;
     setBusy(true);
     try {
       const supabase = supabaseBrowser();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut().catch(() => {});
+      // Clear server cookies too so SSR sees signed-out state
+      await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
       setWho(null);
       setMsg("Signed out.");
+      router.refresh();
     } catch {
       setMsg("Sign-out error");
     } finally {
@@ -70,7 +77,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto max-w-md p-6">
-      <h1 className="text-2xl font-semibold mb-4">Log in</h1>
+      <h1 className="mb-4 text-2xl font-semibold">Log in</h1>
 
       {who ? (
         <div className="mb-4 rounded border p-3 text-sm">
@@ -93,6 +100,7 @@ export default function LoginPage() {
             type="button"
             onClick={() => setMode("signin")}
             className={`rounded px-3 py-1.5 border ${mode === "signin" ? "bg-muted text-app" : "bg-card"}`}
+            disabled={busy}
           >
             Sign in
           </button>
@@ -100,13 +108,14 @@ export default function LoginPage() {
             type="button"
             onClick={() => setMode("signup")}
             className={`rounded px-3 py-1.5 border ${mode === "signup" ? "bg-muted text-app" : "bg-card"}`}
+            disabled={busy}
           >
             Sign up
           </button>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
+          <label className="mb-1 block text-sm font-medium">Email</label>
           <input
             type="email"
             autoComplete="email"
@@ -115,11 +124,12 @@ export default function LoginPage() {
             className="w-full rounded border px-3 py-2"
             placeholder="you@example.com"
             required
+            disabled={busy}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
+          <label className="mb-1 block text-sm font-medium">Password</label>
           <input
             type="password"
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
@@ -128,6 +138,7 @@ export default function LoginPage() {
             className="w-full rounded border px-3 py-2"
             placeholder="min 6 characters"
             required
+            disabled={busy}
           />
           <p className="mt-1 text-xs text-muted">
             Enable Email/Password in Supabase → Auth → Providers.
@@ -142,15 +153,15 @@ export default function LoginPage() {
           {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
 
-<p className="mt-2 text-sm">
-  <a href="/reset" className="underline">Forgot password?</a>
-</p>
+        <p className="mt-2 text-sm">
+          <a href="/reset" className="underline">Forgot password?</a>
+        </p>
 
-        {msg ? <p className="text-sm mt-2">{msg}</p> : null}
+        {msg ? <p className="mt-2 text-sm">{msg}</p> : null}
       </form>
 
       <p className="mt-4 text-sm text-gray-600">
-        After signing in, go to <code>/admin/ratings</code> to set star tiers.
+        After signing in, you'll be redirected back if you came from a protected page.
       </p>
     </main>
   );

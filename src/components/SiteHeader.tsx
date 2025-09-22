@@ -1,74 +1,75 @@
-"use client";
-
+// Server component
 import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import ThemeToggle from "@/components/ThemeToggle";
+import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getSessionUser, isAdmin } from "@/lib/auth";
+import { signOut } from "@/app/actions/auth";
 
-export default function SiteHeader({
-  isAdmin = false,
-  signedIn = false,
-}: {
-  isAdmin?: boolean;
-  signedIn?: boolean;
-}) {
-  const pathname = usePathname();
-  const linkClass = (href: string) =>
-  pathname === href
-    ? "relative text-scarlet after:absolute after:-bottom-1 after:left-0 after:h-0.5 after:w-full after:bg-scarlet"
-    : "text-ink-muted hover:text-ink";
+export default async function Header() {
+  const supabase = createSupabaseServer();
+  const user = await getSessionUser();
+  const admin = user ? await isAdmin(user.id) : false;
 
+  let profile:
+    | { username: string | null; profile_pic_url: string | null }
+    | null = null;
+
+  if (user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username, profile_pic_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    profile = data ?? null;
+  }
 
   return (
-  <header className="sticky top-0 z-50 border-b border-app bg-muted backdrop-blur-md">
-
-
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        {/* Brand: logo links to home */}
-        <Link href="/" className="flex items-center gap-2" aria-label="Certified Sliders home">
-          <Image
-            src="/brand/logo.png"
-            alt="Certified Sliders"
-            width={140}
-            height={40}
-            priority
-            className="h-8 w-auto"
-          />
-          <span className="sr-only">Certified Sliders</span>
-        </Link>
-
-        {/* Primary nav + actions */}
-        <nav className="flex items-center gap-4 text-sm font-medium">
-          <Link href="/submit-result" className={linkClass("/submit-result")}>
-            Submit Result
+    <header className="border-b bg-card">
+      <div className="container h-14 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          {/* Brand only */}
+          <Link href="/" className="font-semibold tracking-tight">
+            Certified Sliders
           </Link>
-          <Link href="/rankings" className={linkClass("/rankings")}>
-            Rankings
-          </Link>
-          <Link href="/me" className={linkClass("/me")}>
-            Me
-          </Link>
-          <Link href="/blog" className={linkClass("/blog")}>
-  Blog
-</Link>
 
-          {isAdmin && (
-            <Link href="/admin" className={linkClass("/admin")}>
-              Admin
+          {/* Left-side nav (always visible) */}
+          <nav className="flex items-center gap-3">
+            <Link href="/blog" className="text-sm hover:underline">Blog</Link>
+            <Link href="/athletes" className="text-sm hover:underline">Find athletes</Link>
+
+            {admin && (
+              <>
+                <Link href="/admin/results" className="text-sm hover:underline">Results Queue</Link>
+                <Link href="/admin/blog/new" className="text-sm hover:underline">New Post</Link>
+                <Link href="/admin/home" className="text-sm hover:underline">Home Manager</Link>
+              </>
+            )}
+          </nav>
+        </div>
+
+        {/* Right-side auth/profile */}
+        {!user ? (
+          <nav className="flex items-center gap-3">
+            <Link href="/login" className="btn">Sign in</Link>
+          </nav>
+        ) : (
+          <nav className="flex items-center gap-3">
+            <Link href="/submit-result" className="btn">Submit Result</Link>
+            <Link href="/me" className="btn">My Profile</Link>
+
+            <form action={signOut}>
+              <button type="submit" className="btn" title="Sign out">Sign out</button>
+            </form>
+
+            <Link href="/me" className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {profile?.profile_pic_url ? (
+                <img src={profile.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
+              )}
             </Link>
-          )}
-          {signedIn ? (
-            <Link href="/signout" className="text-ink-muted hover:text-ink">
-              Sign out
-            </Link>
-          ) : (
-            <Link href="/signin" className="text-ink-muted hover:text-ink">
-              Sign in
-            </Link>
-          )}
-          {/* Theme toggle at the end */}
-          <ThemeToggle />
-        </nav>
+          </nav>
+        )}
       </div>
     </header>
   );

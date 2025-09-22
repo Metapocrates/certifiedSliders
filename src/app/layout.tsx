@@ -66,7 +66,8 @@ export default async function RootLayout({
         {/* Theming provider: toggles `dark` class on <html> */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {/* Header receives props; no client fetching */}
-          <SiteHeader isAdmin={isAdmin} signedIn={!!user} />
+          <SiteHeader />
+
 
           {/* Separation bar (brand accent) */}
           <div className="border-b-4 border-accent" />
