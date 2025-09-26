@@ -3,7 +3,11 @@ import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
-import ThemeToggle from "@/components/ThemeToggle"; // <-- add
+import ThemeToggle from "@/components/ThemeToggle";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 export default async function Header() {
   const supabase = createSupabaseServer();

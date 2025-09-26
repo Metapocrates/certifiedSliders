@@ -1,129 +1,87 @@
-import "server-only";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+// src/app/(protected)/admin/claims/page.tsx
+import { notFound } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getSessionUser, isAdmin } from "@/lib/auth";
+import AdminClaimPanel from "@/components/admin/AdminClaimPanel";
 
-export const revalidate = 0;
 
-type ClaimRow = {
-  id: string;
-  status: "pending" | "auto_verified" | "approved" | "rejected" | "withdrawn";
-  created_at: string;
-  requester_user_id: string;
-  evidence_url: string | null;
-  evidence_kind: string | null;
-  athlete: { id: string; slug: string | null; full_name: string | null } | null;
-};
-
-function isUUID(s: unknown): s is string {
-  return typeof s === "string" && /^[0-9a-fA-F-]{36}$/.test(s);
-}
-
-export default async function ClaimsPage() {
+export default async function AdminClaimsPage() {
   const supabase = createSupabaseServer();
+  const user = await getSessionUser();
+  if (!user) notFound();
+  const admin = await isAdmin(user.id);
+  if (!admin) notFound();
 
-  // Approve (Server Action; CSRF-safe; each action creates its own client)
-  async function approveClaim(formData: FormData) {
-    "use server";
-    const claimId = formData.get("claim_id");
-    const athleteSlug = (formData.get("athlete_slug") as string) || "";
-
-    if (!isUUID(claimId)) throw new Error("Invalid claim_id");
-
-    const sb = createSupabaseServer();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) redirect("/login");
-
-    const { error } = await sb.rpc("approve_claim", { p_claim_id: claimId });
-    if (error) throw new Error(error.message);
-
-    revalidatePath("/admin/claims");
-    if (athleteSlug) revalidatePath(`/athletes/${athleteSlug}`);
-  }
-
-  // Reject (Server Action; enforced by RLS; each action creates its own client)
-  async function rejectClaim(formData: FormData) {
-    "use server";
-    const claimId = formData.get("claim_id");
-    const athleteSlug = (formData.get("athlete_slug") as string) || "";
-
-    if (!isUUID(claimId)) throw new Error("Invalid claim_id");
-
-    const sb = createSupabaseServer();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) redirect("/login");
-
-    const { error } = await sb
-      .from("athlete_claims")
-      .update({ status: "rejected", decided_at: new Date().toISOString() })
-      .eq("id", claimId);
-    if (error) throw new Error(error.message);
-
-    revalidatePath("/admin/claims");
-    if (athleteSlug) revalidatePath(`/athletes/${athleteSlug}`);
-  }
-
-  const { data, error } = await supabase
+  // All pending claims with athlete + requester info
+  const { data: rows, error } = await supabase
     .from("athlete_claims")
     .select(
-      `id,status,created_at,requester_user_id,evidence_url,evidence_kind,
-       athlete:athletes(id,slug,full_name)`
+      "id, athlete_id, user_id, status, created_at, " +
+      "athletes!inner(slug, full_name), " +
+      "profiles!inner(username)"
     )
-    .in("status", ["pending", "auto_verified"])
-    .order("created_at", { ascending: false });
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
 
-  if (error) return <div className="p-6 text-red-600">Error: {error.message}</div>;
-  const rows = (data as ClaimRow[]) ?? [];
+  if (error) {
+    return (
+      <div className="container py-8">
+        <h1 className="text-xl font-semibold">Claims</h1>
+        <p className="mt-2 text-red-600">Error loading claims: {error.message}</p>
+      </div>
+    );
+  }
+
+  const claimsByAthlete = (rows ?? []).reduce((acc: any, r: any) => {
+    const key = r.athlete_id;
+    (acc[key] ??= {
+      athleteId: r.athlete_id,
+      slug: r.athletes?.slug,
+      fullName: r.athletes?.full_name,
+      claims: [],
+    }).claims.push({
+      id: r.id,
+      user_id: r.user_id,
+      status: r.status,
+      created_at: r.created_at,
+      requester: r.profiles?.username ?? r.user_id?.slice(0, 8),
+    });
+    return acc;
+  }, {} as Record<string, any>);
+
+  const groups = Object.values(claimsByAthlete) as Array<{
+    athleteId: string;
+    slug: string;
+    fullName: string;
+    claims: { id: string; user_id: string; status: string; created_at: string }[];
+  }>;
 
   return (
-    <main className="p-6 space-y-4">
-      <h1 className="text-2xl font-semibold">Claims</h1>
+    <div className="container py-8 space-y-6">
+      <h1 className="text-2xl font-bold">Pending Claims</h1>
 
-      {!rows.length ? (
-        <div className="text-sm opacity-70">No pending claims.</div>
+      {groups.length === 0 ? (
+        <p className="opacity-70">No pending claims.</p>
       ) : (
-        <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-4 rounded-xl border p-4">
-              <div className="space-y-1">
-                <div className="font-medium">
-                  {r.athlete?.full_name ?? "Unnamed"}{" "}
-                  {r.athlete?.slug && (
-                    <Link href={`/athletes/${r.athlete.slug}`} className="underline opacity-80">
-                      view
-                    </Link>
-                  )}
-                </div>
-                <div className="text-xs opacity-70">
-                  {new Date(r.created_at).toLocaleString()} • by {r.requester_user_id}
-                </div>
-                {r.evidence_url && (
-                  <div className="text-xs">
-                    evidence:{" "}
-                    <a className="underline" href={r.evidence_url} target="_blank" rel="noreferrer">
-                      {r.evidence_kind ?? "link"}
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-2">
-                <form action={approveClaim}>
-                  <input type="hidden" name="claim_id" value={r.id} />
-                  <input type="hidden" name="athlete_slug" value={r.athlete?.slug ?? ""} />
-                  <button className="rounded bg-emerald-600 px-3 py-1.5 text-white">Approve</button>
-                </form>
-                <form action={rejectClaim}>
-                  <input type="hidden" name="claim_id" value={r.id} />
-                  <input type="hidden" name="athlete_slug" value={r.athlete?.slug ?? ""} />
-                  <button className="rounded bg-red-600 px-3 py-1.5 text-white">Reject</button>
-                </form>
-              </div>
-            </li>
-          ))}
-        </ul>
+        groups.map((g) => (
+          <section key={g.athleteId} className="rounded-xl border p-4">
+            <div className="mb-2">
+              <a href={`/athletes/${g.slug}`} className="font-semibold hover:underline">
+                {g.fullName || g.slug}
+              </a>
+            </div>
+            <AdminClaimPanel
+              slug={g.slug}
+              claims={g.claims.map((c) => ({
+                id: c.id,
+                user_id: c.user_id,
+                status: c.status,
+                created_at: c.created_at,
+              }))}
+            />
+          </section>
+        ))
       )}
-    </main>
+    </div>
   );
 }

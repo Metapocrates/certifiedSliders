@@ -3,6 +3,10 @@ import { getSessionUser } from "@/lib/auth";
 import ClaimBanner from "@/components/ClaimBanner";
 import AdminOffersPanel from "./AdminOffersPanel";
 import InterestsSelfServe from "./InterestsSelfServe";
+import ClaimControls from "./ClaimControls";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 
 type Athlete = {
@@ -16,7 +20,7 @@ type Athlete = {
   is_claimed: boolean;
   claim_status: "unclaimed" | "pending" | "verified" | "locked";
   external_athleticnet_id: string | null;
-  claimed_user_id: string | null; // <-- new
+  claimed_user_id: string | null;
 };
 
 type InterestRow = { id: string; college_name: string; created_at: string };
@@ -66,6 +70,20 @@ export default async function AthletePage({ params }: { params: { slug: string }
     .select("id, college_name, offer_type, created_at")
     .eq("athlete_id", athlete.id)
     .order("created_at", { ascending: false });
+
+  // --- NEW: My pending claim (if signed in) ---
+  let myPendingClaimId: string | null = null;
+  if (user?.id) {
+    const { data: myClaim } = await supabase
+      .from("athlete_claims")
+      .select("id")
+      .eq("athlete_id", athlete.id)
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .maybeSingle();
+    myPendingClaimId = myClaim?.id ?? null;
+  }
+  // --- END NEW ---
 
   // Admin?
   const { data: isAdminRow } = await supabase
@@ -121,6 +139,19 @@ export default async function AthletePage({ params }: { params: { slug: string }
         claimStatus={athlete.claim_status}
         signedIn={!!user}
       />
+
+      {/* --- NEW: Claim controls section --- */}
+      <section className="rounded-xl border p-4">
+        <div className="text-sm font-medium mb-2">Claim this profile</div>
+        <ClaimControls
+          athleteId={athlete.id}
+          slug={params.slug}
+          myPendingClaimId={myPendingClaimId}
+          signedIn={!!user}
+          claimStatus={athlete.claim_status}
+        />
+      </section>
+      {/* --- END NEW --- */}
 
       <section className="rounded-xl border p-4 space-y-6">
         <div>

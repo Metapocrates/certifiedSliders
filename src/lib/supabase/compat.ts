@@ -1,14 +1,27 @@
-// No top-level server-only imports here.
+// src/lib/supabase/compat.ts
+import { cookies } from "next/headers";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
-// Client helper — safe in Client Components
-export function createSupabaseBrowser() {
-    const { createClientComponentClient } = require("@supabase/auth-helpers-nextjs");
-    return createClientComponentClient();
-}
-
-// Server helper — safe in Server Components / route handlers
 export function createSupabaseServer() {
-    const { cookies } = require("next/headers");
-    const { createServerComponentClient } = require("@supabase/auth-helpers-nextjs");
-    return createServerComponentClient({ cookies });
+    const cookieStore = cookies();
+
+    // IMPORTANT: read AND write cookies using next/headers
+    return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
+                },
+                set(name: string, value: string, options: CookieOptions) {
+                    // next/headers cookies() is mutable on the server request
+                    cookieStore.set({ name, value, ...options });
+                },
+                remove(name: string, options: CookieOptions) {
+                    cookieStore.set({ name, value: "", ...options, maxAge: 0 });
+                },
+            },
+        }
+    );
 }

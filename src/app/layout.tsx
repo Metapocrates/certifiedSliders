@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import SiteHeader from "@/components/SiteHeader";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Providers from "@/components/Providers";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://certifiedsliders.vercel.app"),

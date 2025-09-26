@@ -227,9 +227,24 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
     );
   }
 
-  const verifiedRows: ResultRow[] = (data ?? []).filter(
-    (r: any): r is ResultRow => !!r?.athlete_id && !!r?.event
-  );
+  // ---------- NEW: robust narrowing to ResultRow[] ----------
+  function isPlainObject(x: unknown): x is Record<string, unknown> {
+    return Object.prototype.toString.call(x) === "[object Object]";
+  }
+  function isResultRow(r: unknown): r is ResultRow {
+    if (!isPlainObject(r)) return false;
+    return (
+      typeof r.athlete_id === "string" &&
+      typeof r.event === "string" &&
+      (typeof r.mark_seconds_adj === "number" || r.mark_seconds_adj === null) &&
+      (typeof r.meet_name === "string" || r.meet_name === null) &&
+      (typeof r.meet_date === "string" || r.meet_date === null) &&
+      (typeof r.status === "string" || r.status === null)
+    );
+  }
+  const dataArray: unknown[] = Array.isArray(data) ? (data as unknown[]) : [];
+  const verifiedRows: ResultRow[] = dataArray.filter(isResultRow);
+  // ---------- END NEW ----------
 
   // 3) Reduce to best per athlete/event
   const bestRows = bestPerAthleteEvent(verifiedRows);
