@@ -1,15 +1,19 @@
+// src/app/layout.tsx
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import SiteHeader from "@/components/SiteHeader";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Providers from "@/components/Providers";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://certifiedsliders.vercel.app"),
-  title: { default: "Certified Sliders", template: "%s – Certified Sliders" },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? "https://certifiedsliders.vercel.app"),
+  title: {
+    default: "Certified Sliders",
+    template: "%s – Certified Sliders",
+  },
   description: "HS Track & Field rankings and verified results.",
   icons: {
     icon: [
@@ -33,6 +37,11 @@ export const metadata: Metadata = {
     description: "HS Track & Field rankings and verified results.",
     images: ["/og.png"],
   },
+  // ⛔️ remove themeColor from here
+};
+
+// ✅ NEW: move themeColor to viewport export
+export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#faf0e6" },
     { media: "(prefers-color-scheme: dark)",  color: "#1c1c1c" },

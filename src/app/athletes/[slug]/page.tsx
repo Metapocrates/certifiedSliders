@@ -27,8 +27,19 @@ type InterestRow = { id: string; college_name: string; created_at: string };
 type OfferRow = { id: string; college_name: string; offer_type: "interest" | "offer"; created_at: string };
 
 export default async function AthletePage({ params }: { params: { slug: string } }) {
-  const supabase = createSupabaseServer();
-  const user = await getSessionUser();
+ let supabase, user;
+try {
+  supabase = createSupabaseServer();
+  user = await getSessionUser();
+} catch (e: any) {
+  return (
+    <div className="container py-8">
+      <h1 className="text-xl font-semibold">Athlete</h1>
+      <p className="mt-2 text-red-600">Failed to initialize session. {e?.message ?? ""}</p>
+    </div>
+  );
+}
+
 
   // Athlete
   const { data, error } = await supabase
