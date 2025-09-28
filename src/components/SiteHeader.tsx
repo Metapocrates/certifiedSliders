@@ -1,4 +1,6 @@
+// src/components/Header.tsx
 // Server component
+
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
@@ -7,7 +9,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
 
 export default async function Header() {
   const supabase = createSupabaseServer();
@@ -53,13 +54,15 @@ export default async function Header() {
 
         {/* Right-side auth/profile + theme */}
         <nav className="flex items-center gap-3">
-          <ThemeToggle /> {/* <-- the toggle shows in prod now */}
+          <ThemeToggle /> {/* toggle shows in prod */}
 
           {!user ? (
             <Link href="/login" className="btn">Sign in</Link>
           ) : (
             <>
+              {/* ✅ New: Submit Result (only when signed in) */}
               <Link href="/submit-result" className="btn">Submit Result</Link>
+
               <Link href="/me" className="btn">My Profile</Link>
 
               <form action={signOut}>
