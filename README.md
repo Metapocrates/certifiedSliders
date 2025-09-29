@@ -35,3 +35,42 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # certfiedSliders
+
+## Submit Result Flow
+
+Athlete workflow for adding a mark:
+
+1. **Paste URL**  
+   Athlete goes to `/submit-result` and pastes a link from Athletic.net or MileSplit.
+
+2. **Ingest Route**  
+   The client calls `POST /api/proofs/ingest` with `{ url }`.  
+   - This checks whitelist (Athletic.net, MileSplit).  
+   - Calls `parseBySource` to scrape/parse.  
+   - Calls `normalizeParsed` to normalize fields.  
+   - Returns `{ ok, source, parsed, normalized }`.
+
+3. **Preview & Confirm**  
+   The parsed result is shown to the athlete.  
+   - If parsing fails, fields can be edited manually.  
+   - Athlete confirms submission.
+
+4. **Server Action: confirmSubmitAction**  
+   - Validates fields with Zod.  
+   - Calls Supabase RPC `adjust_time` (if time-based).  
+   - Inserts row into `results` table with `status = pending`.
+
+5. **Admin Verification**  
+   Admin sees pending rows in `/admin/results`.  
+   - Approves or rejects.  
+   - On approve, status → `verified`.  
+   - Materialized view `mv_best_event` refresh picks up verified PRs.
+
+6. **Rankings**  
+   Public `rankings` page queries `mv_best_event` to show verified best marks.
+
+### Notes
+- `results.status = pending` ensures no unverified result shows publicly.
+- `adjust_time` handles FAT vs. hand-time adjustments (fallback is +0.24s).
+- Parser modules live under `lib/proofs/`.
+- You can bypass whitelist during dev by setting `PROOF_BYPASS=1`.
