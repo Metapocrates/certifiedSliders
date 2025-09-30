@@ -41,6 +41,8 @@ export default async function Header() {
           <nav className="flex items-center gap-3">
             <Link href="/blog" className="text-sm hover:underline">Blog</Link>
             <Link href="/athletes" className="text-sm hover:underline">Find athletes</Link>
+            {/* ✅ New: public Rankings link */}
+            <Link href="/rankings" className="text-sm hover:underline">Rankings</Link>
 
             {admin && (
               <>
@@ -60,7 +62,7 @@ export default async function Header() {
             <Link href="/login" className="btn">Sign in</Link>
           ) : (
             <>
-              {/* ✅ New: Submit Result (only when signed in) */}
+              {/* Submit Result (only when signed in) */}
               <Link href="/submit-result" className="btn">Submit Result</Link>
 
               <Link href="/me" className="btn">My Profile</Link>
