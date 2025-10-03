@@ -1,6 +1,7 @@
 // src/app/(public)/rankings/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Link from "next/link";
+import SafeLink from "@/components/SafeLink";
 import type { ReactNode } from "react";
 
 export const revalidate = 0; // always fresh
@@ -209,8 +210,6 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
     .limit(MAX_FETCH);
 
   if (event) base = base.eq("event", event);
-
-  // DB hint order (final sort is in-memory)
   base = base.order("mark_seconds_adj", { ascending: true, nullsFirst: false });
 
   const { data, error } = await base;
@@ -227,7 +226,6 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
     );
   }
 
-  // ---------- NEW: robust narrowing to ResultRow[] ----------
   function isPlainObject(x: unknown): x is Record<string, unknown> {
     return Object.prototype.toString.call(x) === "[object Object]";
   }
@@ -244,7 +242,6 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
   }
   const dataArray: unknown[] = Array.isArray(data) ? (data as unknown[]) : [];
   const verifiedRows: ResultRow[] = dataArray.filter(isResultRow);
-  // ---------- END NEW ----------
 
   // 3) Reduce to best per athlete/event
   const bestRows = bestPerAthleteEvent(verifiedRows);
@@ -300,7 +297,6 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
   const startDisplay = total === 0 ? 0 : from + 1;
   const endDisplay = to;
 
-  // UI helpers
   const CLASS_BUCKETS_UI: { value: SearchParams["class_bucket"]; label: string }[] = [
     { value: "FR", label: "Freshman" },
     { value: "SO", label: "Sophomore" },
@@ -404,17 +400,14 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
           </select>
         </label>
 
-        {/* Reset to first page when applying */}
         <input type="hidden" name="page" value="1" />
 
-        {/* Apply */}
         <div className="flex items-end">
           <button type="submit" className="w-full rounded-xl border bg-black text-white px-4 py-2 hover:opacity-90">
             Apply
           </button>
         </div>
 
-        {/* Summary */}
         <div className="flex items-end lg:col-span-7">
           <Subtle>{total === 0 ? "No results" : `Showing ${startDisplay}–${endDisplay} of ${total}`}</Subtle>
         </div>
@@ -451,13 +444,9 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
                   <tr key={`${r.athlete_id}-${r.event}-${i}`} className="border-t">
                     <td className="px-3 py-2">{idx}</td>
                     <td className="px-3 py-2">
-                      {profileHref ? (
-                        <Link href={profileHref} className="underline hover:opacity-80">
-                          {r.full_name ?? username ?? "Unknown"}
-                        </Link>
-                      ) : (
-                        r.full_name ?? "Unknown"
-                      )}
+                      <SafeLink href={profileHref} className="underline hover:opacity-80" fallback={<span>{r.full_name ?? username ?? "Unknown"}</span>}>
+                        {r.full_name ?? username ?? "Unknown"}
+                      </SafeLink>
                     </td>
                     <td className="px-3 py-2">
                       {r.school_name ? (
@@ -476,7 +465,7 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
                     </td>
                     <td className="px-3 py-2">{formatMeet(r.meet_name, r.meet_date)}</td>
                     <td className="px-3 py-2">
-                      {historyHref ? <Link href={historyHref} className="underline hover:opacity-80">View</Link> : <Subtle>—</Subtle>}
+                      <SafeLink href={historyHref} className="underline hover:opacity-80">View</SafeLink>
                     </td>
                   </tr>
                 );

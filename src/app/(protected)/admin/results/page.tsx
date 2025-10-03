@@ -1,5 +1,6 @@
 // src/app/(protected)/admin/results/page.tsx
 import Link from "next/link";
+import SubmitButton from "./SubmitButton";
 import {
   getPendingResultsAction,
   approveResultAction,
@@ -9,13 +10,25 @@ import {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function Toast({ kind, msg }: { kind: "error" | "success"; msg: string }) {
+  const cls =
+    kind === "success"
+      ? "border-green-300 bg-green-50 text-green-800"
+      : "border-red-300 bg-red-50 text-red-800";
+  return (
+    <div className={`rounded-lg border px-3 py-2 text-sm ${cls}`}>
+      {msg}
+    </div>
+  );
+}
+
 export default async function AdminResultsPage() {
   const res = await getPendingResultsAction();
   if (!res.ok) {
     return (
       <div className="container py-8">
         <h1 className="text-2xl font-semibold mb-4">Results Queue</h1>
-        <p className="text-red-600">{res.error}</p>
+        <Toast kind="error" msg={res.error ?? "Unauthorized"} />
       </div>
     );
   }
@@ -75,24 +88,22 @@ export default async function AdminResultsPage() {
                     <td className="px-3 py-2">{r.meet_name}</td>
                     <td className="px-3 py-2">{dateStr}</td>
                     <td className="px-3 py-2">
-                      <Link
-                        href={r.proof_url}
-                        target="_blank"
-                        className="text-blue-600 hover:underline"
-                      >
-                        View
-                      </Link>
-                    </td>
+  {r.proof_url ? (
+    <Link href={r.proof_url} target="_blank" className="text-blue-600 hover:underline">
+      View
+    </Link>
+  ) : (
+    <span className="text-gray-400">—</span>
+  )}
+</td>
+
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
                         <form action={approveResultAction}>
                           <input type="hidden" name="id" value={r.id} />
-                          <button
-                            className="rounded-md bg-green-600 px-3 py-1.5 text-white text-xs hover:opacity-90"
-                            type="submit"
-                          >
+                          <SubmitButton className="rounded-md bg-green-600 px-3 py-1.5 text-white text-xs">
                             Approve
-                          </button>
+                          </SubmitButton>
                         </form>
                         <details className="relative">
                           <summary className="list-none">
@@ -109,12 +120,9 @@ export default async function AdminResultsPage() {
                                 className="w-full rounded-md border px-2 py-1 text-xs"
                                 placeholder="Optional reason…"
                               />
-                              <button
-                                className="w-full rounded-md bg-red-600 px-3 py-1.5 text-white text-xs hover:opacity-90"
-                                type="submit"
-                              >
+                              <SubmitButton className="w-full rounded-md bg-red-600 px-3 py-1.5 text-white text-xs">
                                 Confirm Reject
-                              </button>
+                              </SubmitButton>
                             </form>
                           </div>
                         </details>
