@@ -160,9 +160,10 @@ export default function LoginPage() {
         {msg ? <p className="mt-2 text-sm">{msg}</p> : null}
       </form>
 
-      <p className="mt-4 text-sm text-gray-600">
-        After signing in, you'll be redirected back if you came from a protected page.
-      </p>
+    <p className="mt-4 text-sm text-gray-600">
+  After signing in, you&apos;ll be redirected back if you came from a protected page.
+</p>
+
     </main>
   );
 }
