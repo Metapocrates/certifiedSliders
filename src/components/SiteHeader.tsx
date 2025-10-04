@@ -6,6 +6,8 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 import ThemeToggle from "@/components/ThemeToggle";
+import Image from "next/image";
+
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -73,11 +75,18 @@ export default async function Header() {
 
               <Link href="/me" className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                {profile?.profile_pic_url ? (
-                  <img src={profile.profile_pic_url} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
-                )}
+               {profile?.profile_pic_url ? (
+  <Image
+    src={profile.profile_pic_url}
+    alt="Avatar"
+    fill
+    sizes="32px"
+    className="object-cover"
+  />
+) : (
+  <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
+)}
+
               </Link>
             </>
           )}
