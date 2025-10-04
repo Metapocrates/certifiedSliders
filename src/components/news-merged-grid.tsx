@@ -1,15 +1,19 @@
 // src/components/news-merged-grid.tsx
-import 'server-only';
-import { getMergedNews } from '@/lib/rss';
+import "server-only";
+import { getMergedNews } from "@/lib/rss";
+import Image from "next/image";
 
 export const revalidate = 600;
 
 function formatDate(d?: string) {
-  if (!d) return '';
+  if (!d) return "";
   try {
-    return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return new Date(d).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -18,13 +22,15 @@ export default async function NewsMergedGrid() {
   const items = ((await getMergedNews(8)) ?? []).slice(0, 8);
 
   if (!items.length) {
-    return <div className="text-sm subtle">Couldn’t load the news feed right now.</div>;
+    return (
+      <div className="text-sm subtle">Couldn’t load the news feed right now.</div>
+    );
   }
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-      {items.map((item, idx) => {
-        const hasImage = Boolean(item.image);
+      {items.map((item: any, idx: number) => {
+        const src = typeof item.image === "string" && item.image.trim() ? item.image : null;
 
         return (
           <a
@@ -39,15 +45,17 @@ export default async function NewsMergedGrid() {
               hover:shadow-sm transition
             "
           >
-            {/* Smaller media area: fixed height for denser cards */}
+            {/* Media area: fixed height for denser cards */}
             <div className="relative w-full h-28 sm:h-32 overflow-hidden">
-              {hasImage ? (
-                <img
-                  src={item.image!}
+              {src ? (
+                <Image
+                  src={src}
                   alt=""
-                  className="absolute inset-0 h-full w-full object-cover"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover"
+                  // Avoid domain config for now; flip off later when you whitelist hosts
+                  unoptimized
                 />
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
