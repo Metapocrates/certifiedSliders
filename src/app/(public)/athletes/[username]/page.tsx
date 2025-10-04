@@ -4,6 +4,8 @@ import SafeLink from "@/components/SafeLink";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+import Image from "next/image";
+
 
 type Params = { params: { username: string } };
 
@@ -79,10 +81,19 @@ export default async function AthleteProfilePage({ params }: Params) {
           <div className="h-14 w-14 overflow-hidden rounded-full bg-gray-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {profile.profile_pic_url ? (
-              <img src={profile.profile_pic_url} alt="Avatar" className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full w-full place-items-center">🙂</div>
-            )}
+  <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gray-100">
+    <Image
+      src={profile.profile_pic_url}
+      alt="Avatar"
+      fill
+      sizes="56px"
+      className="object-cover"
+    />
+  </div>
+) : (
+  <div className="grid h-14 w-14 place-items-center rounded-full bg-gray-100">🙂</div>
+)}
+
           </div>
           <div>
             <h1 className="text-xl font-semibold">{profile.full_name ?? profile.username}</h1>
