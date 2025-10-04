@@ -1,6 +1,8 @@
 // Server component
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import Image from "next/image";
+
 
 export default async function FeaturedProfileCard() {
   const supabase = createSupabaseServer();
@@ -55,14 +57,17 @@ export default async function FeaturedProfileCard() {
 
   return (
     <div className="p-4 rounded-xl border flex gap-4 items-center">
-      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 shrink-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {profile.profile_pic_url ? (
-          <img src={profile.profile_pic_url} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
-        )}
-      </div>
+      <div className="relative h-24 w-24 overflow-hidden rounded-full bg-gray-100">
+  <Image
+    src={profile.profile_pic_url ?? "/avatar-placeholder.png"} // keep your existing src logic
+    alt={profile.display_name ?? "Avatar"}
+    fill
+    sizes="96px"
+    className="object-cover"
+    unoptimized
+  />
+</div>
+
       <div className="flex-1 min-w-0">
         <div className="text-sm text-muted">Featured Profile</div>
         <div className="text-lg font-semibold truncate">{profile.display_name}</div>
