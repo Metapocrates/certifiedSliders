@@ -27,7 +27,7 @@ export default function AuthListener() {
       setTimeout(() => { syncingRef.current = false; }, 500);
     }
   }
-
+// eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
       async (event) => {
