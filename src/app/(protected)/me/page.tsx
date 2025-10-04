@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser } from "@/lib/auth";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -55,11 +56,22 @@ export default async function MePage() {
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 overflow-hidden rounded-full bg-gray-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            {profile?.profile_pic_url ? (
-              <img src={profile.profile_pic_url} alt="Avatar" className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full w-full place-items-center">🙂</div>
-            )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+{profile?.profile_pic_url ? (
+  <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gray-100">
+    <Image
+      src={profile.profile_pic_url}
+      alt="Avatar"
+      fill
+      sizes="56px"
+      className="object-cover"
+    />
+  </div>
+) : (
+  <div className="h-14 w-14 rounded-full bg-gray-100 grid place-items-center">🙂</div>
+)}
+
+
           </div>
           <div>
             <h1 className="text-xl font-semibold">
