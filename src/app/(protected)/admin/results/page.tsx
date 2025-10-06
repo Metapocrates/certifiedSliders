@@ -6,6 +6,7 @@ import {
   approveResultAction,
   rejectResultAction,
 } from "./actions";
+import SafeLink from "@/components/SafeLink";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -87,15 +88,17 @@ export default async function AdminResultsPage() {
                     <td className="px-3 py-2">{r.wind ?? "—"}</td>
                     <td className="px-3 py-2">{r.meet_name}</td>
                     <td className="px-3 py-2">{dateStr}</td>
-                    <td className="px-3 py-2">
-  {r.proof_url ? (
-    <Link href={r.proof_url} target="_blank" className="text-blue-600 hover:underline">
-      View
-    </Link>
-  ) : (
-    <span className="text-gray-400">—</span>
-  )}
+                   <td className="px-3 py-2">
+  <SafeLink
+    href={r.proof_url}
+    target="_blank"
+    className="text-blue-600 hover:underline"
+    fallback="—"
+  >
+    View
+  </SafeLink>
 </td>
+
 
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
