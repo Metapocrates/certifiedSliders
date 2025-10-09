@@ -11,6 +11,24 @@ import SafeLink from "@/components/SafeLink";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function proofBadge(url?: string | null) {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    let label = host;
+    if (host.includes("athletic.net")) label = "athletic.net";
+    else if (host.includes("milesplit")) label = "milesplit";
+
+    return (
+      <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] leading-5 text-neutral-600 border-neutral-300/70 dark:border-neutral-700/70">
+        {label}
+      </span>
+    );
+  } catch {
+    return null;
+  }
+}
+
 function Toast({ kind, msg }: { kind: "error" | "success"; msg: string }) {
   const cls =
     kind === "success"
@@ -88,16 +106,17 @@ export default async function AdminResultsPage() {
                     <td className="px-3 py-2">{r.wind ?? "—"}</td>
                     <td className="px-3 py-2">{r.meet_name}</td>
                     <td className="px-3 py-2">{dateStr}</td>
-                   <td className="px-3 py-2">
-  <SafeLink
-    href={r.proof_url}
-    target="_blank"
-    className="text-blue-600 hover:underline"
-    fallback="—"
-  >
-    View
-  </SafeLink>
-</td>
+                    <td className="px-3 py-2">
+                      <SafeLink
+                        href={r.proof_url}
+                        target="_blank"
+                        className="text-blue-600 hover:underline"
+                        fallback="—"
+                      >
+                        View
+                      </SafeLink>
+                    </td>
+
 
 
                     <td className="px-3 py-2">
