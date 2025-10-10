@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { confirmSubmitAction, type ConfirmInput } from "./actions";
+import ParseFromUrl from "./ParseFromUrl"; // ✅ Step 2: use the parser UI
 
 type ParsedProof = {
   event: string;
@@ -35,10 +36,11 @@ type IngestResponse = {
 
 export default function SubmitResultURLPage() {
   const router = useRouter();
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
+  // Proof URL to submit (filled by parser and still editable)
+  const [url, setUrl] = useState("");
+
+  const [err, setErr] = useState<string | null>(null);
   const [source, setSource] = useState<"athleticnet" | "milesplit" | "other">("athleticnet");
   const [editable, setEditable] = useState(false);
 
@@ -53,56 +55,39 @@ export default function SubmitResultURLPage() {
   const [meetDate, setMeetDate] = useState("");
   const [confidence, setConfidence] = useState<number | undefined>(undefined);
 
-  async function handleParse(e: React.FormEvent) {
-    e.preventDefault();
+  // ✅ Step 2: when ParseFromUrl succeeds, prefill our local state
+  function handleParsed(data?: any) {
     setErr(null);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/proofs/ingest", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
 
-      if (res.status === 401) {
-        setErr("You must be signed in to submit results.");
-        setLoading(false);
-        return;
-      }
-
-      const data: IngestResponse = await res.json();
-      if (!data.ok || !data.normalized) {
-        setErr(data.error || "Could not parse this URL. You can still edit and submit manually.");
-        setEditable(true);
-      }
-
-      if (data.source) setSource(data.source);
-      const p = data.normalized ?? data.parsed;
-      if (p) {
-        setEvent(p.event ?? "");
-        setMarkText(p.markText ?? "");
-        setMarkSeconds(p.markSeconds ?? null);
-        setTiming(p.timing ?? null);
-        setWind(p.wind ?? null);
-        setMeetName(p.meetName ?? "");
-        setMeetDate(p.meetDate ?? "");
-        setConfidence(p.confidence);
-      } else {
-        setEvent("");
-        setMarkText("");
-        setMarkSeconds(null);
-        setTiming(null);
-        setWind(null);
-        setMeetName("");
-        setMeetDate("");
-        setConfidence(undefined);
-      }
-    } catch (e: any) {
-      setErr(e?.message || "Unexpected error parsing URL.");
-      setEditable(true);
-    } finally {
-      setLoading(false);
+    // If the API echoes a source or proof url, capture them
+    if (typeof data?.proof_url === "string") setUrl(data.proof_url);
+    if (typeof data?.source === "string" && (["athleticnet","milesplit","other"] as const).includes(data.source)) {
+      setSource(data.source);
     }
+
+    setEvent(data?.event ?? "");
+    setMarkText(data?.mark ?? data?.markText ?? "");
+    setMarkSeconds(
+      typeof data?.mark_seconds_adj === "number"
+        ? data.mark_seconds_adj
+        : typeof data?.markSeconds === "number"
+        ? data.markSeconds
+        : null
+    );
+    setTiming(
+      data?.timing === "FAT" || data?.timing === "Hand" ? data.timing : null
+    );
+    setWind(
+      typeof data?.wind === "number" ? data.wind : null
+    );
+    setMeetName(data?.meet_name ?? data?.meetName ?? "");
+    setMeetDate(data?.meet_date ?? data?.meetDate ?? "");
+    setConfidence(
+      typeof data?.confidence === "number" ? data.confidence : undefined
+    );
+
+    // Let user tweak after parsing
+    setEditable(true);
   }
 
   async function handleConfirm() {
@@ -137,27 +122,16 @@ export default function SubmitResultURLPage() {
         Paste an Athletic.net or MileSplit result link. We’ll parse the details; you can edit before confirming.
       </p>
 
-      <form onSubmit={handleParse} className="flex gap-3 mb-6">
-        <input
-          type="url"
-          className="flex-1 rounded-lg border px-3 py-2"
-          placeholder="https://www.athletic.net/TrackAndField/meet/..."
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          required
-        />
-        <button type="submit" className="btn" disabled={loading}>
-          {loading ? "Parsing…" : "Parse"}
-        </button>
-      </form>
+      {/* ✅ Step 2: modern parser UI (calls /api/proofs/ingest) */}
+      <ParseFromUrl onParsed={handleParsed} />
 
       {err && (
-        <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
           {err}
         </div>
       )}
 
-      <div className="rounded-xl border p-4 space-y-4">
+      <div className="mt-4 rounded-xl border p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Preview</h2>
           <div className="flex items-center gap-3">
@@ -178,6 +152,19 @@ export default function SubmitResultURLPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Proof URL stays visible & editable so the user can confirm it */}
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium mb-1">Proof URL</label>
+            <input
+              type="url"
+              className="w-full rounded-lg border px-3 py-2"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={!editable}
+              placeholder="https://www.athletic.net/TrackAndField/meet/..."
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">Source</label>
             <select

@@ -1,49 +1,53 @@
+// src/app/(protected)/settings/page.tsx
+import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getSessionUser } from "@/lib/auth";
+import EditProfileForm from "./EditProfileForm";
+import Link from "next/link";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { supabaseServer } from "@/lib/supabase/server";
-import SettingsForm from "./SettingsForm";
-
 export default async function SettingsPage() {
-  const supabase = supabaseServer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const supabase = createSupabaseServer();
+  const user = await getSessionUser();
 
-  // (protected)/layout.tsx already redirects if no session, so session is present.
-  const userId = session!.user.id;
+  if (!user) {
+    return (
+      <div className="container py-10">
+        <h1 className="text-2xl font-semibold mb-3">Profile Settings</h1>
+        <p className="text-sm text-gray-600 mb-4">
+          You must be signed in to edit your profile.
+        </p>
+        <Link href="/login?next=/settings" className="btn">Sign in</Link>
+      </div>
+    );
+  }
 
-  const { data: profile, error } = await supabase
+  const { data: profile } = await supabase
     .from("profiles")
-    .select(
-      "id, username, full_name, class_year, gender, school_name, school_state, bio, profile_pic_url"
-    )
-    .eq("id", userId)
+    .select("username, full_name, class_year, school_name, school_state")
+    .eq("id", user.id)
     .maybeSingle();
 
-  // Provide safe defaults even if profile row doesn't exist yet
-  const initialProfile = {
-    id: profile?.id ?? userId,
+  const initial = {
     username: profile?.username ?? "",
     full_name: profile?.full_name ?? "",
     class_year: profile?.class_year ?? null,
-    gender: profile?.gender ?? "",
     school_name: profile?.school_name ?? "",
     school_state: profile?.school_state ?? "",
-    bio: profile?.bio ?? "",
-    profile_pic_url: profile?.profile_pic_url ?? "",
   };
 
   return (
-    <main className="mx-auto max-w-3xl p-6 space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        {error && (
-          <p className="mt-2 text-sm text-red-600">Error: {error.message}</p>
-        )}
-      </header>
+    <div className="container max-w-2xl py-8">
+      <h1 className="text-2xl font-semibold mb-3">Profile Settings</h1>
+      <p className="text-sm text-gray-600 mb-6">
+        Set your public username and basic details. Your public page will be at{" "}
+        <code>/athletes/&lt;username&gt;</code>.
+      </p>
 
-      <SettingsForm userId={userId} initialProfile={initialProfile} />
-    </main>
+      <div className="rounded-xl border p-4">
+        <EditProfileForm initial={initial} />
+      </div>
+    </div>
   );
 }

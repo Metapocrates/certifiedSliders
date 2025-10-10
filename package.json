@@ -10,7 +10,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint:routes": "node scripts/check-routes.js"
+    "lint:routes": "node scripts/check-routes.js",
+    "smoke": "scripts/smoke.sh"
   },
   "dependencies": {
     "@sanity/client": "7.11.2",
@@ -26,6 +27,7 @@
     "react-dom": "18.3.1",
     "rss-parser": "3.13.0",
     "sanitize-html": "2.17.0",
+    "sonner": "2.0.7",
     "zod": "^4.1.0"
   },
   "devDependencies": {

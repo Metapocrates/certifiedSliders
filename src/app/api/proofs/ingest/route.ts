@@ -1,134 +1,160 @@
 // src/app/api/proofs/ingest/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServer } from "@/lib/supabase/compat";
-import { getSessionUser } from "@/lib/auth";
+import { NextResponse } from "next/server";
 
-let isAllowedUrl: ((url: string) => boolean) | null = null;
-let parseBySource:
-    | ((url: string) => Promise<{ source: "athleticnet" | "milesplit" | "other"; parsed: any }>)
-    | null = null;
-let normalizeParsed: ((input: any) => any) | null = null;
+// If you have server auth, uncomment and use it
+// import { getSessionUser } from "@/lib/auth";
+// import { createSupabaseServer } from "@/lib/supabase/compat";
 
-try {
-    // Adjust these import paths if your files live elsewhere
-    // @ts-ignore
-    isAllowedUrl = (await import("@/lib/proofs/whitelist")).isAllowedUrl;
-    // @ts-ignore
-    parseBySource = (await import("@/lib/proofs/parse")).parseBySource;
-    // @ts-ignore
-    normalizeParsed = (await import("@/lib/proofs/normalize")).normalizeParsed;
-} catch {
-    // Intentionally swallow; we’ll surface a helpful error below.
-}
+type In = { url?: string };
+type Normalized = {
+    source: "athleticnet" | "milesplit" | "other";
+    proof_url: string;
+    event?: string;
+    markText?: string;
+    markSeconds?: number | null;
+    timing?: "FAT" | "Hand" | null;
+    wind?: number | null;
+    meetName?: string;
+    meetDate?: string; // YYYY-MM-DD
+    confidence?: number;
+};
 
-export const runtime = "nodejs";
-
-function json(data: any, init?: ResponseInit) {
-    return NextResponse.json(data, init);
-}
-
-function detectSource(u: URL): "athleticnet" | "milesplit" | "other" {
-    const host = u.hostname.toLowerCase();
-    if (host.includes("athletic.net")) return "athleticnet";
-    if (host.includes("milesplit")) return "milesplit";
+function detectSource(url: string): Normalized["source"] {
+    const u = url.toLowerCase();
+    if (u.includes("athletic.net")) return "athleticnet";
+    if (u.includes("milesplit")) return "milesplit";
     return "other";
 }
 
-export async function POST(req: NextRequest) {
+// ---- Put your real parsers here ----
+// For now, this demo tries a debug endpoint if you already have one.
+// Replace this with direct parser calls if available.
+async function tryParseViaDebug(url: string): Promise<any | null> {
     try {
-        const supabase = createSupabaseServer();
-        const user = await getSessionUser();
-        if (!user) return json({ ok: false, error: "Unauthorized" }, { status: 401 });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/proofs/parse-debug`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url }),
+            // In dev, absolute URL may be missing; if so, bail gracefully.
+            cache: "no-store",
+        });
+        if (!res.ok) return null;
+        return await res.json().catch(() => null);
+    } catch {
+        return null;
+    }
+}
 
-        const body = await req.json().catch(() => ({}));
-        const url: string | undefined = body?.url;
-        if (!url) return json({ ok: false, error: "Missing 'url' in body" }, { status: 400 });
+function normalizePayload(url: string, raw: any): Normalized {
+    // Accept a variety of possible keys from older parsers
+    const event = raw?.event ?? raw?.Event ?? undefined;
+    const markText = raw?.markText ?? raw?.mark ?? raw?.best_mark_text ?? undefined;
+    const markSeconds =
+        typeof raw?.markSeconds === "number"
+            ? raw.markSeconds
+            : typeof raw?.mark_seconds_adj === "number"
+                ? raw.mark_seconds_adj
+                : typeof raw?.best_seconds_adj === "number"
+                    ? raw.best_seconds_adj
+                    : null;
+    const timing =
+        raw?.timing === "FAT" || raw?.timing === "Hand" ? raw.timing : null;
+    const wind =
+        typeof raw?.wind === "number"
+            ? raw.wind
+            : typeof raw?.wind_mps === "number"
+                ? raw.wind_mps
+                : null;
+    const meetName = raw?.meetName ?? raw?.meet_name ?? undefined;
+    const meetDate = raw?.meetDate ?? raw?.meet_date ?? undefined;
+    const confidence =
+        typeof raw?.confidence === "number" ? raw.confidence : undefined;
 
-        let parsedUrl: URL;
+    return {
+        source: detectSource(url),
+        proof_url: url,
+        event,
+        markText,
+        markSeconds,
+        timing,
+        wind,
+        meetName,
+        meetDate,
+        confidence,
+    };
+}
+
+export async function POST(req: Request) {
+    try {
+        // Optional auth guard (uncomment to enforce)
+        // const user = await getSessionUser();
+        // if (!user) {
+        //   return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+        // }
+
+        const body = (await req.json().catch(() => ({}))) as In;
+        const url = typeof body.url === "string" ? body.url.trim() : "";
+        if (!url) {
+            return NextResponse.json({ ok: false, error: "Missing URL." }, { status: 400 });
+        }
         try {
-            parsedUrl = new URL(url);
+            new URL(url);
         } catch {
-            return json({ ok: false, error: "Invalid URL" }, { status: 400 });
+            return NextResponse.json({ ok: false, error: "Invalid URL." }, { status: 400 });
         }
 
-        const PROOF_BYPASS = process.env.PROOF_BYPASS === "1";
+        // 1) Try your real parser(s) here first, e.g.:
+        // let raw = await parseAthleticNet(url) or parseMilesplit(url) ...
+        // 2) Fallback to parse-debug if available:
+        const raw = await tryParseViaDebug(url);
 
-        if (!PROOF_BYPASS && isAllowedUrl && !isAllowedUrl(url)) {
-            return json(
-                { ok: false, error: "URL domain is not allowed. Use Athletic.net or MileSplit." },
-                { status: 400 }
-            );
+        if (!raw || (raw.ok === false && !raw.data)) {
+            // Nothing parseable
+            return NextResponse.json({
+                ok: false,
+                error: "Could not parse this URL. You can still edit and submit manually.",
+                source: detectSource(url),
+            });
         }
 
-        const source = detectSource(parsedUrl);
+        // Accept both shapes: { ok, data } or raw fields at top-level
+        const candidate = raw?.data ?? raw;
 
-        if (!parseBySource || !normalizeParsed) {
-            return json(
-                {
-                    ok: false,
-                    error:
-                        "Parser modules not found. Ensure '@/lib/proofs/parse' and '@/lib/proofs/normalize' exist and export the expected functions.",
-                },
-                { status: 500 }
-            );
+        const normalized = normalizePayload(url, candidate);
+
+        // Minimal sanity: at least one meaningful field
+        const hasUseful =
+            normalized.event ||
+            normalized.markText ||
+            normalized.markSeconds !== null ||
+            normalized.meetName ||
+            normalized.meetDate;
+
+        if (!hasUseful) {
+            return NextResponse.json({
+                ok: false,
+                error: "Parser returned no useful fields.",
+                source: normalized.source,
+            });
         }
 
-        const parsedResult = await parseBySource(url).catch((e: any) => ({
-            parsed: null as any,
-            __err: e?.message || "Parser failed unexpectedly.",
-        }));
-
-        const { parsed } = parsedResult;
-        if (!parsed) {
-            return json(
-                {
-                    ok: false,
-                    error:
-                        "Could not parse this URL (step: parseBySource). Ensure the page is public and is a direct result page.",
-                    source,
-                },
-                { status: 422 }
-            );
-        }
-
-        let normalized: any = null;
-        try {
-            normalized = normalizeParsed!(parsed);
-        } catch {
-            normalized = null;
-        }
-
-        if (!normalized) {
-            return json(
-                {
-                    ok: false,
-                    error:
-                        "Parsed data did not normalize (step: normalizeParsed). The page structure may have changed.",
-                    source,
-                    parsed,
-                },
-                { status: 422 }
-            );
-        }
-
-        const required = ["event", "markText", "markSeconds", "timing", "wind", "meetName", "meetDate"];
-        const missing = required.filter((k) => !(k in normalized));
-        if (missing.length) {
-            return json(
-                {
-                    ok: false,
-                    error: `Normalized object missing fields: ${missing.join(", ")}`,
-                    source,
-                    normalized,
-                },
-                { status: 422 }
-            );
-        }
-
-        return json({ ok: true, source, parsed, normalized }, { status: 200 });
-    } catch (e: any) {
-        return json(
-            { ok: false, error: e?.message || "Unexpected server error in ingest." },
+        return NextResponse.json({
+            ok: true,
+            source: normalized.source,
+            normalized: {
+                event: normalized.event ?? "",
+                markText: normalized.markText ?? "",
+                markSeconds: normalized.markSeconds ?? null,
+                timing: normalized.timing ?? null,
+                wind: normalized.wind ?? null,
+                meetName: normalized.meetName ?? "",
+                meetDate: normalized.meetDate ?? "",
+                confidence: normalized.confidence,
+            },
+        });
+    } catch (err: any) {
+        return NextResponse.json(
+            { ok: false, error: err?.message || "Server error." },
             { status: 500 }
         );
     }

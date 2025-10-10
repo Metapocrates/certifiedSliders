@@ -30,6 +30,7 @@ type ResultRow = {
   meet_name: string | null;
   meet_date: string | null; // ISO
   status: string | null;
+  proof_url: string | null;
 };
 
 type ProfileLite = {
@@ -48,6 +49,7 @@ type Enriched = {
   mark_seconds_adj: number | null;
   meet_name: string | null;
   meet_date: string | null;
+  proof_url?: string | null;
 
   username?: string | null;
   full_name?: string | null;
@@ -74,6 +76,24 @@ function formatMeet(name: string | null, dateISO: string | null): string {
   if (!name && !dateISO) return "—";
   const date = dateISO ? new Date(dateISO).toLocaleDateString() : "";
   return name ? `${name}${date ? ` — ${date}` : ""}` : date;
+}
+
+function proofBadge(url?: string | null) {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    let label = host;
+    if (host.includes("athletic.net")) label = "athletic.net";
+    else if (host.includes("milesplit")) label = "milesplit";
+
+    return (
+      <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] leading-5 text-neutral-600 border-neutral-300/70 dark:border-neutral-700/70">
+        {label}
+      </span>
+    );
+  } catch {
+    return null;
+  }
 }
 
 function buildQueryString(
@@ -205,7 +225,15 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
   // 2) Pull VERIFIED results (optionally by event)
   let base = supabase
     .from("results")
-    .select(["athlete_id","event","mark_seconds_adj","meet_name","meet_date","status"].join(","))
+    .select([
+      "athlete_id",
+      "event",
+      "mark_seconds_adj",
+      "meet_name",
+      "meet_date",
+      "status",
+      "proof_url",
+    ].join(","))
     .eq("status", "verified")
     .limit(MAX_FETCH);
 
@@ -237,7 +265,8 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
       (typeof r.mark_seconds_adj === "number" || r.mark_seconds_adj === null) &&
       (typeof r.meet_name === "string" || r.meet_name === null) &&
       (typeof r.meet_date === "string" || r.meet_date === null) &&
-      (typeof r.status === "string" || r.status === null)
+      (typeof r.status === "string" || r.status === null) &&
+      (typeof (r as any).proof_url === "string" || (r as any).proof_url === null)
     );
   }
   const dataArray: unknown[] = Array.isArray(data) ? (data as unknown[]) : [];
@@ -270,6 +299,7 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
       mark_seconds_adj: r.mark_seconds_adj ?? null,
       meet_name: r.meet_name ?? null,
       meet_date: r.meet_date ?? null,
+      proof_url: r.proof_url ?? null,
 
       username: p?.username ?? null,
       full_name: p?.full_name ?? null,
@@ -426,13 +456,14 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
               <th className="px-3 py-2">Gender</th>
               <th className="px-3 py-2">Class</th>
               <th className="px-3 py-2">Meet</th>
+              <th className="px-3 py-2">Proof</th>
               <th className="px-3 py-2">History</th>
             </tr>
           </thead>
           <tbody>
             {pageRows.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-3 py-6 text-center text-gray-500">No results match your filters yet.</td>
+                <td colSpan={10} className="px-3 py-6 text-center text-gray-500">No results match your filters yet.</td>
               </tr>
             ) : (
               pageRows.map((r: Enriched, i: number) => {
@@ -464,6 +495,22 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
                         : "—"}
                     </td>
                     <td className="px-3 py-2">{formatMeet(r.meet_name, r.meet_date)}</td>
+                    <td className="px-3 py-2">
+                      {r.proof_url ? (
+                        <div className="flex items-center gap-2">
+                          <SafeLink
+                            href={r.proof_url}
+                            target="_blank"
+                            className="text-blue-600 hover:underline"
+                          >
+                            View
+                          </SafeLink>
+                          {proofBadge(r.proof_url)}
+                        </div>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="px-3 py-2">
                       <SafeLink href={historyHref} className="underline hover:opacity-80">View</SafeLink>
                     </td>

@@ -1,41 +1,53 @@
+// src/components/AuthListener.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/utils/supabase/client";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 export default function AuthListener() {
   const router = useRouter();
   const syncingRef = useRef(false);
 
-  // Only sync cookies for these events. Ignore INITIAL_SESSION.
-  const EVENTS_TO_SYNC = new Set([
-    "SIGNED_IN",
-    "SIGNED_OUT",
-    "TOKEN_REFRESHED",
-    "USER_UPDATED",
-  ]);
+  // Keep the set stable
+  const EVENTS_TO_SYNC = useRef(
+    new Set(["SIGNED_IN", "SIGNED_OUT", "TOKEN_REFRESHED", "USER_UPDATED"])
+  );
 
   async function syncServerCookie() {
-    if (syncingRef.current) return;     // de-dupe bursts
+    if (syncingRef.current) return;
     syncingRef.current = true;
     try {
-      await fetch("/auth/callback", { method: "POST" });
+      const sb = supabaseBrowser();
+      const { data: sessionData } = await sb.auth.getSession();
+
+      // Send tokens so the server can set the HTTP-only cookies for RLS
+      await fetch("/auth/callback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          access_token: sessionData.session?.access_token ?? null,
+          refresh_token: sessionData.session?.refresh_token ?? null,
+        }),
+      });
       router.refresh();
     } finally {
-      // small delay to prevent thrash on rapid refresh events
-      setTimeout(() => { syncingRef.current = false; }, 500);
+      setTimeout(() => {
+        syncingRef.current = false;
+      }, 500);
     }
   }
-// eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(
-      async (event) => {
-        if (EVENTS_TO_SYNC.has(event)) {
-          await syncServerCookie();
-        }
+    const sb = supabaseBrowser();
+    const {
+      data: { subscription },
+    } = sb.auth.onAuthStateChange(async (event) => {
+      if (EVENTS_TO_SYNC.current.has(event)) {
+        await syncServerCookie();
       }
-    );
+    });
+
     return () => subscription.unsubscribe();
   }, [router]);
 

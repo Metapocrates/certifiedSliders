@@ -73,21 +73,21 @@ export default async function Header() {
                 <button type="submit" className="btn" title="Sign out">Sign out</button>
               </form>
 
-              <Link href="/me" className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-               {profile?.profile_pic_url ? (
-  <Image
-    src={profile.profile_pic_url}
-    alt="Avatar"
-    fill
-    sizes="32px"
-    className="object-cover"
-  />
-) : (
-  <div className="w-full h-full grid place-items-center text-xs text-muted">🙂</div>
-)}
-
+              <Link
+                href="/me"
+                className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 relative"
+                title="My profile"
+              >
+                <Image
+                  src={profile?.profile_pic_url ?? "/avatar-placeholder.png"}
+                  alt="Avatar"
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                  unoptimized
+                />
               </Link>
+
             </>
           )}
         </nav>

@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from "next";
 import SiteHeader from "@/components/SiteHeader";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Providers from "@/components/Providers";
+import AuthListener from "@/components/AuthListener";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -37,14 +38,13 @@ export const metadata: Metadata = {
     description: "HS Track & Field rankings and verified results.",
     images: ["/og.png"],
   },
-  // ⛔️ remove themeColor from here
 };
 
-// ✅ NEW: move themeColor to viewport export
+// ✅ themeColor belongs in viewport (not metadata)
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#faf0e6" },
-    { media: "(prefers-color-scheme: dark)",  color: "#1c1c1c" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c1c1c" },
   ],
 };
 
@@ -67,6 +67,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-app text-app">
         <Providers>
+          <AuthListener />
           <SiteHeader />
           <div className="border-b-4 border-accent" />
           <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
