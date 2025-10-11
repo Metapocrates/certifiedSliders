@@ -1,66 +1,38 @@
+// src/app/api/profile/claim/route.ts
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
-
-function supabaseServer() {
-    const cookieStore = cookies();
-    return createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-                set(name: string, value: string, options?: any) {
-                    cookieStore.set({ name, value, ...options });
-                },
-                remove(name: string, options?: any) {
-                    cookieStore.delete({ name, ...options });
-                },
-            },
-        }
-    );
-}
+import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export async function POST(req: Request) {
-    try {
-        const { token } = await req.json();
-        if (!token) {
-            return NextResponse.json({ ok: false, error: "Missing token" }, { status: 400 });
-        }
+    const supabase = createSupabaseServer();
 
-        const supabase = supabaseServer();
-        const { data: auth } = await supabase.auth.getUser();
-        const uid = auth.user?.id;
-        if (!uid) {
-            return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
-        }
+    // Ensure caller is signed in
+    const {
+        data: { user },
+        error: authErr,
+    } = await supabase.auth.getUser();
 
-        const { data: prof, error: findErr } = await supabase
-            .from("profiles")
-            .select("id, claimed_by, claim_token")
-            .eq("claim_token", token)
-            .single();
-
-        if (findErr || !prof) {
-            return NextResponse.json({ ok: false, error: "Invalid token" }, { status: 404 });
-        }
-        if (prof.claimed_by) {
-            return NextResponse.json({ ok: false, error: "Already claimed" }, { status: 409 });
-        }
-
-        const { error: updErr } = await supabase
-            .from("profiles")
-            .update({ claimed_by: uid, claimed_at: new Date().toISOString(), claim_token: null })
-            .eq("id", prof.id);
-
-        if (updErr) {
-            return NextResponse.json({ ok: false, error: updErr.message }, { status: 500 });
-        }
-
-        return NextResponse.json({ ok: true });
-    } catch (e: any) {
-        return NextResponse.json({ ok: false, error: e?.message || "Server error" }, { status: 500 });
+    if (authErr || !user) {
+        return NextResponse.json({ ok: false, error: "Not signed in" }, { status: 401 });
     }
+
+    // Read JSON body
+    let body: unknown;
+    try {
+        body = await req.json();
+    } catch {
+        return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    }
+
+    const profileId = (body as { profileId?: string })?.profileId;
+    if (!profileId) {
+        return NextResponse.json({ ok: false, error: "Missing profileId" }, { status: 400 });
+    }
+
+    // Call the RLS-safe function
+    const { error } = await supabase.rpc("claim_profile", { p_profile_id: profileId });
+    if (error) {
+        return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true });
 }
