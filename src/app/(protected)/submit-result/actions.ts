@@ -100,7 +100,7 @@ export async function confirmSubmitAction(input: ConfirmInput): Promise<ConfirmR
         return { ok: false, error: { formErrors: [error.message] } };
     }
 
-    // Optional: trigger a refresh of mv_best_event if you use it for reads
+    // Optional: trigger a refresh of mv_best_event if you use it for reads and stuff
     try {
         await supabase.rpc("refresh_mv_best_event");
     } catch {
