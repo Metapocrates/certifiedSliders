@@ -1,153 +1,180 @@
+// src/app/(protected)/settings/SettingsForm.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+import { useEffect, useState } from "react";
+import { useFormState, useFormStatus } from "react-dom";
+import { updateProfileAction } from "./actions";
 
-type Profile = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  class_year: number | null;
-  gender: string | null;
-  school_name: string | null;
-  school_state: string | null;
-  bio: string | null;
-  profile_pic_url: string | null;
+type Initial = {
+  username: string;
+  full_name: string;
+  class_year: string;
+  school_name: string;
+  school_state: string;
+  profile_pic_url: string;
+  bio: string;
+  email: string;
 };
 
-export default function SettingsForm({
-  userId,
-  initialProfile,
-}: {
-  userId: string;
-  initialProfile: Profile;
-}) {
-  const router = useRouter();
-  const supabase = createClient();
+type ActionResult =
+  | { ok: true }
+  | { ok: false; fieldErrors?: Record<string, string>; formError?: string };
 
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+// Allow null as the initial form state to satisfy TS.
+type FormState = ActionResult | null;
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setSaving(true);
-    setMsg(null);
-    setErr(null);
+function SubmitBtn({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="rounded bg-black px-4 py-2 text-white disabled:opacity-60"
+    >
+      {pending ? "Saving…" : label}
+    </button>
+  );
+}
 
-    const fd = new FormData(e.currentTarget);
-    const payload: Omit<Profile, "id"> = {
-      username: (fd.get("username") as string) || null,
-      full_name: (fd.get("full_name") as string) || null,
-      class_year: fd.get("class_year")
-        ? Number(fd.get("class_year"))
-        : null,
-      gender: (fd.get("gender") as string) || null,
-      school_name: (fd.get("school_name") as string) || null,
-      school_state: (fd.get("school_state") as string) || null,
-      bio: (fd.get("bio") as string) || null,
-      profile_pic_url: (fd.get("profile_pic_url") as string) || null,
-    };
+export default function SettingsForm({ initial }: { initial: Initial }) {
+  const [state, formAction] = useFormState<FormState, FormData>(
+    // cast avoids mismatch between our widened FormState and action's return
+    updateProfileAction as unknown as (p: FormState, f: FormData) => Promise<FormState>,
+    null
+  );
 
-    // Ensure row exists; update() will no-op if none. You can switch to upsert if desired.
-    const { error } = await supabase
-      .from("profiles")
-      .update(payload)
-      .eq("id", userId);
+  const [flash, setFlash] =
+    useState<null | { kind: "ok" | "err"; text: string }>(null);
 
-    if (error) {
-      setErr(error.message);
-    } else {
-      setMsg("Saved!");
-      router.refresh(); // refresh server data on the page
-    }
+  useEffect(() => {
+    if (!state) return;
+    if (state.ok) setFlash({ kind: "ok", text: "Profile saved." });
+    else if (!state.ok && state.formError)
+      setFlash({ kind: "err", text: state.formError });
+    else if (!state.ok && state.fieldErrors)
+      setFlash({ kind: "err", text: "Please fix the highlighted fields." });
+  }, [state]);
 
-    setSaving(false);
-  }
+  const fe = (name: string) =>
+    state && !state.ok ? state.fieldErrors?.[name] : undefined;
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">Username</label>
+    <form action={formAction} className="space-y-5 rounded-xl border p-4">
+      {flash ? (
+        <div
+          className={`rounded-lg border px-3 py-2 text-sm ${flash.kind === "ok"
+              ? "border-green-300 bg-green-50 text-green-800"
+              : "border-red-300 bg-red-50 text-red-800"
+            }`}
+        >
+          {flash.text}
+        </div>
+      ) : null}
+
+      <div>
+        <label className="mb-1 block text-sm font-medium">Username</label>
         <input
           name="username"
-          defaultValue={initialProfile.username ?? ""}
-          className="input"
+          defaultValue={initial.username}
+          className="w-full rounded border px-3 py-2"
+          placeholder="your-handle"
+          required
         />
+        {fe("username") ? (
+          <p className="mt-1 text-xs text-red-600">{fe("username")}</p>
+        ) : (
+          <p className="mt-1 text-xs text-gray-500">
+            Letters, numbers, dashes and underscores.
+          </p>
+        )}
       </div>
 
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">Full name</label>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Full name</label>
         <input
           name="full_name"
-          defaultValue={initialProfile.full_name ?? ""}
-          className="input"
+          defaultValue={initial.full_name}
+          className="w-full rounded border px-3 py-2"
+          placeholder="Full name"
+          required
         />
+        {fe("full_name") ? (
+          <p className="mt-1 text-xs text-red-600">{fe("full_name")}</p>
+        ) : null}
       </div>
 
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">Class year</label>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Class year</label>
         <input
           name="class_year"
-          type="number"
+          defaultValue={initial.class_year}
+          className="w-full rounded border px-3 py-2"
+          placeholder="2028"
           inputMode="numeric"
-          defaultValue={initialProfile.class_year ?? ""}
-          className="input"
+          pattern="\d{4}"
+          required
         />
+        {fe("class_year") ? (
+          <p className="mt-1 text-xs text-red-600">{fe("class_year")}</p>
+        ) : (
+          <p className="mt-1 text-xs text-gray-500">Enter a 4-digit year.</p>
+        )}
       </div>
 
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">Gender</label>
-        <input
-          name="gender"
-          defaultValue={initialProfile.gender ?? ""}
-          className="input"
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-sm font-medium">School name</label>
+          <input
+            name="school_name"
+            defaultValue={initial.school_name}
+            className="w-full rounded border px-3 py-2"
+            placeholder="High School"
+          />
+          {fe("school_name") ? (
+            <p className="mt-1 text-xs text-red-600">{fe("school_name")}</p>
+          ) : null}
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            State (2-letter)
+          </label>
+          <input
+            name="school_state"
+            defaultValue={initial.school_state}
+            className="w-full rounded border px-3 py-2 uppercase"
+            placeholder="CA"
+            maxLength={2}
+          />
+          {fe("school_state") ? (
+            <p className="mt-1 text-xs text-red-600">{fe("school_state")}</p>
+          ) : null}
+        </div>
       </div>
 
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">School name</label>
-        <input
-          name="school_name"
-          defaultValue={initialProfile.school_name ?? ""}
-          className="input"
-        />
-      </div>
-
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">School state</label>
-        <input
-          name="school_state"
-          defaultValue={initialProfile.school_state ?? ""}
-          className="input"
-        />
-      </div>
-
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">Bio</label>
+      <div>
+        <label className="mb-1 block text-sm font-medium">Bio</label>
         <textarea
           name="bio"
-          defaultValue={initialProfile.bio ?? ""}
-          className="input min-h-[120px]"
+          defaultValue={initial.bio}
+          rows={4}
+          className="w-full rounded border px-3 py-2"
+          placeholder="Optional: achievements, goals, notes…"
         />
       </div>
 
-      <div className="grid gap-1">
-        <label className="text-sm font-medium">Profile photo URL</label>
-        <input
-          name="profile_pic_url"
-          defaultValue={initialProfile.profile_pic_url ?? ""}
-          className="input"
-        />
+      <div className="flex items-center gap-3">
+        <SubmitBtn label="Save Profile" />
+        <a
+          href={initial.username ? `/athletes/${initial.username}` : "/me"}
+          className="text-sm underline"
+        >
+          View public page
+        </a>
       </div>
 
-      <button type="submit" className="btn" disabled={saving}>
-        {saving ? "Saving..." : "Save changes"}
-      </button>
-
-      {msg && <p className="text-sm text-green-700">{msg}</p>}
-      {err && <p className="text-sm text-red-600">{err}</p>}
+      {state && !state.ok && state.formError ? (
+        <p className="text-sm text-red-700">{state.formError}</p>
+      ) : null}
     </form>
   );
 }
