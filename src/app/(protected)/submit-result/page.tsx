@@ -1,3 +1,4 @@
+// src/app/(protected)/submit-result/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -26,9 +27,9 @@ type IngestResponse = {
 export default function SubmitResultURLPage() {
   const router = useRouter();
   const [url, setUrl] = useState("");
+  const [html, setHtml] = useState(""); // NEW: optional pasted HTML fallback
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
 
   const [source, setSource] = useState<"athleticnet" | "milesplit" | "other">("athleticnet");
   const [editable, setEditable] = useState(false);
@@ -47,15 +48,13 @@ export default function SubmitResultURLPage() {
   async function handleParse(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    setInfo(null);
     setLoading(true);
-    setEditable(false);
-
     try {
       const res = await fetch("/api/proofs/ingest", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url }),
+        // Include optional pasted HTML — server will prefer it if present.
+        body: JSON.stringify({ url, html: html?.trim() ? html : undefined }),
       });
 
       if (res.status === 401) {
@@ -66,49 +65,38 @@ export default function SubmitResultURLPage() {
 
       const data: IngestResponse = await res.json();
 
-      if (!data.ok) {
-        setErr(data.error || "Could not parse this URL. You can still edit and submit manually.");
-        setEditable(true);
-        return;
-      }
-
       if (data.source) setSource(data.source);
 
-      // Prefer normalized, then parsed; if neither present, enable manual edit
       const p = data.normalized ?? data.parsed ?? null;
-
-      if (!p) {
-        // No structured fields were returned. Enable editing & show info.
+      if (data.ok && p) {
         setEditable(true);
-        setInfo(
+        setEvent(p.event ?? "");
+        setMarkText(p.markText ?? "");
+        setMarkSeconds(p.markSeconds ?? null);
+        setTiming(p.timing ?? null);
+        setWind(p.wind ?? null);
+        setMeetName(p.meetName ?? "");
+        setMeetDate(p.meetDate ?? "");
+        setConfidence(p.confidence);
+      } else {
+        // Make fields editable so user can fill manually
+        setEditable(true);
+        setErr(
+          data.error ||
           "Parsed successfully, but no structured fields were returned. Please fill in the details below."
         );
-
-        // Clear any previous values so you start fresh
-        setEvent("");
-        setMarkText("");
-        setMarkSeconds(null);
-        setTiming(null);
-        setWind(null);
-        setMeetName("");
-        setMeetDate("");
-        setConfidence(undefined);
-        return;
+        // keep any prior values, but ensure something visible
+        if (!p) {
+          setEvent("");
+          setMarkText("");
+          setMarkSeconds(null);
+          setTiming(null);
+          setWind(null);
+          setMeetName("");
+          setMeetDate("");
+          setConfidence(undefined);
+        }
       }
-
-      // Fill fields from payload
-      setEvent(p.event ?? "");
-      setMarkText(p.markText ?? "");
-      setMarkSeconds(p.markSeconds ?? null);
-      setTiming(p.timing ?? null);
-      setWind(p.wind ?? null);
-      setMeetName(p.meetName ?? "");
-      setMeetDate(p.meetDate ?? "");
-      setConfidence(p.confidence);
-
-      // Keep read-only by default when we have a parse
-      setEditable(false);
-      setInfo("Parsed successfully. Review and continue.");
     } catch (e: any) {
       setErr(e?.message || "Unexpected error parsing URL.");
       setEditable(true);
@@ -119,8 +107,6 @@ export default function SubmitResultURLPage() {
 
   async function handleConfirm() {
     setErr(null);
-    setInfo(null);
-
     const payload: ConfirmInput = {
       source,
       proofUrl: url,
@@ -133,7 +119,6 @@ export default function SubmitResultURLPage() {
       meetName,
       meetDate,
     };
-
     const res = await confirmSubmitAction(payload);
     if (res?.ok) {
       router.push("/me");
@@ -149,31 +134,43 @@ export default function SubmitResultURLPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-semibold mb-2">Submit a Result (Paste Link)</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Paste an Athletic.net or MileSplit result link. We’ll parse the details; you can edit before confirming.
+        Paste an Athletic.net result link. If the site blocks us, paste the page HTML below and we’ll parse that instead.
       </p>
 
-      <form onSubmit={handleParse} className="flex gap-3 mb-6">
-        <input
-          type="url"
-          className="flex-1 rounded-lg border px-3 py-2"
-          placeholder="https://www.athletic.net/TrackAndField/meet/..."
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          required
-        />
-        <button type="submit" className="btn" disabled={loading}>
-          {loading ? "Parsing…" : "Parse"}
-        </button>
+      <form onSubmit={handleParse} className="space-y-3 mb-6">
+        <div className="flex gap-3">
+          <input
+            type="url"
+            className="flex-1 rounded-lg border px-3 py-2"
+            placeholder="https://www.athletic.net/TrackAndField/meet/..."
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            required
+          />
+          <button type="submit" className="btn" disabled={loading}>
+            {loading ? "Parsing…" : "Parse"}
+          </button>
+        </div>
+
+        <details className="rounded-lg border p-3">
+          <summary className="cursor-pointer text-sm font-medium">
+            Paste page HTML (optional)
+          </summary>
+          <p className="mt-2 text-xs text-gray-500">
+            If parsing fails due to a generic/blocked page, open the result in your browser, view page source, copy all, and paste it here.
+          </p>
+          <textarea
+            className="mt-2 w-full min-h-[140px] rounded-lg border px-3 py-2 font-mono text-xs"
+            placeholder="<!doctype html>…"
+            value={html}
+            onChange={(e) => setHtml(e.target.value)}
+          />
+        </details>
       </form>
 
       {err && (
         <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
           {err}
-        </div>
-      )}
-      {info && (
-        <div className="mb-4 rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-          {info}
         </div>
       )}
 

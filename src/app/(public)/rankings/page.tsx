@@ -1,446 +1,239 @@
 // src/app/(public)/rankings/page.tsx
-import { createSupabaseServer } from "@/lib/supabase/compat";
+import Image from "next/image";
 import Link from "next/link";
-import SafeLink from "@/components/SafeLink";
-import type { ReactNode } from "react";
+import { createSupabaseServer } from "@/lib/supabase/compat";
 
-export const revalidate = 0; // always fresh
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-// ---------- Config ----------
-const PAGE_SIZE = 50;
-const MAX_FETCH = 4000;
-
-type SortKey = "mark" | "name" | "school" | "date";
-type Dir = "asc" | "desc";
-
-type SearchParams = {
-  event?: string;
-  gender?: "M" | "F";
-  class_bucket?: "FR" | "SO" | "JR" | "SR";
-  page?: string;
-  sort?: SortKey;
-  dir?: Dir;
+type PageProps = {
+  searchParams: {
+    event?: string;
+    gender?: "M" | "F";
+    season?: "indoor" | "outdoor";
+    classYear?: string; // e.g., "2028"
+    state?: string; // 2-letter
+    limit?: string; // e.g., "50"
+    // keyset cursor
+    cursorSec?: string; // number as string
+    cursorId?: string; // athlete id
+  };
 };
 
-type ResultRow = {
-  athlete_id: string;
-  event: string;
-  mark_seconds_adj: number | null;
-  meet_name: string | null;
-  meet_date: string | null; // ISO
-  status: string | null;
-  proof_url: string | null;
-};
-
-type ProfileLite = {
-  id: string;
-  username: string | null;
-  full_name: string | null;
-  school_name: string | null;
-  school_state: string | null;
-  gender: "M" | "F" | null;
-  class_year: number | null;
-};
-
-type Enriched = {
-  athlete_id: string;
-  event: string;
-  mark_seconds_adj: number | null;
-  meet_name: string | null;
-  meet_date: string | null;
-  proof_url?: string | null;
-
-  username?: string | null;
-  full_name?: string | null;
-  school_name?: string | null;
-  school_state?: string | null;
-  gender?: "M" | "F" | null;
-  class_year?: number | null;
-  class_bucket?: "FR" | "SO" | "JR" | "SR" | null;
-};
-
-// ---------- Utils ----------
-function Subtle({ children }: { children: ReactNode }) {
-  return <span className="text-sm text-gray-500">{children}</span>;
-}
-
-function formatMark(sec: number | null): string {
+// Helper: format time from seconds
+function fmtTime(sec: number | null | undefined) {
   if (sec == null) return "—";
   const mm = Math.floor(sec / 60);
   const ss = sec % 60;
   return mm > 0 ? `${mm}:${ss.toFixed(2).padStart(5, "0")}` : ss.toFixed(2);
 }
 
-function formatMeet(name: string | null, dateISO: string | null): string {
-  if (!name && !dateISO) return "—";
-  const date = dateISO ? new Date(dateISO).toLocaleDateString() : "";
-  return name ? `${name}${date ? ` — ${date}` : ""}` : date;
+// Build URL with new query params
+function buildHref(params: URLSearchParams, patch: Record<string, string | undefined | null>) {
+  const next = new URLSearchParams(params.toString());
+  for (const [k, v] of Object.entries(patch)) {
+    if (v == null || v === "") next.delete(k);
+    else next.set(k, v);
+  }
+  return `?${next.toString()}`;
 }
 
-function proofBadge(url?: string | null) {
-  if (!url) return null;
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, "");
-    let label = host;
-    if (host.includes("athletic.net")) label = "athletic.net";
-    else if (host.includes("milesplit")) label = "milesplit";
-
-    return (
-      <span className="inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] leading-5 text-neutral-600 border-neutral-300/70 dark:border-neutral-700/70">
-        {label}
-      </span>
-    );
-  } catch {
-    return null;
-  }
-}
-
-function buildQueryString(
-  current: Partial<SearchParams>,
-  overrides: Partial<Record<keyof SearchParams, string | number | undefined>>
-): string {
-  const qp = new URLSearchParams();
-  const keys: (keyof SearchParams)[] = ["event","gender","class_bucket","page","sort","dir"];
-  for (const k of keys) {
-    const v = current[k];
-    if (v != null && v !== "") qp.set(k, String(v));
-  }
-  for (const [k, v] of Object.entries(overrides)) {
-    if (v == null || v === "") continue;
-    qp.set(k, String(v));
-  }
-  const qs = qp.toString();
-  return qs ? `?${qs}` : "";
-}
-
-// Derive FR/SO/JR/SR from graduation year (rough US school calendar)
-function deriveClassBucket(class_year: number | null): "FR" | "SO" | "JR" | "SR" | null {
-  if (!class_year) return null;
-  const today = new Date();
-  const month = today.getMonth(); // 0-11
-  const schoolYearEnd = month >= 7 ? today.getFullYear() + 1 : today.getFullYear();
-  const delta = class_year - schoolYearEnd; // 0 => SR, 1 => JR, 2 => SO, 3 => FR
-  switch (delta) {
-    case 0: return "SR";
-    case 1: return "JR";
-    case 2: return "SO";
-    case 3: return "FR";
-    default: return null;
-  }
-}
-
-function applySort(rows: Enriched[], sort: SortKey, dir: Dir): Enriched[] {
-  const asc = dir === "asc" ? 1 : -1;
-  const cmpStr = (a?: string | null, b?: string | null) =>
-    ((a ?? "").localeCompare(b ?? "")) * asc;
-  const cmpNum = (a?: number | null, b?: number | null) => {
-    const an = a ?? Number.POSITIVE_INFINITY;
-    const bn = b ?? Number.POSITIVE_INFINITY;
-    return (an - bn) * (dir === "asc" ? 1 : -1);
-  };
-  const cmpDate = (a?: string | null, b?: string | null) => {
-    const ad = a ? new Date(a).getTime() : -Infinity;
-    const bd = b ? new Date(b).getTime() : -Infinity;
-    return (ad - bd) * (dir === "asc" ? 1 : -1);
-  };
-
-  const sorted = [...rows];
-  switch (sort) {
-    case "name":
-      sorted.sort((x, y) => cmpStr(x.full_name ?? x.username, y.full_name ?? y.username));
-      break;
-    case "school":
-      sorted.sort((x, y) => {
-        const byName = cmpStr(x.school_name, y.school_name);
-        if (byName !== 0) return byName;
-        return cmpStr(x.school_state, y.school_state);
-      });
-      break;
-    case "date":
-      sorted.sort((x, y) => cmpDate(x.meet_date, y.meet_date));
-      break;
-    case "mark":
-    default:
-      sorted.sort((x, y) => cmpNum(x.mark_seconds_adj, y.mark_seconds_adj));
-  }
-  return sorted;
-}
-
-// Reduce to best (lowest mark_seconds_adj) per athlete+event
-function bestPerAthleteEvent(rows: ResultRow[]): ResultRow[] {
-  const best = new Map<string, ResultRow>();
-  for (const r of rows) {
-    const key = `${r.athlete_id}__${r.event}`;
-    const prev = best.get(key);
-    if (!prev) {
-      best.set(key, r);
-    } else {
-      const a = r.mark_seconds_adj ?? Number.POSITIVE_INFINITY;
-      const b = prev.mark_seconds_adj ?? Number.POSITIVE_INFINITY;
-      if (a < b) best.set(key, r);
-    }
-  }
-  return Array.from(best.values());
-}
-
-// ---------- Page ----------
-export default async function RankingsPage({ searchParams }: { searchParams: SearchParams }) {
+export default async function RankingsPage({ searchParams }: PageProps) {
   const supabase = createSupabaseServer();
 
-  const pageNum = Math.max(1, Number(searchParams.page ?? "1") || 1);
-  const sort: SortKey = (searchParams.sort as SortKey) ?? "mark";
-  const dir: Dir = (searchParams.dir as Dir) ?? (sort === "date" ? "desc" : "asc");
+  // Read filters
+  const event = (searchParams.event ?? "").trim();
+  const gender = (searchParams.gender as "M" | "F" | undefined) ?? undefined;
+  const season = (searchParams.season as "indoor" | "outdoor" | undefined) ?? undefined;
+  const classYear = (searchParams.classYear ?? "").trim();
+  const state = (searchParams.state ?? "").trim().toUpperCase();
+  const limit = Math.min(Math.max(parseInt(searchParams.limit ?? "50", 10) || 50, 10), 200);
 
-  // 1) Dynamic events from verified results
-  const { data: eventRows, error: eventErr } = await supabase
-    .from("results")
-    .select("event")
-    .not("event", "is", null)
-    .eq("status", "verified")
-    .order("event", { ascending: true })
-    .limit(1000);
+  // Keyset cursor (ascending by time)
+  const cursorSec = searchParams.cursorSec ? Number(searchParams.cursorSec) : undefined;
+  const cursorId = searchParams.cursorId ?? undefined;
 
-  if (eventErr) {
-    return (
-      <div className="mx-auto max-w-5xl p-4">
-        <h1 className="text-2xl font-semibold mb-4">Rankings</h1>
-        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
-          <div className="font-medium mb-1">Couldn’t load rankings</div>
-          <div className="text-sm">{eventErr.message}</div>
-        </div>
-      </div>
-    );
-  }
+  // Base query to mv_best_event
+  let q = supabase
+    .from("mv_best_event")
+    .select(
+      // selecting conservative set that is known to exist
+      "athlete_id, event, best_seconds_adj, wind, wind_legal, meet_name, meet_date, season"
+    )
+    .order("best_seconds_adj", { ascending: true, nullsFirst: false })
+    .order("athlete_id", { ascending: true });
 
-  type EventRow = { event: string | null };
-  const distinctEvents: string[] = Array.from(
-    new Set(((eventRows ?? []) as EventRow[]).map(r => r.event).filter((e): e is string => !!e))
-  );
-
-  const event = searchParams.event && distinctEvents.includes(searchParams.event)
-    ? searchParams.event
-    : undefined;
-
-  // 2) Pull VERIFIED results (optionally by event)
-  let base = supabase
-    .from("results")
-    .select([
-      "athlete_id",
-      "event",
-      "mark_seconds_adj",
-      "meet_name",
-      "meet_date",
-      "status",
-      "proof_url",
-    ].join(","))
-    .eq("status", "verified")
-    .limit(MAX_FETCH);
-
-  if (event) base = base.eq("event", event);
-  base = base.order("mark_seconds_adj", { ascending: true, nullsFirst: false });
-
-  const { data, error } = await base;
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-5xl p-4">
-        <h1 className="text-2xl font-semibold mb-4">Rankings</h1>
-        <div className="rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
-          <div className="font-medium mb-1">Couldn’t load rankings</div>
-          <div className="text-sm">{error.message}</div>
-        </div>
-      </div>
-    );
-  }
-
-  function isPlainObject(x: unknown): x is Record<string, unknown> {
-    return Object.prototype.toString.call(x) === "[object Object]";
-  }
-  function isResultRow(r: unknown): r is ResultRow {
-    if (!isPlainObject(r)) return false;
-    return (
-      typeof r.athlete_id === "string" &&
-      typeof r.event === "string" &&
-      (typeof r.mark_seconds_adj === "number" || r.mark_seconds_adj === null) &&
-      (typeof r.meet_name === "string" || r.meet_name === null) &&
-      (typeof r.meet_date === "string" || r.meet_date === null) &&
-      (typeof r.status === "string" || r.status === null) &&
-      (typeof (r as any).proof_url === "string" || (r as any).proof_url === null)
-    );
-  }
-  const dataArray: unknown[] = Array.isArray(data) ? (data as unknown[]) : [];
-  const verifiedRows: ResultRow[] = dataArray.filter(isResultRow);
-
-  // 3) Reduce to best per athlete/event
-  const bestRows = bestPerAthleteEvent(verifiedRows);
-
-  // 4) Batch fetch profile info
-  const athleteIds = Array.from(new Set(bestRows.map(r => r.athlete_id)));
-  let profileMap = new Map<string, ProfileLite>();
-  if (athleteIds.length) {
-    const { data: profs } = await supabase
-      .from("profiles")
-      .select("id, username, full_name, school_name, school_state, gender, class_year")
-      .in("id", athleteIds);
-
-    for (const p of (profs ?? []) as ProfileLite[]) {
-      profileMap.set(p.id, p);
+  if (event) q = q.eq("event", event);
+  if (season) q = q.eq("season", season.toUpperCase()); // mv likely stores OUTDOOR/INDOOR
+  // Apply keyset cursor if present
+  if (cursorSec != null && !Number.isNaN(cursorSec)) {
+    // We need rows with (time, id) > (cursorSec, cursorId) in our sort
+    // Supabase doesn't support tuple compare; emulate:
+    // (best_seconds_adj > cursorSec) OR (best_seconds_adj = cursorSec AND athlete_id > cursorId)
+    if (cursorId) {
+      q = q.or(
+        `best_seconds_adj.gt.${cursorSec},and(best_seconds_adj.eq.${cursorSec},athlete_id.gt.${cursorId})`,
+        { referencedTable: "mv_best_event" }
+      );
+    } else {
+      q = q.gt("best_seconds_adj", cursorSec);
     }
   }
 
-  // 5) Enrich + in-memory filter (gender, class)
-  const enriched: Enriched[] = bestRows.map(r => {
-    const p = profileMap.get(r.athlete_id);
-    const class_bucket = deriveClassBucket(p?.class_year ?? null);
-    return {
-      athlete_id: r.athlete_id,
-      event: r.event,
-      mark_seconds_adj: r.mark_seconds_adj ?? null,
-      meet_name: r.meet_name ?? null,
-      meet_date: r.meet_date ?? null,
-      proof_url: r.proof_url ?? null,
+  // Execute base fetch
+  const { data: baseRows, error: baseErr } = await q.limit(limit);
+  if (baseErr) {
+    return (
+      <div className="container py-8">
+        <h1 className="text-2xl font-semibold mb-2">Rankings</h1>
+        <p className="text-red-700 text-sm">Error: {baseErr.message}</p>
+      </div>
+    );
+  }
+  const rows = baseRows ?? [];
 
-      username: p?.username ?? null,
-      full_name: p?.full_name ?? null,
-      school_name: p?.school_name ?? null,
-      school_state: p?.school_state ?? null,
-      gender: p?.gender ?? null,
-      class_year: p?.class_year ?? null,
-      class_bucket,
-    };
-  });
+  // Fetch profiles for displayed athletes, then filter by gender/class/state if requested
+  const ids = Array.from(new Set(rows.map(r => r.athlete_id))).filter(Boolean);
+  let profiles: Array<{
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    school_name: string | null;
+    school_state: string | null;
+    class_year: number | null;
+    gender: "M" | "F" | null;
+    profile_pic_url: string | null;
+  }> = [];
 
-  const filtered = enriched.filter(row => {
-    if (searchParams.gender && row.gender !== searchParams.gender) return false;
-    if (searchParams.class_bucket && row.class_bucket !== searchParams.class_bucket) return false;
-    return true;
-  });
+  if (ids.length > 0) {
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id, full_name, username, school_name, school_state, class_year, gender, profile_pic_url")
+      .in("id", ids);
 
-  // 6) Sort + paginate
-  const sorted = applySort(filtered, sort, dir);
-  const total = sorted.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const from = (pageNum - 1) * PAGE_SIZE;
-  const to = Math.min(from + PAGE_SIZE, total);
-  const pageRows = sorted.slice(from, to);
-  const startDisplay = total === 0 ? 0 : from + 1;
-  const endDisplay = to;
+    profiles = (profs ?? []).filter(p => {
+      if (gender && p.gender !== gender) return false;
+      if (classYear && String(p.class_year ?? "") !== classYear) return false;
+      if (state && (p.school_state ?? "").toUpperCase() !== state) return false;
+      return true;
+    });
+  }
 
-  const CLASS_BUCKETS_UI: { value: SearchParams["class_bucket"]; label: string }[] = [
-    { value: "FR", label: "Freshman" },
-    { value: "SO", label: "Sophomore" },
-    { value: "JR", label: "Junior" },
-    { value: "SR", label: "Senior" },
+  // Build a map for quick lookup
+  const profMap = new Map(profiles.map(p => [p.id, p]));
+
+  // Apply post-filter to rows based on filtered profiles (so rows and profiles align)
+  const filteredRows = rows.filter(r => profMap.has(r.athlete_id));
+
+  // Compute next cursor from the last visible row
+  const last = filteredRows.at(-1);
+  const nextCursorSec =
+    last && typeof last.best_seconds_adj === "number" ? String(last.best_seconds_adj) : undefined;
+  const nextCursorId = last?.athlete_id;
+
+  // Build a minimal set of options (could later hydrate from DB)
+  const eventOptions = Array.from(new Set(rows.map(r => r.event))).sort();
+  const yearOptions = ["2026", "2027", "2028", "2029", "2030"];
+  const stateOptions = [
+    "",
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DC", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA",
+    "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM", "NV", "NY", "OH", "OK", "OR",
+    "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI", "WV", "WY"
   ];
-  const GENDERS_UI = [
-    { value: "M" as const, label: "Boys" },
-    { value: "F" as const, label: "Girls" },
-  ];
+
+  // Reconstruct URLSearchParams for control links
+  const currentParams = new URLSearchParams();
+  if (event) currentParams.set("event", event);
+  if (gender) currentParams.set("gender", gender);
+  if (season) currentParams.set("season", season);
+  if (classYear) currentParams.set("classYear", classYear);
+  if (state) currentParams.set("state", state);
+  currentParams.set("limit", String(limit));
 
   return (
-    <div className="mx-auto max-w-6xl p-4">
-      <h1 className="text-2xl font-semibold mb-2">Rankings</h1>
-      <p className="text-sm text-gray-600 mb-4">
-        Filter, sort, and paginate best verified marks. Click an athlete to view their profile or audit trail.
-      </p>
+    <div className="container py-8">
+      <h1 className="text-2xl font-semibold mb-4">Rankings</h1>
 
-      {/* Quick event chips */}
-      {distinctEvents.length > 0 && (
-        <nav className="mb-4 overflow-x-auto">
-          <ul className="flex gap-2 min-w-max">
-            {distinctEvents.slice(0, 24).map((ev: string) => {
-              const active = ev === event;
-              const href = `/rankings${buildQueryString({ ...searchParams, event }, { event: ev, page: 1 })}`;
-              return (
-                <li key={ev}>
-                  <Link
-                    href={href}
-                    className={`rounded-full border px-3 py-1 text-sm whitespace-nowrap ${
-                      active ? "bg-black text-white" : "hover:opacity-90"
-                    }`}
-                  >
-                    {ev}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      )}
+      {/* Filters */}
+      <form className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3" method="GET">
+        <select
+          name="event"
+          className="rounded-lg border px-3 py-2"
+          defaultValue={event}
+        >
+          <option value="">All events</option>
+          {eventOptions.map((e) => (
+            <option key={e} value={e}>
+              {e}
+            </option>
+          ))}
+        </select>
 
-      {/* Filters + Sorting */}
-      <form className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-7" action="/rankings" method="get">
-        {/* Event */}
-        <label className="block">
-          <span className="block text-sm font-medium mb-1">Event</span>
-          <select name="event" defaultValue={event ?? ""} className="w-full rounded-lg border p-2">
-            <option value="">All events</option>
-            {distinctEvents.map((ev: string) => (
-              <option key={ev} value={ev}>
-                {ev}
+        <select
+          name="gender"
+          className="rounded-lg border px-3 py-2"
+          defaultValue={gender ?? ""}
+        >
+          <option value="">All genders</option>
+          <option value="M">Boys</option>
+          <option value="F">Girls</option>
+        </select>
+
+        <select
+          name="season"
+          className="rounded-lg border px-3 py-2"
+          defaultValue={season ?? ""}
+        >
+          <option value="">All seasons</option>
+          <option value="outdoor">Outdoor</option>
+          <option value="indoor">Indoor</option>
+        </select>
+
+        <select
+          name="classYear"
+          className="rounded-lg border px-3 py-2"
+          defaultValue={classYear}
+        >
+          <option value="">All classes</option>
+          {yearOptions.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name="state"
+          className="rounded-lg border px-3 py-2"
+          defaultValue={state}
+        >
+          {stateOptions.map((s) => (
+            <option key={s || "ALL"} value={s}>
+              {s ? s : "All states"}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex gap-2">
+          <select
+            name="limit"
+            className="rounded-lg border px-3 py-2"
+            defaultValue={String(limit)}
+          >
+            {[25, 50, 100, 150, 200].map((n) => (
+              <option key={n} value={n}>
+                {n}/page
               </option>
             ))}
           </select>
-        </label>
-
-        {/* Gender */}
-        <label className="block">
-          <span className="block text-sm font-medium mb-1">Gender</span>
-          <select name="gender" defaultValue={searchParams.gender ?? ""} className="w-full rounded-lg border p-2">
-            <option value="">All</option>
-            {GENDERS_UI.map((g) => (
-              <option key={g.value} value={g.value}>
-                {g.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Class bucket */}
-        <label className="block">
-          <span className="block text-sm font-medium mb-1">Class</span>
-          <select name="class_bucket" defaultValue={searchParams.class_bucket ?? ""} className="w-full rounded-lg border p-2">
-            <option value="">All</option>
-            {CLASS_BUCKETS_UI.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Sort */}
-        <label className="block">
-          <span className="block text-sm font-medium mb-1">Sort</span>
-          <select name="sort" defaultValue={sort} className="w-full rounded-lg border p-2">
-            <option value="mark">Best Mark</option>
-            <option value="name">Name</option>
-            <option value="school">School</option>
-            <option value="date">Meet Date</option>
-          </select>
-        </label>
-
-        {/* Direction */}
-        <label className="block">
-          <span className="block text-sm font-medium mb-1">Direction</span>
-          <select name="dir" defaultValue={dir} className="w-full rounded-lg border p-2">
-            <option value="asc">Asc</option>
-            <option value="desc">Desc</option>
-          </select>
-        </label>
-
-        <input type="hidden" name="page" value="1" />
-
-        <div className="flex items-end">
-          <button type="submit" className="w-full rounded-xl border bg-black text-white px-4 py-2 hover:opacity-90">
+          <button className="rounded-lg border px-3 py-2 bg-black text-white">
             Apply
           </button>
         </div>
 
-        <div className="flex items-end lg:col-span-7">
-          <Subtle>{total === 0 ? "No results" : `Showing ${startDisplay}–${endDisplay} of ${total}`}</Subtle>
-        </div>
+        {/* Clear cursor on filter change */}
+        <input type="hidden" name="cursorSec" value="" />
+        <input type="hidden" name="cursorId" value="" />
       </form>
 
       {/* Table */}
@@ -450,70 +243,64 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
             <tr className="text-left">
               <th className="px-3 py-2">#</th>
               <th className="px-3 py-2">Athlete</th>
-              <th className="px-3 py-2">School</th>
               <th className="px-3 py-2">Event</th>
               <th className="px-3 py-2">Mark</th>
-              <th className="px-3 py-2">Gender</th>
-              <th className="px-3 py-2">Class</th>
+              <th className="px-3 py-2">Season</th>
               <th className="px-3 py-2">Meet</th>
-              <th className="px-3 py-2">Proof</th>
-              <th className="px-3 py-2">History</th>
+              <th className="px-3 py-2">Date</th>
             </tr>
           </thead>
           <tbody>
-            {pageRows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-3 py-6 text-center text-gray-500">No results match your filters yet.</td>
+                <td className="px-3 py-4 text-gray-600" colSpan={7}>
+                  No results match your filters.
+                </td>
               </tr>
             ) : (
-              pageRows.map((r: Enriched, i: number) => {
-                const idx = from + i + 1;
-                const username = r.username ?? undefined;
-                const profileHref = username ? `/athletes/${username}` : undefined;
-                const historyHref = username ? `/athletes/${username}/history` : undefined;
+              filteredRows.map((r, idx) => {
+                const p = profMap.get(r.athlete_id);
+                const name = p?.full_name || p?.username || r.athlete_id;
+                const avatar = p?.profile_pic_url || "";
+                const username = p?.username || "";
+                const school = p?.school_name ? `${p.school_name}${p.school_state ? `, ${p.school_state}` : ""}` : "—";
+                const dateStr = r.meet_date ? new Date(r.meet_date).toISOString().slice(0, 10) : "—";
+
                 return (
-                  <tr key={`${r.athlete_id}-${r.event}-${i}`} className="border-t">
-                    <td className="px-3 py-2">{idx}</td>
+                  <tr key={`${r.athlete_id}-${r.event}-${idx}`} className="border-t">
+                    <td className="px-3 py-2">{idx + 1}</td>
                     <td className="px-3 py-2">
-                      <SafeLink href={profileHref} className="underline hover:opacity-80" fallback={<span>{r.full_name ?? username ?? "Unknown"}</span>}>
-                        {r.full_name ?? username ?? "Unknown"}
-                      </SafeLink>
-                    </td>
-                    <td className="px-3 py-2">
-                      {r.school_name ? (
-                        <>
-                          {r.school_name} <Subtle>{r.school_state ? `(${r.school_state})` : ""}</Subtle>
-                        </>
-                      ) : "—"}
+                      <div className="flex items-center gap-2">
+                        <div className="relative h-8 w-8 overflow-hidden rounded-full bg-gray-100">
+                          {avatar ? (
+                            <Image src={avatar} alt="" fill sizes="32px" className="object-cover" />
+                          ) : (
+                            <div className="grid h-8 w-8 place-items-center text-xs">🙂</div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">
+                            {username ? (
+                              <Link
+                                href={`/athletes/${username}`}
+                                className="hover:underline"
+                                title={`View ${name}`}
+                              >
+                                {name}
+                              </Link>
+                            ) : (
+                              name
+                            )}
+                          </div>
+                          <div className="truncate text-xs text-gray-500">{school}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-3 py-2">{r.event}</td>
-                    <td className="px-3 py-2 font-medium">{formatMark(r.mark_seconds_adj)}</td>
-                    <td className="px-3 py-2">{r.gender === "M" ? "Boys" : r.gender === "F" ? "Girls" : "—"}</td>
-                    <td className="px-3 py-2">
-                      {r.class_bucket
-                        ? ({ FR:"Freshman", SO:"Sophomore", JR:"Junior", SR:"Senior" } as const)[r.class_bucket]
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-2">{formatMeet(r.meet_name, r.meet_date)}</td>
-                    <td className="px-3 py-2">
-                      {r.proof_url ? (
-                        <div className="flex items-center gap-2">
-                          <SafeLink
-                            href={r.proof_url}
-                            target="_blank"
-                            className="text-blue-600 hover:underline"
-                          >
-                            View
-                          </SafeLink>
-                          {proofBadge(r.proof_url)}
-                        </div>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      <SafeLink href={historyHref} className="underline hover:opacity-80">View</SafeLink>
-                    </td>
+                    <td className="px-3 py-2 font-medium">{fmtTime(r.best_seconds_adj)}</td>
+                    <td className="px-3 py-2">{r.season ?? "—"}</td>
+                    <td className="px-3 py-2">{r.meet_name ?? "—"}</td>
+                    <td className="px-3 py-2">{dateStr}</td>
                   </tr>
                 );
               })
@@ -524,25 +311,29 @@ export default async function RankingsPage({ searchParams }: { searchParams: Sea
 
       {/* Pagination */}
       <div className="mt-4 flex items-center justify-between">
-        <Link
-          aria-disabled={pageNum <= 1}
-          className={`rounded-xl border px-3 py-2 ${pageNum <= 1 ? "pointer-events-none opacity-40" : "hover:opacity-90"}`}
-          href={`/rankings${buildQueryString(searchParams, { page: Math.max(1, pageNum - 1) })}`}
-        >
-          ← Prev
-        </Link>
-        <Subtle>Page {pageNum} of {totalPages}</Subtle>
-        <Link
-          aria-disabled={pageNum >= totalPages}
-          className={`rounded-xl border px-3 py-2 ${pageNum >= totalPages ? "pointer-events-none opacity-40" : "hover:opacity-90"}`}
-          href={`/rankings${buildQueryString(searchParams, { page: Math.min(totalPages, pageNum + 1) })}`}
-        >
-          Next →
-        </Link>
-      </div>
+        <div className="text-xs text-gray-500">
+          Showing {filteredRows.length} of {rows.length} fetched
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Back = clear cursor */}
+          <Link
+            className="rounded-md border px-3 py-1.5 text-sm hover:bg-gray-50"
+            href={buildHref(currentParams, { cursorSec: undefined, cursorId: undefined })}
+          >
+            Reset
+          </Link>
 
-      <div className="mt-3">
-        <Subtle>Showing {Math.min(PAGE_SIZE, pageRows.length)} per page.</Subtle>
+          {/* Next page */}
+          <Link
+            className="rounded-md border px-3 py-1.5 text-sm bg-black text-white hover:opacity-90"
+            href={buildHref(currentParams, {
+              cursorSec: nextCursorSec,
+              cursorId: nextCursorId,
+            })}
+          >
+            Next →
+          </Link>
+        </div>
       </div>
     </div>
   );

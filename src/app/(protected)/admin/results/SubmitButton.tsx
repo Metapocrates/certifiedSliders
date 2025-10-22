@@ -1,22 +1,16 @@
+// src/app/(protected)/admin/results/SubmitButton.tsx
 "use client";
 
 import { useFormStatus } from "react-dom";
+import { type ComponentProps } from "react";
 
-export default function SubmitButton({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+type Props = ComponentProps<"button"> & { pendingText?: string };
+
+export default function SubmitButton({ pendingText = "Working…", children, ...rest }: Props) {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className={`${className ?? ""} ${pending ? "opacity-60 cursor-not-allowed" : "hover:opacity-90"}`}
-    >
-      {pending ? "Working…" : children}
+    <button {...rest} disabled={pending || rest.disabled}>
+      {pending ? pendingText : children}
     </button>
   );
 }
