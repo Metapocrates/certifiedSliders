@@ -1,6 +1,7 @@
 // src/components/home/FeaturedProfilesCarousel.tsx
 import "server-only";
 import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import SafeLink from "@/components/SafeLink";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
@@ -171,21 +172,9 @@ export default async function FeaturedProfilesCarousel() {
                                 >
                                     <div className="relative flex h-40 w-full items-end overflow-hidden">
                                         {c.profile_pic_url ? (
-                                            <Image
+                                            <ImageWithFallback
                                                 src={c.profile_pic_url}
                                                 alt={c.full_name || c.username || "Athlete"}
-                                                fill
-                                                sizes="320px"
-                                                unoptimized
-                                                onError={(e) => {
-                                                    const img = e.currentTarget;
-                                                    if (img.dataset.fallback === "1") return;
-                                                    img.dataset.fallback = "1";
-                                                    img.src = "/brand/logo.png";
-                                                    img.classList.remove("object-cover");
-                                                    img.classList.add("object-contain", "bg-white", "p-6");
-                                                }}
-                                                className="object-cover transition duration-500 group-hover:scale-105"
                                             />
                                         ) : (
                                             <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] text-4xl text-white">

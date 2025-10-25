@@ -1,6 +1,7 @@
 // src/components/home/BlogList.tsx
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import BlogCover from "@/components/home/BlogCover";
 
 type BlogCard = {
   id: string;
@@ -68,22 +69,14 @@ if (!posts.length) {
             className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent"
             aria-hidden="true"
           />
-          {primary.cover_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+          <div className="relative h-full w-full">
+            <BlogCover
               src={primary.cover_image_url}
               alt={primary.title ?? "Featured blog post"}
-              onError={(e) => {
-                if (e.currentTarget.dataset.fallback === "1") return;
-                e.currentTarget.dataset.fallback = "1";
-                e.currentTarget.src = "/brand/logo.png";
-                e.currentTarget.classList.add("object-contain", "p-10", "bg-white");
-              }}
-              className="h-full w-full object-cover"
+              fill
+              fallbackClassName="p-10"
             />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E]" />
-          )}
+          </div>
           <div className="relative flex h-full flex-col justify-end gap-4 p-8 text-white">
             <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.3em] text-white/70">
               <span>Featured story</span>
@@ -108,22 +101,14 @@ if (!posts.length) {
                 href={`/blog/${post.slug}`}
                 className="group flex flex-col overflow-hidden rounded-3xl border border-app bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
               >
-                {post.cover_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                <div className="relative h-36 w-full">
+                  <BlogCover
                     src={post.cover_image_url}
                     alt={post.title ?? ""}
-                    className="h-36 w-full object-cover transition duration-500 group-hover:scale-105"
-                    onError={(e) => {
-                      if (e.currentTarget.dataset.fallback === "1") return;
-                      e.currentTarget.dataset.fallback = "1";
-                      e.currentTarget.src = "/brand/logo.png";
-                      e.currentTarget.classList.add("object-contain", "p-6", "bg-white");
-                    }}
+                    fill
+                    fallbackClassName="p-6"
                   />
-                ) : (
-                  <div className="h-36 w-full bg-muted" />
-                )}
+                </div>
                 <div className="flex flex-1 flex-col gap-3 p-5">
                   <div className="text-xs uppercase tracking-[0.3em] text-muted">
                     {formatDate(post.published_at)}
