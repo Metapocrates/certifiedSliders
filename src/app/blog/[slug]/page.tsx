@@ -197,41 +197,55 @@ export default async function BlogPostPage({
       >
         Edit in admin
       </Link>
-      {post.status !== "published" ? (
-        <form action={setPostStatus}>
-          <input type="hidden" name="slug" value={post.slug} />
-          <input type="hidden" name="status" value="published" />
-          <button className="rounded-full bg-scarlet px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-scarlet/90">
-            Publish now
-          </button>
-        </form>
-      ) : null}
-      {post.status === "published" ? (
-        <form action={setPostStatus}>
-          <input type="hidden" name="slug" value={post.slug} />
-          <input type="hidden" name="status" value="draft" />
-          <button className="rounded-full border border-app px-3 py-1.5 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet">
-            Unpublish
-          </button>
-        </form>
-      ) : null}
-      {post.status !== "archived" ? (
-        <form action={setPostStatus}>
-          <input type="hidden" name="slug" value={post.slug} />
-          <input type="hidden" name="status" value="archived" />
-          <button className="rounded-full border border-app px-3 py-1.5 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet">
-            Archive
-          </button>
-        </form>
-      ) : (
-        <form action={setPostStatus}>
-          <input type="hidden" name="slug" value={post.slug} />
-          <input type="hidden" name="status" value="draft" />
-          <button className="rounded-full border border-app px-3 py-1.5 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet">
-            Restore to draft
-          </button>
-        </form>
-      )}
+      <form action={setPostStatus}>
+        <input type="hidden" name="slug" value={post.slug} />
+        <input
+          type="hidden"
+          name="redirectTo"
+          value={`/blog/${post.slug}?preview=1`}
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          {post.status !== "published" ? (
+            <button
+              name="status"
+              value="published"
+              className="rounded-full bg-scarlet px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-scarlet/90"
+            >
+              Publish now
+            </button>
+          ) : null}
+
+          {post.status === "published" ? (
+            <button
+              name="status"
+              value="draft"
+              className="rounded-full border border-app px-3 py-1.5 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+            >
+              Unpublish
+            </button>
+          ) : null}
+
+          {post.status !== "archived" ? (
+            <button
+              name="status"
+              value="archived"
+              className="rounded-full border border-app px-3 py-1.5 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+            >
+              Archive
+            </button>
+          ) : null}
+
+          {post.status === "archived" ? (
+            <button
+              name="status"
+              value="draft"
+              className="rounded-full border border-app px-3 py-1.5 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+            >
+              Restore to draft
+            </button>
+          ) : null}
+        </div>
+      </form>
     </div>
   ) : null;
 

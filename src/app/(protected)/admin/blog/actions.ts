@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { TEAM_AUTHOR_NAME } from "./constants";
@@ -110,6 +111,7 @@ export async function setPostStatus(formData: FormData) {
     }
 
     const { slug, status } = parsed.data;
+    const redirectTo = (formData.get("redirectTo") as string | null) || null;
 
     const { data: existing, error: fetchErr } = await supabase
         .from("blog_posts")
@@ -136,5 +138,8 @@ export async function setPostStatus(formData: FormData) {
     revalidatePath(`/blog/${slug}`);
     revalidatePath("/");
 
+    if (redirectTo) {
+        redirect(redirectTo);
+    }
     return { ok: true };
 }
