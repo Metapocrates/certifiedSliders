@@ -9,7 +9,7 @@ type BlogCard = {
   slug: string;
   title?: string | null;
   excerpt?: string | null;
-  cover_url?: string | null;
+  cover_image_url?: string | null;
   published_at?: string | null;
   [key: string]: unknown;
 };
@@ -18,9 +18,10 @@ export default async function BlogList() {
   const supabase = createSupabaseServer();
 
   const { data: posts, error } = await supabase
-    .from("posts")
-    .select("id, slug, title, excerpt, cover_url, published_at")
+    .from("blog_posts")
+    .select("id, slug, title, excerpt, cover_image_url, published_at")
     .eq("status", "published")
+    .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
     .limit(3);
 
@@ -54,14 +55,14 @@ export default async function BlogList() {
             href={`/blog/${p.slug}`}
             className="rounded-xl border overflow-hidden"
           >
-            {p.cover_url ? (
+            {p.cover_image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.cover_url} alt={p.title ?? ""} className="w-full h-32 object-cover" />
+              <img src={p.cover_image_url} alt={p.title ?? ""} className="w-full h-32 object-cover" />
             ) : null}
             <div className="p-3">
               <div className="font-medium">{p.title}</div>
               {p.excerpt ? (
-                <p className="text-sm text-gray-600 mt-1 line-clamp-3">{p.excerpt}</p>
+                <p className="text-sm text-gray-600 mt-1">{p.excerpt}</p>
               ) : null}
             </div>
           </Link>

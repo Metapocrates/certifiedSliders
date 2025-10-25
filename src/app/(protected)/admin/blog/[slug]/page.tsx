@@ -10,8 +10,8 @@ export default async function EditBlogPostPage({ params }: { params: { slug: str
   if (!(await isAdmin(me.id))) redirect("/");
 
   const { data: post } = await supabase
-    .from("posts")
-    .select("slug, title, excerpt, content, cover_url, status")
+    .from("blog_posts")
+    .select("slug, title, excerpt, content, cover_image_url, tags, status")
     .eq("slug", params.slug)
     .maybeSingle();
 

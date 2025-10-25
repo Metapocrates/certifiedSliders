@@ -9,7 +9,8 @@ type Post = {
   title: string;
   excerpt: string | null;
   content: string | null;
-  cover_url: string | null;
+  cover_image_url: string | null;
+  tags: string[] | null;
   status: "draft" | "published";
 };
 
@@ -84,12 +85,23 @@ export default function EditPostForm({ initial }: { initial: Post }) {
       <label className="grid gap-1">
         <span className="text-sm font-medium">Cover image URL</span>
         <input
-          name="cover_url"
-          defaultValue={initial.cover_url ?? ""}
+          name="cover_image_url"
+          defaultValue={initial.cover_image_url ?? ""}
           className="input"
           type="url"
           placeholder="https://..."
         />
+      </label>
+
+      <label className="grid gap-1">
+        <span className="text-sm font-medium">Tags (comma separated)</span>
+        <input
+          name="tags"
+          defaultValue={(initial.tags ?? []).join(", ")}
+          className="input"
+          placeholder="rankings, interviews, training"
+        />
+        <span className="text-xs text-muted">Use lowercase keywords separated by commas.</span>
       </label>
 
       <label className="grid gap-1">

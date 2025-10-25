@@ -49,7 +49,13 @@ export default function NewPostForm() {
 
       <label className="grid gap-1">
         <span className="text-sm font-medium">Cover image URL (optional)</span>
-        <input name="cover_url" className="input" type="url" placeholder="https://..." />
+        <input name="cover_image_url" className="input" type="url" placeholder="https://..." />
+      </label>
+
+      <label className="grid gap-1">
+        <span className="text-sm font-medium">Tags (comma separated)</span>
+        <input name="tags" className="input" placeholder="rankings, interviews, training" />
+        <span className="text-xs text-muted">Use lowercase keywords separated by commas.</span>
       </label>
 
       <label className="grid gap-1">

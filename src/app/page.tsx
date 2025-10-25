@@ -6,6 +6,12 @@ import SafeLink from "@/components/SafeLink";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const numberFormatter = new Intl.NumberFormat("en-US");
+
+function formatNumber(n: number) {
+  return numberFormatter.format(n);
+}
+
 const spotlightCards = [
   {
     title: "Verified PRs only",
@@ -40,6 +46,62 @@ export default async function HomePage() {
   const supabase = createSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
+
+  const oneWeekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  let verifiedThisWeek: number | null = null;
+  const { count: verifiedCountByVerifiedAt, error: verifiedAtErr } = await supabase
+    .from("results")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "verified")
+    .gte("verified_at", oneWeekAgoIso);
+
+  if (!verifiedAtErr) {
+    verifiedThisWeek = verifiedCountByVerifiedAt ?? 0;
+  } else {
+    const { count: verifiedCountByCreatedAt, error: createdAtErr } = await supabase
+      .from("results")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "verified")
+      .gte("created_at", oneWeekAgoIso);
+    if (!createdAtErr) {
+      verifiedThisWeek = verifiedCountByCreatedAt ?? 0;
+    }
+  }
+
+  let teamsRepresented: number | null = null;
+  const { data: teamRows, error: teamsErr } = await supabase
+    .from("profiles")
+    .select("school_name, school_state")
+    .not("school_name", "is", null)
+    .neq("school_name", "")
+    .limit(2000);
+
+  if (!teamsErr && teamRows) {
+    const unique = new Set<string>();
+    for (const row of teamRows) {
+      const name = (row.school_name ?? "").trim();
+      if (!name) continue;
+      const state = (row.school_state ?? "").trim();
+      unique.add(`${name.toLowerCase()}|${state.toLowerCase()}`);
+    }
+    teamsRepresented = unique.size;
+  }
+
+  const heroStats = [
+    {
+      id: "verified-week",
+      label: verifiedThisWeek === 1 ? "Verified PR this week" : "Verified PRs this week",
+      value: verifiedThisWeek,
+      description: "Every mark is reviewed by the admin crew before it hits the board.",
+    },
+    {
+      id: "teams-represented",
+      label: teamsRepresented === 1 ? "Team represented" : "Teams represented",
+      value: teamsRepresented,
+      description: "Athletes from programs across the country contribute verified marks.",
+    },
+  ];
 
   const primaryCta = user
     ? { href: "/submit-result", label: "Submit a result" }
@@ -85,24 +147,26 @@ export default async function HomePage() {
                 <p className="mt-2 text-2xl font-semibold text-white">Manual verification, transparent adjustments.</p>
               </div>
               <div className="space-y-4">
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.25em] text-white/65">
-                    Verified PRs this week
-                  </p>
-                  <p className="text-3xl font-semibold text-white">120+</p>
-                  <p className="text-xs text-white/70">
-                    Every mark checked by the admin crew before it hits the board.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.25em] text-white/65">
-                    Teams represented
-                  </p>
-                  <p className="text-3xl font-semibold text-white">65</p>
-                  <p className="text-xs text-white/70">
-                    The community keeps growing—coaches can request admin access any time.
-                  </p>
-                </div>
+                {heroStats.map((stat) => {
+                  const valueDisplay =
+                    stat.value == null ? "—" : formatNumber(stat.value);
+                  return (
+                    <div
+                      key={stat.id}
+                      className="rounded-2xl border border-white/20 bg-white/10 px-4 py-3"
+                    >
+                      <p className="text-xs uppercase tracking-[0.25em] text-white/65">
+                        {stat.label}
+                      </p>
+                      <p className="text-3xl font-semibold text-white">
+                        {valueDisplay}
+                      </p>
+                      <p className="text-xs text-white/70">
+                        {stat.description}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

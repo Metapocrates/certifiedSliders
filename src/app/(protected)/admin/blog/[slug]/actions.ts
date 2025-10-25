@@ -8,10 +8,15 @@ import { getSessionUser, isAdmin } from "@/lib/auth";
 const PostUpdateSchema = z.object({
     original_slug: z.string().min(1),
     title: z.string().min(3, "Title is required"),
-    slug: z.string().min(3).regex(/^[a-z0-9-]+$/i, "Use letters, numbers, dashes").optional(),
+    slug: z
+        .string()
+        .min(3)
+        .regex(/^[a-z0-9-]+$/i, "Use letters, numbers, dashes")
+        .optional(),
     excerpt: z.string().max(300).optional().or(z.literal("")),
     content: z.string().min(1, "Content is required"),
-    cover_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    cover_image_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    tags: z.string().optional(),
     status: z.enum(["draft", "published"]).default("draft"),
 });
 
@@ -36,7 +41,8 @@ export async function updatePost(formData: FormData) {
         slug: (formData.get("slug") as string) || undefined,
         excerpt: formData.get("excerpt") ?? "",
         content: formData.get("content"),
-        cover_url: (formData.get("cover_url") as string) || undefined,
+        cover_image_url: (formData.get("cover_image_url") as string) || undefined,
+        tags: (formData.get("tags") as string) || undefined,
         status: (formData.get("status") as string) || "draft",
     });
     if (!parsed.success) {
@@ -45,6 +51,11 @@ export async function updatePost(formData: FormData) {
 
     const d = parsed.data;
     const newSlug = d.slug ? slugify(d.slug) : slugify(d.title);
+    const tagList =
+        d.tags
+            ?.split(",")
+            .map((t) => t.trim())
+            .filter(Boolean) ?? [];
 
     // published_at handling
     // - if publishing now: set when null
@@ -52,7 +63,7 @@ export async function updatePost(formData: FormData) {
     const publishNow = d.status === "published";
 
     const { data: existing, error: findErr } = await supabase
-        .from("posts")
+        .from("blog_posts")
         .select("published_at, status")
         .eq("slug", d.original_slug)
         .maybeSingle();
@@ -64,9 +75,9 @@ export async function updatePost(formData: FormData) {
         title: d.title,
         excerpt: d.excerpt || null,
         content: d.content,
-        cover_url: d.cover_url || null,
+        cover_image_url: d.cover_image_url || null,
+        tags: tagList,
         status: d.status,
-        updated_at: new Date().toISOString(),
     };
 
     if (publishNow && !existing.published_at) {
@@ -77,7 +88,7 @@ export async function updatePost(formData: FormData) {
     }
 
     const { error } = await supabase
-        .from("posts")
+        .from("blog_posts")
         .update(updates)
         .eq("slug", d.original_slug);
 
@@ -90,6 +101,7 @@ export async function updatePost(formData: FormData) {
 
     // Revalidate list + both slugs (old & new)
     revalidatePath("/blog");
+    revalidatePath("/admin/blog");
     revalidatePath(`/blog/${d.original_slug}`);
     revalidatePath(`/blog/${newSlug}`);
     revalidatePath("/"); // in case it’s on the home
@@ -105,10 +117,11 @@ export async function deletePost(formData: FormData) {
     const slug = String(formData.get("slug") || "");
     if (!slug) return { ok: false, message: "Missing slug." };
 
-    const { error } = await supabase.from("posts").delete().eq("slug", slug);
+    const { error } = await supabase.from("blog_posts").delete().eq("slug", slug);
     if (error) return { ok: false, message: error.message };
 
     revalidatePath("/blog");
+    revalidatePath("/admin/blog");
     revalidatePath(`/blog/${slug}`);
     revalidatePath("/");
     return { ok: true };
