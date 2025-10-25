@@ -41,7 +41,8 @@ function formatDate(iso: string | null) {
 
 function renderMarkdown(md: string) {
   const raw = marked.parse(md, { gfm: true, breaks: true });
-  return sanitizeHtml(raw, {
+  const htmlString = typeof raw === "string" ? raw : String(raw);
+  return sanitizeHtml(htmlString, {
     allowedTags: sanitizeHtml.defaults.allowedTags.concat([
       "img",
       "h1",
