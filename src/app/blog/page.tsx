@@ -41,7 +41,7 @@ export default async function BlogIndex() {
     .select("slug, title, excerpt, cover_image_url, published_at, tags")
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
-    .order("published_at", { ascending: false, nullsLast: false });
+    .order("published_at", { ascending: false });
 
   if (error) {
     return (
