@@ -45,8 +45,8 @@ export default async function BlogList() {
     );
   }
 
-  const posts: BlogCard[] = (data ?? []) as BlogCard[];
-  if (!posts.length) {
+const posts: BlogCard[] = (data ?? []) as BlogCard[];
+if (!posts.length) {
     return (
       <div className="rounded-2xl border border-app bg-muted px-4 py-6 text-sm text-muted shadow-inner">
         No articles yet. We publish new stories soon.
@@ -73,6 +73,12 @@ export default async function BlogList() {
             <img
               src={primary.cover_image_url}
               alt={primary.title ?? "Featured blog post"}
+              onError={(e) => {
+                if (e.currentTarget.dataset.fallback === "1") return;
+                e.currentTarget.dataset.fallback = "1";
+                e.currentTarget.src = "/brand/logo.png";
+                e.currentTarget.classList.add("object-contain", "p-10", "bg-white");
+              }}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -108,6 +114,12 @@ export default async function BlogList() {
                     src={post.cover_image_url}
                     alt={post.title ?? ""}
                     className="h-36 w-full object-cover transition duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      if (e.currentTarget.dataset.fallback === "1") return;
+                      e.currentTarget.dataset.fallback = "1";
+                      e.currentTarget.src = "/brand/logo.png";
+                      e.currentTarget.classList.add("object-contain", "p-6", "bg-white");
+                    }}
                   />
                 ) : (
                   <div className="h-36 w-full bg-muted" />

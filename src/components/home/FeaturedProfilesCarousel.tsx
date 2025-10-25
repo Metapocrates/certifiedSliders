@@ -176,6 +176,15 @@ export default async function FeaturedProfilesCarousel() {
                                                 alt={c.full_name || c.username || "Athlete"}
                                                 fill
                                                 sizes="320px"
+                                                unoptimized
+                                                onError={(e) => {
+                                                    const img = e.currentTarget;
+                                                    if (img.dataset.fallback === "1") return;
+                                                    img.dataset.fallback = "1";
+                                                    img.src = "/brand/logo.png";
+                                                    img.classList.remove("object-cover");
+                                                    img.classList.add("object-contain", "bg-white", "p-6");
+                                                }}
                                                 className="object-cover transition duration-500 group-hover:scale-105"
                                             />
                                         ) : (
