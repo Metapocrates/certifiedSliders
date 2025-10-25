@@ -80,3 +80,53 @@ export async function createPost(formData: FormData) {
     revalidatePath("/");
     return { ok: true, slug };
 }
+
+const StatusSchema = z.object({
+    slug: z.string().min(3),
+    status: z.enum(["draft", "published"]),
+});
+
+export async function setPostStatus(formData: FormData) {
+    const supabase = createSupabaseServer();
+    const user = await getSessionUser();
+    if (!user) return { ok: false, message: "Not signed in." };
+    if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
+
+    const parsed = StatusSchema.safeParse({
+        slug: formData.get("slug"),
+        status: formData.get("status"),
+    });
+
+    if (!parsed.success) {
+        return { ok: false, message: "Invalid status change." };
+    }
+
+    const { slug, status } = parsed.data;
+
+    const { data: existing, error: fetchErr } = await supabase
+        .from("blog_posts")
+        .select("published_at, status")
+        .eq("slug", slug)
+        .maybeSingle();
+
+    if (fetchErr || !existing) {
+        return { ok: false, message: "Post not found." };
+    }
+
+    const updates: Record<string, any> = { status };
+    if (status === "published") {
+        updates.published_at = existing.published_at ?? new Date().toISOString();
+    } else {
+        updates.published_at = null;
+    }
+
+    const { error } = await supabase.from("blog_posts").update(updates).eq("slug", slug);
+    if (error) return { ok: false, message: error.message };
+
+    revalidatePath("/blog");
+    revalidatePath("/admin/blog");
+    revalidatePath(`/blog/${slug}`);
+    revalidatePath("/");
+
+    return { ok: true };
+}

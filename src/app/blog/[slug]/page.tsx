@@ -56,6 +56,44 @@ function renderMarkdown(md: string) {
     },
     transformTags: {
       a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" }),
+      h1: sanitizeHtml.simpleTransform("h1", {
+        class: "mt-12 text-3xl font-semibold text-app",
+      }),
+      h2: sanitizeHtml.simpleTransform("h2", {
+        class: "mt-10 text-2xl font-semibold text-app",
+      }),
+      h3: sanitizeHtml.simpleTransform("h3", {
+        class: "mt-8 text-xl font-semibold text-app",
+      }),
+      h4: sanitizeHtml.simpleTransform("h4", {
+        class: "mt-6 text-lg font-semibold text-app",
+      }),
+      p: sanitizeHtml.simpleTransform("p", {
+        class: "mt-4 text-base leading-relaxed text-app",
+      }),
+      ul: sanitizeHtml.simpleTransform("ul", {
+        class: "mt-5 list-disc space-y-2 pl-6 text-base leading-relaxed text-app",
+      }),
+      ol: sanitizeHtml.simpleTransform("ol", {
+        class: "mt-5 list-decimal space-y-2 pl-6 text-base leading-relaxed text-app",
+      }),
+      li: sanitizeHtml.simpleTransform("li", {
+        class: "leading-relaxed text-app",
+      }),
+      blockquote: sanitizeHtml.simpleTransform("blockquote", {
+        class: "mt-6 border-l-4 border-scarlet/60 bg-muted/60 px-5 py-3 text-base italic text-app",
+      }),
+      pre: sanitizeHtml.simpleTransform("pre", {
+        class:
+          "mt-6 overflow-x-auto rounded-2xl border border-app bg-card px-5 py-4 text-sm text-app",
+      }),
+      code: sanitizeHtml.simpleTransform("code", {
+        class: "rounded bg-muted px-1.5 py-0.5 text-sm text-app",
+      }),
+      img: sanitizeHtml.simpleTransform("img", {
+        class: "mt-6 w-full rounded-3xl border border-app object-cover",
+        loading: "lazy",
+      }),
     },
   });
 }
@@ -140,13 +178,14 @@ export default async function BlogPostPage({
           <img
             src={post.cover_image_url}
             alt={post.title}
-            className="w-full rounded-3xl border border-app object-cover"
+            loading="eager"
+            className="w-full rounded-3xl border border-app object-cover shadow-lg"
           />
         ) : null}
       </header>
 
       <section
-        className="prose prose-lg prose-slate max-w-none dark:prose-invert"
+        className="space-y-4"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </article>

@@ -1,75 +1,139 @@
 // src/components/home/BlogList.tsx
-// Server component
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
-// Minimal shape for blog cards
 type BlogCard = {
   id: string;
   slug: string;
-  title?: string | null;
-  excerpt?: string | null;
-  cover_image_url?: string | null;
-  published_at?: string | null;
-  [key: string]: unknown;
+  title: string | null;
+  excerpt: string | null;
+  cover_image_url: string | null;
+  published_at: string | null;
 };
+
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
 
 export default async function BlogList() {
   const supabase = createSupabaseServer();
 
-  const { data: posts, error } = await supabase
+  const { data, error } = await supabase
     .from("blog_posts")
     .select("id, slug, title, excerpt, cover_image_url, published_at")
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
-    .limit(3);
+    .limit(4);
 
   if (error) {
     return (
-      <div className="p-4 rounded-xl border">
-        <h3 className="font-semibold mb-2">Blog</h3>
-        <p className="text-sm text-red-600">Error: {error.message}</p>
+      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        Couldn’t load blog posts: {error.message}
       </div>
     );
   }
 
-  if (!posts?.length) {
+  const posts: BlogCard[] = (data ?? []) as BlogCard[];
+  if (!posts.length) {
     return (
-      <div className="p-4 rounded-xl border">
-        <h3 className="font-semibold mb-2">Blog</h3>
-        <p className="text-sm text-gray-600">No posts yet.</p>
+      <div className="rounded-2xl border border-app bg-muted px-4 py-6 text-sm text-muted shadow-inner">
+        No articles yet. We publish new stories soon.
       </div>
     );
   }
 
-  const typedPosts: BlogCard[] = posts as unknown as BlogCard[];
+  const [feature, ...rest] = posts;
 
   return (
-    <div className="space-y-4">
-      <h3 className="font-semibold">Blog</h3>
-      <div className="grid gap-4 md:grid-cols-3">
-        {typedPosts.map((p: BlogCard) => (
-          <Link
-            key={p.id}
-            href={`/blog/${p.slug}`}
-            className="rounded-xl border overflow-hidden"
-          >
-            {p.cover_image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={p.cover_image_url} alt={p.title ?? ""} className="w-full h-32 object-cover" />
-            ) : null}
-            <div className="p-3">
-              <div className="font-medium">{p.title}</div>
-              {p.excerpt ? (
-                <p className="text-sm text-gray-600 mt-1">{p.excerpt}</p>
-              ) : null}
+    <div className="space-y-8">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-stretch">
+        <Link
+          href={`/blog/${feature.slug}`}
+          className="relative overflow-hidden rounded-3xl border border-app shadow-xl transition hover:-translate-y-1 hover:shadow-2xl"
+        >
+          <div
+            className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent"
+            aria-hidden="true"
+          />
+          {feature.cover_image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={feature.cover_image_url}
+              alt={feature.title ?? "Featured blog post"}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E]" />
+          )}
+          <div className="relative flex h-full flex-col justify-end gap-4 p-8 text-white">
+            <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.3em] text-white/70">
+              <span>Featured story</span>
+              <span>•</span>
+              <span>{formatDate(feature.published_at)}</span>
             </div>
-          </Link>
-        ))}
+            <h3 className="text-2xl font-semibold leading-tight">
+              {feature.title ?? "Untitled story"}
+            </h3>
+            {feature.excerpt ? (
+              <p className="text-sm text-white/80 line-clamp-3">{feature.excerpt}</p>
+            ) : null}
+            <span className="text-sm font-semibold text-[#F5C518]">Read story →</span>
+          </div>
+        </Link>
+
+        {rest.length ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {rest.map((post) => (
+              <Link
+                key={post.id}
+                href={`/blog/${post.slug}`}
+                className="group flex flex-col overflow-hidden rounded-3xl border border-app bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                {post.cover_image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={post.cover_image_url}
+                    alt={post.title ?? ""}
+                    className="h-36 w-full object-cover transition duration-500 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="h-36 w-full bg-muted" />
+                )}
+                <div className="flex flex-1 flex-col gap-3 p-5">
+                  <div className="text-xs uppercase tracking-[0.3em] text-muted">
+                    {formatDate(post.published_at)}
+                  </div>
+                  <h4 className="text-lg font-semibold text-app line-clamp-2">
+                    {post.title ?? "Untitled story"}
+                  </h4>
+                  {post.excerpt ? (
+                    <p className="text-sm text-muted line-clamp-3">{post.excerpt}</p>
+                  ) : null}
+                  <span className="text-sm font-semibold text-scarlet">Read more →</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </div>
-      <div>
-        <Link href="/blog" className="btn">View all posts</Link>
+
+      <div className="flex justify-end">
+        <Link
+          href="/blog"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-app px-6 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+        >
+          View all posts
+        </Link>
       </div>
     </div>
   );

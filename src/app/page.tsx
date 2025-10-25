@@ -1,5 +1,6 @@
 // src/app/page.tsx
 import FeaturedProfilesCarousel from "@/components/home/FeaturedProfilesCarousel";
+import BlogList from "@/components/home/BlogList";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SafeLink from "@/components/SafeLink";
 
@@ -203,6 +204,18 @@ export default async function HomePage() {
           </SafeLink>
         </div>
         <FeaturedProfilesCarousel />
+      </section>
+
+      <section className="mx-auto max-w-6xl space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+              Latest from the blog
+            </p>
+            <h2 className="text-2xl font-semibold text-app">Stories from the track &amp; beyond</h2>
+          </div>
+        </div>
+        <BlogList />
       </section>
 
       <section className="mx-auto max-w-6xl rounded-3xl border border-app bg-card p-8 shadow-sm">
