@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 
+export const TEAM_AUTHOR_NAME = "Certified Sliders Team";
+
 const PostSchema = z.object({
     title: z.string().min(3, "Title is required"),
     slug: z
@@ -16,6 +18,8 @@ const PostSchema = z.object({
     content: z.string().min(1, "Content is required"),
     cover_image_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
     tags: z.string().optional(),
+    video_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    author_mode: z.enum(["self", "team"]).default("self"),
     status: z.enum(["draft", "published"]).default("draft"),
 });
 
@@ -41,6 +45,8 @@ export async function createPost(formData: FormData) {
         content: formData.get("content") ?? "",
         cover_image_url: (formData.get("cover_image_url") as string | null) ?? undefined,
         tags: (formData.get("tags") as string | null) ?? undefined,
+        video_url: (formData.get("video_url") as string | null) ?? undefined,
+        author_mode: (formData.get("author_mode") as string | null) ?? "self",
         status: (formData.get("status") as string | null) ?? "draft",
     });
     if (!parsed.success) {
@@ -54,6 +60,7 @@ export async function createPost(formData: FormData) {
             ?.split(",")
             .map((t) => t.trim())
             .filter(Boolean) ?? [];
+    const mode = data.author_mode ?? "self";
 
     const row = {
         slug,
@@ -61,8 +68,10 @@ export async function createPost(formData: FormData) {
         excerpt: data.excerpt ?? null,
         content: data.content,
         cover_image_url: data.cover_image_url ? data.cover_image_url : null,
-        author_id: user.id,
+        author_id: mode === "team" ? null : user.id,
+        author_override: mode === "team" ? TEAM_AUTHOR_NAME : null,
         tags: tagList,
+        video_url: data.video_url ? data.video_url : null,
         status: data.status,
         published_at: data.status === "published" ? new Date().toISOString() : null,
     };
@@ -83,7 +92,7 @@ export async function createPost(formData: FormData) {
 
 const StatusSchema = z.object({
     slug: z.string().min(3),
-    status: z.enum(["draft", "published"]),
+    status: z.enum(["draft", "published", "archived"]),
 });
 
 export async function setPostStatus(formData: FormData) {

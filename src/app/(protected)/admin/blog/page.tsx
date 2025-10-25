@@ -7,7 +7,7 @@ import { setPostStatus } from "./actions";
 type Row = {
   slug: string;
   title: string;
-  status: "draft" | "published";
+  status: "draft" | "published" | "archived";
   published_at: string | null;
   updated_at: string;
 };
@@ -39,6 +39,7 @@ export default async function AdminBlogIndex() {
 
   const drafts = (posts ?? []).filter((p) => p.status === "draft");
   const published = (posts ?? []).filter((p) => p.status === "published");
+  const archived = (posts ?? []).filter((p) => p.status === "archived");
 
   return (
     <div className="container py-12 space-y-6">
@@ -82,6 +83,18 @@ export default async function AdminBlogIndex() {
           </div>
         </header>
         <PublishedTable rows={published} />
+      </section>
+
+      <section className="space-y-4">
+        <header className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Archived</p>
+            <h2 className="text-lg font-semibold text-app">
+              {archived.length} {archived.length === 1 ? "archive" : "archives"} saved
+            </h2>
+          </div>
+        </header>
+        <ArchivedTable rows={archived} />
       </section>
     </div>
   );
@@ -180,22 +193,102 @@ function PublishedTable({ rows }: { rows: Row[] }) {
               <td className="px-4 py-3">{formatDate(post.published_at)}</td>
               <td className="px-4 py-3">{formatDate(post.updated_at)}</td>
               <td className="px-4 py-3">
-                <form action={setPostStatus} className="inline-flex items-center gap-3">
-                  <input type="hidden" name="slug" value={post.slug} />
-                  <input type="hidden" name="status" value="draft" />
-                  <button
-                    type="submit"
-                    className="rounded-full border border-app px-3 py-1.5 text-xs font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
-                  >
-                    Unpublish
-                  </button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <form action={setPostStatus}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <input type="hidden" name="status" value="draft" />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-app px-3 py-1.5 text-xs font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+                    >
+                      Unpublish
+                    </button>
+                  </form>
+                  <form action={setPostStatus}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <input type="hidden" name="status" value="archived" />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-app px-3 py-1.5 text-xs font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+                    >
+                      Archive
+                    </button>
+                  </form>
                   <Link
                     href={`/admin/blog/${post.slug}`}
                     className="rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-app shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                   >
                     Edit
                   </Link>
-                </form>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ArchivedTable({ rows }: { rows: Row[] }) {
+  if (!rows.length) {
+    return (
+      <div className="rounded-2xl border border-app bg-muted px-4 py-6 text-sm text-muted shadow-inner">
+        Nothing in the archive. Unpublish a story to move it here.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-2xl border">
+      <table className="min-w-full text-sm">
+        <thead className="bg-muted text-xs uppercase tracking-wide text-muted">
+          <tr>
+            <th className="px-4 py-3 text-left font-semibold text-app">Title</th>
+            <th className="px-4 py-3 text-left font-semibold text-app">Last updated</th>
+            <th className="px-4 py-3 text-left font-semibold text-app">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((post) => (
+            <tr key={post.slug} className="border-t">
+              <td className="px-4 py-3">
+                <div className="flex flex-col">
+                  <Link href={`/admin/blog/${post.slug}`} className="font-medium hover:underline">
+                    {post.title}
+                  </Link>
+                  <span className="text-xs text-muted">Archived</span>
+                </div>
+              </td>
+              <td className="px-4 py-3">{formatDate(post.updated_at)}</td>
+              <td className="px-4 py-3">
+                <div className="flex flex-wrap gap-3">
+                  <form action={setPostStatus}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <input type="hidden" name="status" value="draft" />
+                    <button
+                      type="submit"
+                      className="rounded-full border border-app px-3 py-1.5 text-xs font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+                    >
+                      Restore to draft
+                    </button>
+                  </form>
+                  <form action={setPostStatus}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <input type="hidden" name="status" value="published" />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-scarlet px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-scarlet/90"
+                    >
+                      Publish
+                    </button>
+                  </form>
+                  <Link
+                    href={`/admin/blog/${post.slug}`}
+                    className="rounded-full bg-card px-3 py-1.5 text-xs font-semibold text-app shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    Edit
+                  </Link>
+                </div>
               </td>
             </tr>
           ))}

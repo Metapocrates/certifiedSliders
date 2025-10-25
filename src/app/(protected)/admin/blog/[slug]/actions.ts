@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
+import { TEAM_AUTHOR_NAME } from "../actions";
 
 const PostUpdateSchema = z.object({
     original_slug: z.string().min(1),
@@ -17,7 +18,9 @@ const PostUpdateSchema = z.object({
     content: z.string().min(1, "Content is required"),
     cover_image_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
     tags: z.string().optional(),
-    status: z.enum(["draft", "published"]).default("draft"),
+    video_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    author_mode: z.enum(["self", "team"]).default("self"),
+    status: z.enum(["draft", "published", "archived"]).default("draft"),
 });
 
 function slugify(s: string) {
@@ -43,6 +46,8 @@ export async function updatePost(formData: FormData) {
         content: formData.get("content"),
         cover_image_url: (formData.get("cover_image_url") as string) || undefined,
         tags: (formData.get("tags") as string) || undefined,
+        video_url: (formData.get("video_url") as string) || undefined,
+        author_mode: (formData.get("author_mode") as string) || "self",
         status: (formData.get("status") as string) || "draft",
     });
     if (!parsed.success) {
@@ -64,7 +69,7 @@ export async function updatePost(formData: FormData) {
 
     const { data: existing, error: findErr } = await supabase
         .from("blog_posts")
-        .select("published_at, status")
+        .select("published_at, status, author_id, author_override")
         .eq("slug", d.original_slug)
         .maybeSingle();
 
@@ -77,8 +82,16 @@ export async function updatePost(formData: FormData) {
         content: d.content,
         cover_image_url: d.cover_image_url || null,
         tags: tagList,
+        video_url: d.video_url || null,
         status: d.status,
     };
+    if (d.author_mode === "team") {
+        updates.author_id = null;
+        updates.author_override = TEAM_AUTHOR_NAME;
+    } else {
+        updates.author_id = existing.author_id ?? user.id;
+        updates.author_override = null;
+    }
 
     if (publishNow && !existing.published_at) {
         updates.published_at = new Date().toISOString();

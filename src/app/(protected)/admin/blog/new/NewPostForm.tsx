@@ -58,6 +58,33 @@ export default function NewPostForm() {
         <span className="text-xs text-muted">Use lowercase keywords separated by commas.</span>
       </label>
 
+      <fieldset className="grid gap-2 rounded-xl border border-dashed border-app/70 p-4">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+          Author
+        </legend>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="radio" name="author_mode" value="self" defaultChecked />
+          <span>Publish as me (shows my profile)</span>
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="radio" name="author_mode" value="team" />
+          <span>Certified Sliders Team</span>
+        </label>
+      </fieldset>
+
+      <label className="grid gap-1">
+        <span className="text-sm font-medium">Featured video URL (optional)</span>
+        <input
+          name="video_url"
+          className="input"
+          type="url"
+          placeholder="https://www.youtube.com/watch?v=..."
+        />
+        <span className="text-xs text-muted">
+          YouTube links embed automatically. Direct MP4 links will show a video player.
+        </span>
+      </label>
+
       <label className="grid gap-1">
         <span className="text-sm font-medium">Content</span>
         <textarea name="content" className="input min-h-[240px]" placeholder="Write your post..." required />
