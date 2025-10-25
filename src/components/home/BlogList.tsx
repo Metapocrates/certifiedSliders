@@ -63,21 +63,23 @@ if (!posts.length) {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-stretch">
         <Link
           href={`/blog/${primary.slug}`}
-          className="relative overflow-hidden rounded-3xl border border-app shadow-xl transition hover:-translate-y-1 hover:shadow-2xl"
+          className="relative min-h-[320px] overflow-hidden rounded-3xl border border-app shadow-xl transition hover:-translate-y-1 hover:shadow-2xl"
         >
+          <div className="absolute inset-0" aria-hidden="true">
+            <div className="relative h-full w-full">
+              <BlogCover
+                src={primary.cover_image_url}
+                alt={primary.title ?? "Featured blog post"}
+                fill
+                fallbackClassName="p-10"
+              />
+            </div>
+          </div>
           <div
-            className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent"
+            className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/40 to-transparent pointer-events-none"
             aria-hidden="true"
           />
-          <div className="relative h-full w-full">
-            <BlogCover
-              src={primary.cover_image_url}
-              alt={primary.title ?? "Featured blog post"}
-              fill
-              fallbackClassName="p-10"
-            />
-          </div>
-          <div className="relative flex h-full flex-col justify-end gap-4 p-8 text-white">
+          <div className="relative z-10 flex h-full flex-col justify-end gap-4 p-8 text-white">
             <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.3em] text-white/70">
               <span>Featured story</span>
               <span>•</span>
