@@ -192,10 +192,12 @@ export default async function BlogPostPage({
     status: data.status as BlogPostRow["status"],
     video_url: data.video_url ?? null,
     author_override: data.author_override ?? null,
-    author: data.author ? {
-      full_name: data.author.full_name,
-      username: data.author.username,
-    } : null,
+    author: data.author && typeof data.author === "object"
+      ? {
+          full_name: (data.author as any)?.full_name ?? null,
+          username: (data.author as any)?.username ?? null,
+        }
+      : null,
   };
   const html = renderMarkdown(post.content);
   const authorDisplay = post.author_override
