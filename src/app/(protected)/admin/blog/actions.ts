@@ -4,8 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
-
-export const TEAM_AUTHOR_NAME = "Certified Sliders Team";
+import { TEAM_AUTHOR_NAME } from "./constants";
 
 const PostSchema = z.object({
     title: z.string().min(3, "Title is required"),

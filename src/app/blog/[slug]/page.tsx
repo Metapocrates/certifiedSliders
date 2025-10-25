@@ -4,7 +4,8 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
-import { setPostStatus, TEAM_AUTHOR_NAME } from "@/app/(protected)/admin/blog/actions";
+import { setPostStatus } from "@/app/(protected)/admin/blog/actions";
+import { TEAM_AUTHOR_NAME } from "@/app/(protected)/admin/blog/constants";
 
 export const revalidate = 600;
 

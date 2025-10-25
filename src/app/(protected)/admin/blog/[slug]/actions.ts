@@ -4,7 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
-import { TEAM_AUTHOR_NAME } from "../actions";
+import { TEAM_AUTHOR_NAME } from "../constants";
 
 const PostUpdateSchema = z.object({
     original_slug: z.string().min(1),
