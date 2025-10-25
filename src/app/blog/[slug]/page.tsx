@@ -175,13 +175,25 @@ export default async function BlogPostPage({
     query = query.eq("status", "published").lte("published_at", new Date().toISOString());
   }
 
-  const { data, error } = await query.maybeSingle();
+  const { data, error } = await query.limit(1).maybeSingle();
 
   if (error || !data) {
     notFound();
   }
 
-  const post = data as BlogPostRow;
+  const post: BlogPostRow = {
+    slug: data.slug,
+    title: data.title,
+    excerpt: data.excerpt ?? null,
+    content: data.content,
+    cover_image_url: data.cover_image_url ?? null,
+    tags: (data.tags ?? []) as string[] | null,
+    published_at: data.published_at ?? null,
+    status: data.status as BlogPostRow["status"],
+    video_url: data.video_url ?? null,
+    author_override: data.author_override ?? null,
+    author: data.author ?? null,
+  };
   const html = renderMarkdown(post.content);
   const authorDisplay = post.author_override
     ? post.author_override
