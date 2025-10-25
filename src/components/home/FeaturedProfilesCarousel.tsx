@@ -175,6 +175,9 @@ export default async function FeaturedProfilesCarousel() {
                                             <ImageWithFallback
                                                 src={c.profile_pic_url}
                                                 alt={c.full_name || c.username || "Athlete"}
+                                                fill
+                                                sizes="320px"
+                                                className="object-cover transition duration-500 group-hover:scale-105"
                                             />
                                         ) : (
                                             <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] text-4xl text-white">
