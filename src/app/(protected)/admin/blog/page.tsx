@@ -2,12 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
-import { setPostStatus } from "./actions";
+import { setPostStatus, setPostFeatured } from "./actions";
 
 type Row = {
   slug: string;
   title: string;
   status: "draft" | "published" | "archived";
+  featured: boolean;
   published_at: string | null;
   updated_at: string;
 };
@@ -33,7 +34,7 @@ export default async function AdminBlogIndex() {
 
   const { data: posts, error } = await supabase
     .from("blog_posts")
-    .select("slug, title, status, published_at, updated_at")
+    .select("slug, title, status, published_at, updated_at, featured")
     .order("published_at", { ascending: false, nullsLast: false })
     .order("updated_at", { ascending: false });
 
@@ -188,6 +189,11 @@ function PublishedTable({ rows }: { rows: Row[] }) {
                   <Link href={`/blog/${post.slug}`} className="text-xs text-muted hover:underline">
                     View live
                   </Link>
+                  {post.featured ? (
+                    <span className="mt-1 inline-flex w-fit items-center gap-2 rounded-full bg-scarlet/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-scarlet">
+                      Featured
+                    </span>
+                  ) : null}
                 </div>
               </td>
               <td className="px-4 py-3">{formatDate(post.published_at)}</td>
@@ -212,6 +218,20 @@ function PublishedTable({ rows }: { rows: Row[] }) {
                       className="rounded-full border border-app px-3 py-1.5 text-xs font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
                     >
                       Archive
+                    </button>
+                  </form>
+                  <form action={setPostFeatured}>
+                    <input type="hidden" name="slug" value={post.slug} />
+                    <input type="hidden" name="featured" value={post.featured ? "off" : "on"} />
+                    <button
+                      type="submit"
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                        post.featured
+                          ? "border border-app text-app hover:border-scarlet hover:text-scarlet"
+                          : "bg-scarlet text-white hover:bg-scarlet/90"
+                      }`}
+                    >
+                      {post.featured ? "Unfeature" : "Feature"}
                     </button>
                   </form>
                   <Link

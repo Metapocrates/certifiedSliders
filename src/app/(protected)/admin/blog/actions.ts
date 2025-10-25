@@ -38,6 +38,7 @@ export async function createPost(formData: FormData) {
     if (!user) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
 
+    const rawFeatured = formData.get("featured");
     const parsed = PostSchema.safeParse({
         title: formData.get("title") ?? "",
         slug: (formData.get("slug") as string | null) || undefined,
@@ -61,6 +62,7 @@ export async function createPost(formData: FormData) {
             .map((t) => t.trim())
             .filter(Boolean) ?? [];
     const mode = data.author_mode ?? "self";
+    const featured = rawFeatured === "on";
 
     const row = {
         slug,
@@ -73,6 +75,7 @@ export async function createPost(formData: FormData) {
         tags: tagList,
         video_url: data.video_url ? data.video_url : null,
         status: data.status,
+        featured,
         published_at: data.status === "published" ? new Date().toISOString() : null,
     };
 
@@ -93,6 +96,11 @@ export async function createPost(formData: FormData) {
 const StatusSchema = z.object({
     slug: z.string().min(3),
     status: z.enum(["draft", "published", "archived"]),
+});
+
+const FeaturedSchema = z.object({
+    slug: z.string().min(3),
+    featured: z.enum(["on", "off"]),
 });
 
 export async function setPostStatus(formData: FormData) {
@@ -141,5 +149,37 @@ export async function setPostStatus(formData: FormData) {
     if (redirectTo) {
         redirect(redirectTo);
     }
+    return { ok: true };
+}
+
+export async function setPostFeatured(formData: FormData) {
+    const supabase = createSupabaseServer();
+    const user = await getSessionUser();
+    if (!user) return { ok: false, message: "Not signed in." };
+    if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
+
+    const parsed = FeaturedSchema.safeParse({
+        slug: formData.get("slug"),
+        featured: formData.get("featured") ?? "off",
+    });
+
+    if (!parsed.success) {
+        return { ok: false, message: "Invalid featured toggle." };
+    }
+
+    const { slug, featured } = parsed.data;
+    const flag = featured === "on";
+
+    const { error } = await supabase
+        .from("blog_posts")
+        .update({ featured: flag })
+        .eq("slug", slug);
+
+    if (error) return { ok: false, message: error.message };
+
+    revalidatePath("/blog");
+    revalidatePath("/admin/blog");
+    revalidatePath("/");
+
     return { ok: true };
 }

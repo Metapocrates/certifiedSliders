@@ -151,13 +151,9 @@ export default async function FeaturedProfilesCarousel() {
     }
 
     return (
-        <section className="space-y-3">
-            {/* <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Featured Athletes</h2>
-            </div> */}
-
+        <section className="space-y-4">
             <div className="no-scrollbar -mx-4 overflow-x-auto px-4 py-1">
-                <ul className="flex gap-4">
+                <ul className="flex gap-5">
                     {cards.map((c) => {
                         const href = c.username ? `/athletes/${c.username}` : undefined;
                         const subtitleParts = [
@@ -168,40 +164,49 @@ export default async function FeaturedProfilesCarousel() {
                         ].filter(Boolean);
 
                         return (
-                            <li
-                                key={c.id}
-                                className="group relative w-64 shrink-0 overflow-hidden rounded-2xl border border-app bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                            >
-                                <SafeLink href={href} className="block">
-                                    <div className="relative h-36 w-full overflow-hidden bg-neutral-100">
+                            <li key={c.id} className="w-[300px] shrink-0">
+                                <SafeLink
+                                    href={href}
+                                    className="group relative block h-full overflow-hidden rounded-3xl border border-app bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                                >
+                                    <div className="relative flex h-40 w-full items-end overflow-hidden">
                                         {c.profile_pic_url ? (
                                             <Image
                                                 src={c.profile_pic_url}
                                                 alt={c.full_name || c.username || "Athlete"}
                                                 fill
-                                                sizes="256px"
+                                                sizes="320px"
                                                 className="object-cover transition duration-500 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <div className="grid h-full place-items-center text-3xl text-neutral-400">
+                                            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] text-4xl text-white">
                                                 🙂
                                             </div>
                                         )}
-                                    </div>
-                                    <div className="space-y-1 p-4">
-                                        <div className="truncate text-sm font-semibold text-app">
-                                            {c.full_name || c.username}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/20 to-transparent" />
+                                        <div className="relative w-full px-5 pb-5">
+                                            <p className="text-xs uppercase tracking-[0.35em] text-white/70">
+                                                Featured slider
+                                            </p>
+                                            <h3 className="truncate text-lg font-semibold text-white">
+                                                {c.full_name || c.username}
+                                            </h3>
+                                            {subtitleParts.length > 0 ? (
+                                                <p className="truncate text-xs text-white/70">{subtitleParts.join(" • ")}</p>
+                                            ) : null}
                                         </div>
-                                        {subtitleParts.length > 0 ? (
-                                            <div className="truncate text-xs text-muted">
-                                                {subtitleParts.join(" • ")}
-                                            </div>
-                                        ) : null}
+                                    </div>
+                                    <div className="space-y-3 px-5 py-4">
                                         {c.blurb ? (
-                                            <div className="truncate text-xs text-app opacity-80">
-                                                {c.blurb}
-                                            </div>
-                                        ) : null}
+                                            <p className="text-sm text-muted line-clamp-2">{c.blurb}</p>
+                                        ) : (
+                                            <p className="text-sm text-muted">
+                                                Tap through to see this athlete&apos;s verified marks.
+                                            </p>
+                                        )}
+                                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-scarlet transition group-hover:text-scarlet/80">
+                                            View profile →
+                                        </span>
                                     </div>
                                 </SafeLink>
                             </li>

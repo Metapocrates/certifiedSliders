@@ -12,6 +12,7 @@ type Post = {
   cover_image_url: string | null;
   tags: string[] | null;
   video_url: string | null;
+  featured: boolean;
   author_override: string | null;
   status: "draft" | "published" | "archived";
 };
@@ -105,6 +106,11 @@ export default function EditPostForm({ initial }: { initial: Post }) {
           placeholder="rankings, interviews, training"
         />
         <span className="text-xs text-muted">Use lowercase keywords separated by commas.</span>
+      </label>
+
+      <label className="flex items-center gap-3 rounded-xl border border-app/60 bg-card px-4 py-3 text-sm">
+        <input type="checkbox" name="featured" defaultChecked={initial.featured} />
+        <span>Feature this post on the home page</span>
       </label>
 
       <fieldset className="grid gap-2 rounded-xl border border-dashed border-app/70 p-4">

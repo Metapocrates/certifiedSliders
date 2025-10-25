@@ -9,6 +9,7 @@ type BlogCard = {
   excerpt: string | null;
   cover_image_url: string | null;
   published_at: string | null;
+  featured: boolean;
 };
 
 function formatDate(iso: string | null) {
@@ -29,11 +30,12 @@ export default async function BlogList() {
 
   const { data, error } = await supabase
     .from("blog_posts")
-    .select("id, slug, title, excerpt, cover_image_url, published_at")
+    .select("id, slug, title, excerpt, cover_image_url, published_at, featured")
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
+    .order("featured", { ascending: false })
     .order("published_at", { ascending: false })
-    .limit(4);
+    .limit(5);
 
   if (error) {
     return (
@@ -52,24 +54,25 @@ export default async function BlogList() {
     );
   }
 
-  const [feature, ...rest] = posts;
+  const primary = posts.find((p) => p.featured) ?? posts[0];
+  const rest = posts.filter((p) => p.id !== primary.id).slice(0, 4);
 
   return (
     <div className="space-y-8">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-stretch">
         <Link
-          href={`/blog/${feature.slug}`}
+          href={`/blog/${primary.slug}`}
           className="relative overflow-hidden rounded-3xl border border-app shadow-xl transition hover:-translate-y-1 hover:shadow-2xl"
         >
           <div
             className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/30 to-transparent"
             aria-hidden="true"
           />
-          {feature.cover_image_url ? (
+          {primary.cover_image_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={feature.cover_image_url}
-              alt={feature.title ?? "Featured blog post"}
+              src={primary.cover_image_url}
+              alt={primary.title ?? "Featured blog post"}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -79,13 +82,13 @@ export default async function BlogList() {
             <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.3em] text-white/70">
               <span>Featured story</span>
               <span>•</span>
-              <span>{formatDate(feature.published_at)}</span>
+              <span>{formatDate(primary.published_at)}</span>
             </div>
             <h3 className="text-2xl font-semibold leading-tight">
-              {feature.title ?? "Untitled story"}
+              {primary.title ?? "Untitled story"}
             </h3>
-            {feature.excerpt ? (
-              <p className="text-sm text-white/80 line-clamp-3">{feature.excerpt}</p>
+            {primary.excerpt ? (
+              <p className="text-sm text-white/80 line-clamp-3">{primary.excerpt}</p>
             ) : null}
             <span className="text-sm font-semibold text-[#F5C518]">Read story →</span>
           </div>

@@ -38,6 +38,7 @@ export async function updatePost(formData: FormData) {
     if (!user) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
 
+    const rawFeatured = formData.get("featured");
     const parsed = PostUpdateSchema.safeParse({
         original_slug: formData.get("original_slug"),
         title: formData.get("title"),
@@ -56,6 +57,7 @@ export async function updatePost(formData: FormData) {
 
     const d = parsed.data;
     const newSlug = d.slug ? slugify(d.slug) : slugify(d.title);
+    const featured = rawFeatured === "on";
     const tagList =
         d.tags
             ?.split(",")
@@ -84,6 +86,7 @@ export async function updatePost(formData: FormData) {
         tags: tagList,
         video_url: d.video_url || null,
         status: d.status,
+        featured,
     };
     if (d.author_mode === "team") {
         updates.author_id = null;

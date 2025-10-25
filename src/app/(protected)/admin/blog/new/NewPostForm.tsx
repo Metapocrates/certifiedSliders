@@ -58,6 +58,11 @@ export default function NewPostForm() {
         <span className="text-xs text-muted">Use lowercase keywords separated by commas.</span>
       </label>
 
+      <label className="flex items-center gap-3 rounded-xl border border-app/60 bg-card px-4 py-3 text-sm">
+        <input type="checkbox" name="featured" />
+        <span>Feature this post on the home page</span>
+      </label>
+
       <fieldset className="grid gap-2 rounded-xl border border-dashed border-app/70 p-4">
         <legend className="px-1 text-xs font-semibold uppercase tracking-[0.3em] text-muted">
           Author

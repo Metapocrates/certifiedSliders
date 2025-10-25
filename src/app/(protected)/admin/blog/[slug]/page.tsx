@@ -11,7 +11,7 @@ export default async function EditBlogPostPage({ params }: { params: { slug: str
 
   const { data: post } = await supabase
     .from("blog_posts")
-    .select("slug, title, excerpt, content, cover_image_url, tags, status, video_url, author_override")
+    .select("slug, title, excerpt, content, cover_image_url, tags, status, video_url, author_override, featured")
     .eq("slug", params.slug)
     .maybeSingle();
 
