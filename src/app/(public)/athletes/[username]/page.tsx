@@ -20,13 +20,17 @@ function fmtTime(sec: number | null | undefined, text?: string | null) {
 }
 
 function Toast({ kind, msg }: { kind: "success" | "error" | "info"; msg: string }) {
-  const cls =
+  const palette =
     kind === "success"
-      ? "border-green-300 bg-green-50 text-green-800"
+      ? { border: "border-green-200", bg: "bg-green-50", text: "text-green-800" }
       : kind === "error"
-        ? "border-red-300 bg-red-50 text-red-800"
-        : "border-blue-300 bg-blue-50 text-blue-800";
-  return <div className={`mb-4 rounded-lg border px-3 py-2 text-sm ${cls}`}>{msg}</div>;
+        ? { border: "border-red-200", bg: "bg-red-50", text: "text-red-800" }
+        : { border: "border-blue-200", bg: "bg-blue-50", text: "text-blue-800" };
+  return (
+    <div className={`rounded-2xl border ${palette.border} ${palette.bg} px-4 py-3 text-sm ${palette.text}`}>
+      {msg}
+    </div>
+  );
 }
 
 export default async function AthleteProfilePage({ params, searchParams }: PageProps) {
@@ -95,6 +99,11 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   }
 
   const historyHref = profile.username ? `/athletes/${profile.username}/history` : undefined;
+  const teamLabel = profile.school_name
+    ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
+    : "Unlisted program";
+  const classLabel = profile.class_year ? `Class of ${profile.class_year}` : "Class year TBD";
+  const genderLabel = profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—";
 
   // Ownership + CTAs
   const isOwner = !!viewer && (viewer.id === profile.id || viewer.id === profile.claimed_by);
@@ -121,125 +130,155 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   }
 
   return (
-    <div className="container py-8">
+    <div className="space-y-12 px-4 pb-16 pt-10 sm:px-6 lg:px-8">
       {toast ? <Toast kind={toast.kind} msg={toast.msg} /> : null}
 
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-14 w-14 overflow-hidden rounded-full bg-gray-100">
-            {profile.profile_pic_url ? (
-              <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gray-100">
+      <section className="relative overflow-hidden rounded-3xl border border-app bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] px-6 py-10 text-white shadow-2xl sm:px-10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,197,24,0.18),_transparent_55%)]" />
+        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-6">
+            <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/30 bg-white/10 p-1 shadow-lg">
+              {profile.profile_pic_url ? (
                 <Image
                   src={profile.profile_pic_url}
-                  alt="Avatar"
+                  alt={`${profile.full_name ?? profile.username} avatar`}
                   fill
-                  sizes="56px"
-                  className="object-cover"
+                  sizes="96px"
+                  className="rounded-2xl object-cover"
                 />
+              ) : (
+                <div className="grid h-full place-items-center text-3xl">🙂</div>
+              )}
+            </div>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
+                  Athlete profile
+                </p>
+                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+                  {profile.full_name ?? profile.username}
+                </h1>
               </div>
-            ) : (
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-gray-100">🙂</div>
-            )}
+              <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.28em] text-white/80">
+                <span>{teamLabel}</span>
+                <span>•</span>
+                <span>{classLabel}</span>
+                <span>•</span>
+                <span>{genderLabel}</span>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-white/70">
+                <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
+                  {best?.length ?? 0} verified events
+                </span>
+                {historyHref ? (
+                  <SafeLink
+                    href={historyHref}
+                    className="rounded-full border border-white/30 px-3 py-1 font-semibold text-white hover:border-white hover:bg-white/10"
+                  >
+                    View detailed history
+                  </SafeLink>
+                ) : null}
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-semibold">{profile.full_name ?? profile.username}</h1>
-            <p className="text-sm text-gray-500">
-              {profile.school_name
-                ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
-                : "—"}
-              {" • "}
-              {profile.class_year ?? "—"}
-              {" • "}
-              {profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—"}
-            </p>
+          <div className="flex flex-wrap gap-2">
+            {isOwner ? (
+              <a
+                href="/settings"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/10"
+              >
+                Edit profile
+              </a>
+            ) : showClaim ? (
+              <a
+                href={claimHref}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#F5C518] hover:text-[#111827]"
+              >
+                Claim this profile
+              </a>
+            ) : null}
           </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <SafeLink
-            href={historyHref}
-            className="rounded-md border px-3 py-2 text-sm hover:opacity-90"
-            fallback={<span />}
-          >
-            View History
-          </SafeLink>
-
-          {isOwner ? (
-            <a
-              href="/settings"
-              className="rounded-md border px-3 py-2 text-sm hover:opacity-90 bg-black text-white"
-              title="Edit your profile"
-            >
-              Edit Profile
-            </a>
-          ) : showClaim ? (
-            <a
-              href={claimHref}
-              className="rounded-md border px-3 py-2 text-sm hover:opacity-90 bg-black text-white"
-              title="Claim this profile"
-            >
-              Claim this profile
-            </a>
-          ) : null}
-        </div>
-      </div>
+      </section>
 
       {profile.bio ? (
-        <div className="mb-6 rounded-xl border p-4 text-sm text-gray-800 whitespace-pre-wrap">
-          {profile.bio}
-        </div>
+        <section className="mx-auto max-w-4xl rounded-3xl border border-app bg-card px-6 py-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-app">Bio</h2>
+          <p className="mt-3 whitespace-pre-wrap text-sm text-muted leading-relaxed">{profile.bio}</p>
+        </section>
       ) : null}
 
-      <div className="rounded-xl border overflow-x-auto">
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <h2 className="text-lg font-medium">Best Marks</h2>
-          <span className="text-sm text-gray-500">{best?.length ?? 0} events</span>
+      <section className="space-y-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Verified marks</p>
+            <h2 className="text-2xl font-semibold text-app">
+              Highlights across {best?.length ?? 0} events
+            </h2>
+          </div>
+          {historyHref ? (
+            <SafeLink
+              href={historyHref}
+              className="inline-flex h-10 items-center justify-center rounded-full border border-app px-4 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+            >
+              See all results
+            </SafeLink>
+          ) : null}
         </div>
+
         {(!best || best.length === 0) ? (
-          <div className="p-4 text-sm text-gray-600">No verified marks yet.</div>
+          <div className="rounded-3xl border border-app bg-muted px-6 py-10 text-sm text-muted shadow-inner">
+            No verified marks yet. Once results are approved they’ll appear here.
+          </div>
         ) : (
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left">
-                <th className="px-3 py-2">Event</th>
-                <th className="px-3 py-2">Mark</th>
-                <th className="px-3 py-2">Wind</th>
-                <th className="px-3 py-2">Season</th>
-                <th className="px-3 py-2">Meet</th>
-                <th className="px-3 py-2">Date</th>
-                <th className="px-3 py-2">Proof</th>
-              </tr>
-            </thead>
-            <tbody>
-              {best!.map((r: any, i: number) => {
-                const mark = fmtTime(
-                  r.best_seconds_adj ?? r.mark_seconds_adj,
-                  r.best_mark_text ?? r.mark
-                );
-                const meetDate = r.meet_date
-                  ? new Date(r.meet_date).toISOString().slice(0, 10)
-                  : "—";
-                const wind = r.wind ?? (r.wind_legal === false ? "NWI/IL" : "—");
-                return (
-                  <tr key={`${r.event}-${i}`} className="border-t">
-                    <td className="px-3 py-2">{r.event}</td>
-                    <td className="px-3 py-2 font-medium">{mark}</td>
-                    <td className="px-3 py-2">{wind}</td>
-                    <td className="px-3 py-2">{r.season ?? "—"}</td>
-                    <td className="px-3 py-2">{r.meet_name ?? "—"}</td>
-                    <td className="px-3 py-2">{meetDate}</td>
-                    <td className="px-3 py-2">
-                      <SafeLink href={r.proof_url} className="text-blue-600 underline" target="_blank">
-                        View
-                      </SafeLink>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="grid gap-5 md:grid-cols-2">
+            {best.map((r: any, i: number) => {
+              const mark = fmtTime(
+                r.best_seconds_adj ?? r.mark_seconds_adj,
+                r.best_mark_text ?? r.mark
+              );
+              const meetDate = r.meet_date ? new Date(r.meet_date).toLocaleDateString() : "—";
+              const wind =
+                r.wind != null
+                  ? `${Number(r.wind).toFixed(1)} m/s`
+                  : r.wind_legal === false
+                    ? "NWI / IL"
+                    : "—";
+              return (
+                <div
+                  key={`${r.event}-${i}`}
+                  className="group relative overflow-hidden rounded-3xl border border-app bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted">
+                    <span>{r.season ?? "Season TBD"}</span>
+                    <span>{meetDate}</span>
+                  </div>
+                  <h3 className="mt-3 text-xl font-semibold text-app">{r.event}</h3>
+                  <p className="mt-1 text-sm text-muted">Best mark</p>
+                  <p className="text-2xl font-semibold text-app">{mark}</p>
+                  <div className="mt-4 space-y-1 text-sm text-muted">
+                    <p>
+                      <span className="font-medium text-app">Meet:</span> {r.meet_name ?? "—"}
+                    </p>
+                    <p>
+                      <span className="font-medium text-app">Wind:</span> {wind}
+                    </p>
+                  </div>
+                  {r.proof_url ? (
+                    <SafeLink
+                      href={r.proof_url}
+                      target="_blank"
+                      className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-scarlet transition hover:text-scarlet/80"
+                    >
+                      View proof →
+                    </SafeLink>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
