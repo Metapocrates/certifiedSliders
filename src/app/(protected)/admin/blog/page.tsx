@@ -35,7 +35,7 @@ export default async function AdminBlogIndex() {
   const { data: posts, error } = await supabase
     .from("blog_posts")
     .select("slug, title, status, published_at, updated_at, featured")
-    .order("published_at", { ascending: false, nullsLast: false })
+    .order("published_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
   const drafts = (posts ?? []).filter((p) => p.status === "draft");

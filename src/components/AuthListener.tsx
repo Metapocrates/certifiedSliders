@@ -1,7 +1,7 @@
 // src/components/AuthListener.tsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
@@ -14,7 +14,7 @@ export default function AuthListener() {
     new Set(["SIGNED_IN", "SIGNED_OUT", "TOKEN_REFRESHED", "USER_UPDATED"])
   );
 
-  async function syncServerCookie() {
+  const syncServerCookie = useCallback(async () => {
     if (syncingRef.current) return;
     syncingRef.current = true;
     try {
@@ -36,7 +36,7 @@ export default function AuthListener() {
         syncingRef.current = false;
       }, 500);
     }
-  }
+  }, [router]);
 
   useEffect(() => {
     const sb = supabaseBrowser();
@@ -49,7 +49,7 @@ export default function AuthListener() {
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, syncServerCookie]);
 
   return null;
 }
