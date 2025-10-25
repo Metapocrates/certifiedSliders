@@ -74,3 +74,7 @@ Athlete workflow for adding a mark:
 - `adjust_time` handles FAT vs. hand-time adjustments (fallback is +0.24s).
 - Parser modules live under `lib/proofs/`.
 - You can bypass whitelist during dev by setting `PROOF_BYPASS=1`.
+
+## NCAA track programs dataset
+
+We maintain a repeatable workflow to pull NCAA track & field sponsorship data. See `/docs/ncaa-track-programs-playbook.md` for steps to download the NCAA spreadsheet, run `/scripts/ncaa_taf_extract.py`, and bulk-load into Supabase (`ncaa_track_programs`).
