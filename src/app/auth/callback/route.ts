@@ -6,6 +6,29 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
  * Receives tokens from the client (AuthListener) and sets HTTP-only auth cookies
  * so RLS can see auth.uid() on the server.
  */
+export async function GET(req: Request) {
+    const url = new URL(req.url);
+    const code = url.searchParams.get("code");
+    const next = url.searchParams.get("next") ?? "/me";
+
+    if (!code) {
+        // No code provided — drop back to sign-in with an error hint
+        const redirect = new URL(`/signin?error=missing_code`, url.origin);
+        return NextResponse.redirect(redirect);
+    }
+
+    const supabase = createSupabaseServer();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+        const redirect = new URL(`/signin?error=${encodeURIComponent(error.message)}`, url.origin);
+        return NextResponse.redirect(redirect);
+    }
+
+    // Successful exchange; send the user along to their destination.
+    const redirect = new URL(next, url.origin);
+    return NextResponse.redirect(redirect);
+}
+
 export async function POST(req: Request) {
     const supabase = createSupabaseServer();
 

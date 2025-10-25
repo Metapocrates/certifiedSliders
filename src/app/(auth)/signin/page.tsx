@@ -18,6 +18,7 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [isSignup, setIsSignup] = useState(false);
   const [pendingPw, setPendingPw] = useState(false);
+  const [pendingGoogle, setPendingGoogle] = useState(false);
 
   // magic link mode
   const [emailMagic, setEmailMagic] = useState("");
@@ -34,6 +35,27 @@ export default function SignInPage() {
   function switchMode(next: Mode) {
     setMode(next);
     setErr(null);
+  }
+
+  async function onGoogleSignIn() {
+    setErr(null);
+    setPendingGoogle(true);
+    try {
+      const origin =
+        process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
+      const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/me`,
+        },
+      });
+      if (error) throw error;
+      if (data?.url) window.location.assign(data.url);
+    } catch (e: any) {
+      setErr(e?.message ?? "Couldn’t start Google sign-in.");
+    } finally {
+      setPendingGoogle(false);
+    }
   }
 
   async function onSubmitPassword(e: React.FormEvent) {
@@ -61,13 +83,11 @@ export default function SignInPage() {
           email: emailPw,
           password,
         });
-        
-        if (error) throw error;
-        await fetch("/auth/callback", { method: "POST" });  // <— add this
-router.push("/me");
-router.refresh();
 
-     
+        if (error) throw error;
+        await fetch("/auth/callback", { method: "POST" });
+        router.push("/me");
+        router.refresh();
       }
     } catch (e: any) {
       setErr(e?.message ?? "Sign-in failed.");
@@ -114,6 +134,22 @@ router.refresh();
   return (
     <div className="container mx-auto px-4 py-10 max-w-md">
       <h1 className="text-2xl font-semibold mb-6">Sign in</h1>
+
+      <div className="space-y-4 mb-8">
+        <button
+          type="button"
+          onClick={onGoogleSignIn}
+          disabled={pendingGoogle}
+          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {pendingGoogle ? "Redirecting…" : "Continue with Google"}
+        </button>
+        <div className="flex items-center gap-2 text-sm text-gray-500">
+          <span className="h-px flex-1 bg-gray-300" aria-hidden="true" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-gray-300" aria-hidden="true" />
+        </div>
+      </div>
 
       {/* Mode toggle */}
       <div className="mb-6 flex gap-2">

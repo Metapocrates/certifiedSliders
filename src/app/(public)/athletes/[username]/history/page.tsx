@@ -1,21 +1,44 @@
 // src/app/(public)/athletes/[username]/history/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SafeLink from "@/components/SafeLink";
-import Image from "next/image";
-
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Params = { params: { username: string } };
+type PageProps = {
+  params: { username: string };
+  searchParams?: {
+    sort?: "date_desc" | "date_asc" | "event_asc" | "season_then_date";
+  };
+};
 
-export default async function AthleteHistoryPage({ params }: Params) {
+function fmtTime(sec: number | null | undefined, text?: string | null) {
+  if (text) return text;
+  if (sec == null) return "—";
+  const mm = Math.floor(sec / 60);
+  const ss = sec % 60;
+  return mm > 0 ? `${mm}:${ss.toFixed(2).padStart(5, "0")}` : ss.toFixed(2);
+}
+
+function fmtDate(d?: string | null) {
+  if (!d) return "—";
+  try {
+    return new Date(d).toISOString().slice(0, 10);
+  } catch {
+    return "—";
+  }
+}
+
+export default async function AthleteHistoryPage({ params, searchParams }: PageProps) {
   const { username } = params;
   const supabase = createSupabaseServer();
 
+  // Load profile (id + basics for header)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, username, school_name, school_state, class_year, profile_pic_url, gender")
+    .select(
+      "id, full_name, username, school_name, school_state, class_year, gender"
+    )
     .eq("username", username)
     .maybeSingle();
 
@@ -28,128 +51,139 @@ export default async function AthleteHistoryPage({ params }: Params) {
     );
   }
 
+  // Fetch all verified results for this athlete
   const { data: results } = await supabase
     .from("results")
-    .select("id, event, mark, mark_seconds_adj, timing, wind, season, meet_name, meet_date, proof_url, created_at")
+    .select(
+      "event, mark, mark_seconds_adj, wind, season, meet_name, meet_date, proof_url, status"
+    )
     .eq("athlete_id", profile.id)
     .eq("status", "verified")
-    .order("meet_date", { ascending: true })
-    .limit(500);
+    .limit(2000);
 
-  const byEvent = new Map<string, any[]>();
-  for (const r of results ?? []) {
-    const arr = byEvent.get(r.event) ?? [];
-    arr.push(r);
-    byEvent.set(r.event, arr);
-  }
-  const eventNames = Array.from(byEvent.keys()).sort();
+  const list = (results ?? []).slice();
 
-  function dateStr(d?: string | null) {
-    return d ? new Date(d).toISOString().slice(0,10) : "—";
-  }
-  function markStr(r: any) {
-    if (r.mark) return r.mark;
-    if (r.mark_seconds_adj != null) {
-      const sec = r.mark_seconds_adj as number;
-      const mm = Math.floor(sec / 60);
-      const ss = sec % 60;
-      return mm > 0 ? `${mm}:${ss.toFixed(2).padStart(5,"0")}` : ss.toFixed(2);
+  // Sorting
+  const sort = searchParams?.sort || "date_desc";
+  list.sort((a: any, b: any) => {
+    const aDate = a.meet_date ? new Date(a.meet_date).getTime() : 0;
+    const bDate = b.meet_date ? new Date(b.meet_date).getTime() : 0;
+
+    switch (sort) {
+      case "date_asc":
+        return aDate - bDate;
+      case "event_asc": {
+        const ev = (a.event || "").localeCompare(b.event || "");
+        if (ev !== 0) return ev;
+        return bDate - aDate; // newer first within event
+      }
+      case "season_then_date": {
+        const sa = a.season || "";
+        const sb = b.season || "";
+        const sCmp = sa.localeCompare(sb);
+        if (sCmp !== 0) return sCmp;
+        return bDate - aDate;
+      }
+      case "date_desc":
+      default:
+        return bDate - aDate;
     }
-    return "—";
-  }
+  });
 
   return (
     <div className="container py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-12 w-12 overflow-hidden rounded-full bg-gray-100">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {profile.profile_pic_url ? (
-  <div className="relative h-12 w-12 overflow-hidden rounded-full bg-gray-100">
-    <Image
-      src={profile.profile_pic_url}
-      alt="Avatar"
-      fill
-      sizes="48px"
-      className="object-cover"
-    />
-  </div>
-) : (
-  <div className="h-12 w-12 rounded-full bg-gray-100 grid place-items-center">🙂</div>
-)}
-
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold">
-              {profile.full_name ?? profile.username}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {profile.school_name ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}` : "—"} •{" "}
-              {profile.class_year ?? "—"} • {profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—"}
-            </p>
-          </div>
-        </div>
-        <SafeLink
-          href={profile.username ? `/athletes/${profile.username}` : undefined}
-          className="rounded-md border px-3 py-2 text-sm"
-        >
-          View Profile
-        </SafeLink>
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold">
+          {profile.full_name ?? profile.username} – History
+        </h1>
+        <p className="text-sm text-gray-500">
+          {profile.school_name
+            ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
+            : "—"}{" "}
+          • {profile.class_year ?? "—"} •{" "}
+          {profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—"}
+        </p>
       </div>
 
-      {(results?.length ?? 0) === 0 ? (
-        <div className="rounded-lg border p-6 text-sm text-gray-600">
-          No verified results yet.
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {eventNames.map((ev) => {
-            const rows = byEvent.get(ev)!;
-            return (
-              <section key={ev} className="rounded-xl border">
-                <header className="flex items-center justify-between border-b px-4 py-3">
-                  <h2 className="text-lg font-medium">{ev}</h2>
-                  <span className="text-xs text-gray-500">{rows.length} marks</span>
-                </header>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr className="text-left">
-                        <th className="px-3 py-2">Mark</th>
-                        <th className="px-3 py-2">Timing</th>
-                        <th className="px-3 py-2">Wind</th>
-                        <th className="px-3 py-2">Season</th>
-                        <th className="px-3 py-2">Meet</th>
-                        <th className="px-3 py-2">Date</th>
-                        <th className="px-3 py-2">Proof</th>
-                        <th className="px-3 py-2">Submitted</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r, i) => (
-                        <tr key={r.id ?? i} className="border-t">
-                          <td className="px-3 py-2 font-medium">{markStr(r)}</td>
-                          <td className="px-3 py-2">{r.timing ?? "—"}</td>
-                          <td className="px-3 py-2">{r.wind ?? "—"}</td>
-                          <td className="px-3 py-2">{r.season ?? "—"}</td>
-                          <td className="px-3 py-2">{r.meet_name ?? "—"}</td>
-                          <td className="px-3 py-2">{dateStr(r.meet_date)}</td>
-                          <td className="px-3 py-2">
-                            <SafeLink href={r.proof_url} className="text-blue-600 underline" target="_blank">
-                              View
-                            </SafeLink>
-                          </td>
-                          <td className="px-3 py-2">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            );
-          })}
-        </div>
-      )}
+      {/* Sort controls */}
+      <form className="mb-4 flex flex-wrap items-center gap-2" method="get">
+        <label className="text-sm">
+          <span className="mr-2 font-medium">Sort:</span>
+          <select
+            name="sort"
+            defaultValue={sort}
+            className="rounded-lg border px-3 py-2 text-sm"
+          >
+            <option value="date_desc">Newest first</option>
+            <option value="date_asc">Oldest first</option>
+            <option value="event_asc">Event (A→Z)</option>
+            <option value="season_then_date">Season → Newest</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          className="rounded-md border px-3 py-2 text-sm hover:opacity-90 bg-black text-white"
+        >
+          Apply
+        </button>
+      </form>
+
+      {/* Table */}
+      <div className="overflow-x-auto rounded-xl border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr className="text-left">
+              <th className="px-3 py-2">Event</th>
+              <th className="px-3 py-2">Mark</th>
+              <th className="px-3 py-2">Wind</th>
+              <th className="px-3 py-2">Season</th>
+              <th className="px-3 py-2">Meet</th>
+              <th className="px-3 py-2">Date</th>
+              <th className="px-3 py-2">Proof</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.length === 0 ? (
+              <tr>
+                <td className="px-3 py-3 text-gray-600" colSpan={7}>
+                  No verified results yet.
+                </td>
+              </tr>
+            ) : (
+              list.map((r: any, i: number) => {
+                const mark = fmtTime(r.mark_seconds_adj, r.mark);
+                const wind =
+                  r.wind != null ? `${Number(r.wind).toFixed(1)} m/s` : "—";
+                const season = r.season ?? "—";
+                const meet = r.meet_name ?? "—";
+                const date = fmtDate(r.meet_date);
+
+                return (
+                  <tr key={`${r.event}-${r.meet_date}-${i}`} className="border-t">
+                    <td className="px-3 py-2">{r.event || "—"}</td>
+                    <td className="px-3 py-2 font-medium">{mark}</td>
+                    <td className="px-3 py-2">{wind}</td>
+                    <td className="px-3 py-2">{season}</td>
+                    <td className="px-3 py-2">{meet}</td>
+                    <td className="px-3 py-2">{date}</td>
+                    <td className="px-3 py-2">
+                      <SafeLink
+                        href={r.proof_url}
+                        className="text-blue-600 underline"
+                        target="_blank"
+                        fallback="—"
+                      >
+                        View
+                      </SafeLink>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

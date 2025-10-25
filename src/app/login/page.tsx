@@ -12,8 +12,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string>("");
+  const [oauthErr, setOauthErr] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [who, setWho] = useState<{ id: string; email: string | null } | null>(null);
+  const [pendingGoogle, setPendingGoogle] = useState(false);
 
   // Show current session (if already logged in)
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (busy) return; // guard against double-fire
     setMsg("");
+    setOauthErr("");
     setBusy(true);
 
     try {
@@ -57,6 +60,31 @@ export default function LoginPage() {
     }
   }
 
+  async function handleGoogle(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    if (pendingGoogle || busy) return;
+    setOauthErr("");
+    setMsg("");
+    setPendingGoogle(true);
+    try {
+      const supabase = supabaseBrowser();
+      const origin =
+        process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/me`,
+        },
+      });
+      if (error) throw error;
+      if (data?.url) window.location.assign(data.url);
+    } catch (err: any) {
+      setOauthErr(err?.message || "Could not start Google sign-in.");
+    } finally {
+      setPendingGoogle(false);
+    }
+  }
+
   async function handleSignOut() {
     if (busy) return;
     setBusy(true);
@@ -76,94 +104,185 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Log in</h1>
-
-      {who ? (
-        <div className="mb-4 rounded border p-3 text-sm">
-          <div>
-            Signed in as <b>{who.email ?? who.id}</b>
+    <section className="mx-auto w-full max-w-5xl">
+      <div className="overflow-hidden rounded-3xl border border-app bg-card shadow-2xl">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1.15fr_minmax(320px,380px)]">
+          <div className="relative bg-gradient-to-br from-[#C8102E] via-[#E63B2E] to-[#F5C518] p-8 text-white lg:hidden">
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/80">
+              Certified Sliders
+            </p>
+            <h1 className="mt-4 text-3xl font-semibold leading-tight">
+              Own your season.
+            </h1>
+            <p className="mt-3 max-w-sm text-sm text-white/85">
+              Sign in to manage verified marks, submit results, and follow teammates.
+            </p>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="mt-2 rounded bg-black px-3 py-1.5 text-app disabled:opacity-50"
-            disabled={busy}
-          >
-            {busy ? "…" : "Sign out"}
-          </button>
+
+          <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[#C8102E] via-[#E63B2E] to-[#F5C518] px-10 py-12 text-white lg:flex">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.45em] text-white/70">
+                Certified Sliders
+              </p>
+              <h1 className="mt-6 max-w-sm text-4xl font-semibold leading-tight">
+                Own your season with verified results.
+              </h1>
+              <p className="mt-4 max-w-sm text-base text-white/80">
+                Log marks, climb official rankings, and stay ready for meet day.
+              </p>
+            </div>
+            <ul className="mt-12 space-y-4 text-sm text-white/85">
+              <li className="flex items-start gap-3">
+                <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-white/80" />
+                <span>Submit performances backed by video or meet links.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-white/80" />
+                <span>Track personal bests across every event in one place.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-white/80" />
+                <span>Unlock admin tools for managing athletes and results.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="px-6 py-9 sm:px-10 lg:px-12">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted">
+                Welcome back
+              </p>
+              <h2 className="text-3xl font-semibold text-app">
+                Sign in to Certified Sliders
+              </h2>
+              <p className="text-sm text-muted">
+                Use Google for a quick sign-in or your email and password below.
+              </p>
+            </div>
+
+            {who ? (
+              <div className="mt-6 rounded-2xl border border-app bg-muted px-4 py-4 text-sm text-app shadow-inner">
+                <div>
+                  Signed in as <b>{who.email ?? who.id}</b>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="mt-3 inline-flex items-center justify-center rounded-full bg-scarlet px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-white hover:text-scarlet"
+                  disabled={busy}
+                >
+                  {busy ? "…" : "Sign out"}
+                </button>
+              </div>
+            ) : null}
+
+            <div className="mt-8 space-y-6">
+              <button
+                type="button"
+                onClick={handleGoogle}
+                disabled={pendingGoogle || busy}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-app bg-card text-sm font-semibold text-app transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+                  <span className="text-sm font-bold text-[#4285F4]">G</span>
+                </span>
+                {pendingGoogle ? "Redirecting…" : "Continue with Google"}
+              </button>
+              {oauthErr ? (
+                <p className="text-sm text-scarlet">{oauthErr}</p>
+              ) : null}
+
+              <div className="relative">
+                <span className="block h-px w-full bg-muted" />
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="rounded-full bg-card px-3 text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+                    Or continue with email
+                  </span>
+                </span>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="inline-flex rounded-full bg-muted p-1 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setMode("signin")}
+                    className={`flex-1 rounded-full px-4 py-1.5 transition ${
+                      mode === "signin"
+                        ? "bg-card text-app shadow-sm"
+                        : "text-muted"
+                    }`}
+                    disabled={busy}
+                  >
+                    Email sign in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("signup")}
+                    className={`flex-1 rounded-full px-4 py-1.5 transition ${
+                      mode === "signup"
+                        ? "bg-card text-app shadow-sm"
+                        : "text-muted"
+                    }`}
+                    disabled={busy}
+                  >
+                    Create account
+                  </button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-app">Email</label>
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-2xl border border-app bg-card px-4 py-3 text-app shadow-sm outline-none focus:border-scarlet focus:ring-2 focus:ring-scarlet/40"
+                    placeholder="you@example.com"
+                    required
+                    disabled={busy}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-medium text-app">Password</label>
+                  <input
+                    type="password"
+                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-2xl border border-app bg-card px-4 py-3 text-app shadow-sm outline-none focus:border-scarlet focus:ring-2 focus:ring-scarlet/40"
+                    placeholder="Minimum 6 characters"
+                    required
+                    disabled={busy}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="btn h-12 w-full rounded-full text-base font-semibold disabled:opacity-60"
+                  disabled={busy}
+                >
+                  {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
+                </button>
+
+                <div className="flex items-center justify-between text-sm text-muted">
+                  <a href="/reset" className="font-semibold text-scarlet hover:text-scarlet/80">
+                    Forgot password?
+                  </a>
+                  <a href="/" className="hover:text-app">
+                    Back to home
+                  </a>
+                </div>
+
+                {msg ? <p className="text-sm text-scarlet">{msg}</p> : null}
+              </form>
+            </div>
+
+            <p className="mt-8 text-xs text-muted">
+              After signing in, you&apos;ll be redirected back if you came from a protected page.
+            </p>
+          </div>
         </div>
-      ) : null}
-
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border p-4">
-        <div className="flex gap-2 text-sm">
-          <button
-            type="button"
-            onClick={() => setMode("signin")}
-            className={`rounded px-3 py-1.5 border ${mode === "signin" ? "bg-muted text-app" : "bg-card"}`}
-            disabled={busy}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("signup")}
-            className={`rounded px-3 py-1.5 border ${mode === "signup" ? "bg-muted text-app" : "bg-card"}`}
-            disabled={busy}
-          >
-            Sign up
-          </button>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Email</label>
-          <input
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            placeholder="you@example.com"
-            required
-            disabled={busy}
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Password</label>
-          <input
-            type="password"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded border px-3 py-2"
-            placeholder="min 6 characters"
-            required
-            disabled={busy}
-          />
-          <p className="mt-1 text-xs text-muted">
-            Enable Email/Password in Supabase → Auth → Providers.
-          </p>
-        </div>
-
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-app disabled:opacity-50"
-          disabled={busy}
-        >
-          {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
-        </button>
-
-        <p className="mt-2 text-sm">
-          <a href="/reset" className="underline">Forgot password?</a>
-        </p>
-
-        {msg ? <p className="mt-2 text-sm">{msg}</p> : null}
-      </form>
-
-    <p className="mt-4 text-sm text-gray-600">
-  After signing in, you&apos;ll be redirected back if you came from a protected page.
-</p>
-
-    </main>
+      </div>
+    </section>
   );
 }
