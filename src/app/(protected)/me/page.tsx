@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import CollegeInterestsSection, { CollegeInterest } from "./college-interests/CollegeInterestsSection";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -58,6 +59,12 @@ export default async function MePage() {
     .eq("id", user.id)
     .maybeSingle();
 
+  const { data: collegeInterestsData } = await supabase
+    .from("athlete_college_interests")
+    .select("id, college_name, created_at")
+    .eq("athlete_id", user.id)
+    .order("created_at", { ascending: true });
+
   // my results
   const { data: resultsData } = await supabase
     .from("results")
@@ -72,6 +79,13 @@ export default async function MePage() {
   const pending = rows.filter(r => r.status === "pending");
   const verified = rows.filter(r => r.status === "verified");
   const rejected = rows.filter(r => r.status === "rejected");
+
+  const collegeInterests: CollegeInterest[] =
+    (collegeInterestsData ?? []).map((row) => ({
+      id: row.id,
+      collegeName: row.college_name,
+      createdAt: row.created_at,
+    })) ?? [];
 
   return (
     <div className="container py-8">
@@ -121,6 +135,8 @@ export default async function MePage() {
           </a>
         </div>
       </div>
+
+      <CollegeInterestsSection interests={collegeInterests} />
 
       {/* Pending */}
       <Section title={`Pending (${pending.length})`}>

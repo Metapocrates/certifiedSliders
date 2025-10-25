@@ -105,6 +105,17 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const classLabel = profile.class_year ? `Class of ${profile.class_year}` : "Class year TBD";
   const genderLabel = profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—";
 
+  const { data: interestsData } = await supabase
+    .from("athlete_college_interests")
+    .select("college_name, created_at")
+    .eq("athlete_id", profile.id)
+    .order("created_at", { ascending: true });
+
+  const collegeInterests = (interestsData ?? []).map((row) => ({
+    name: row.college_name,
+    createdAt: row.created_at,
+  }));
+
   // Ownership + CTAs
   const isOwner = !!viewer && (viewer.id === profile.id || viewer.id === profile.claimed_by);
   const showClaim = !!viewer && !isOwner && profile.claimed_by == null;
@@ -277,6 +288,37 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
               );
             })}
           </div>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Colleges of interest</p>
+            <h2 className="text-2xl font-semibold text-app">
+              Where {profile.full_name ?? profile.username} is looking next
+            </h2>
+            <p className="text-sm text-muted">
+              Updated directly by the athlete to help college coaches connect.
+            </p>
+          </div>
+        </div>
+
+        {collegeInterests.length ? (
+          <ul className="flex flex-wrap gap-3">
+            {collegeInterests.map((item) => (
+              <li
+                key={`${item.name}-${item.createdAt}`}
+                className="rounded-full border border-app bg-card px-4 py-2 text-sm font-semibold text-app shadow-sm"
+              >
+                {item.name}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-3xl border border-dashed border-app/60 bg-muted/40 px-4 py-4 text-sm text-muted">
+            This athlete hasn&apos;t shared any colleges yet.
+          </p>
         )}
       </section>
     </div>
