@@ -14,12 +14,7 @@ const ProfileSchema = z.object({
     full_name: z.string().trim().min(1, "Full name is required").max(100),
     class_year: z.string().trim().regex(/^\d{4}$/, "Enter a 4-digit year like 2028"),
     school_name: z.string().trim().max(120).optional().or(z.literal("")),
-    school_state: z
-        .string()
-        .trim()
-        .max(2, "Use 2-letter state (e.g., CA)")
-        .optional()
-        .or(z.literal("")),
+    school_state: z.string().trim().max(10).optional().or(z.literal("")),
 });
 
 type ActionResult =
@@ -61,6 +56,24 @@ export async function updateProfileAction(
 
     const values = parsed.data;
 
+    const schoolName = values.school_name && values.school_name.trim() !== "" ? values.school_name.trim() : null;
+
+    let schoolState: string | null = null;
+    if (values.school_state && values.school_state.trim() !== "") {
+        const trimmed = values.school_state.trim().toUpperCase();
+        if (!/^[A-Z]{2}$/.test(trimmed)) {
+            return { ok: false, fieldErrors: { school_state: "Use 2-letter state (e.g., CA)" } };
+        }
+        schoolState = trimmed;
+    }
+
+    if (schoolName && !schoolState) {
+        return {
+            ok: false,
+            fieldErrors: { school_state: "Select a state to pair with the school" },
+        };
+    }
+
     // Enforce unique username (ignore current user)
     const { data: taken, error: checkErr } = await supabase
         .from("profiles")
@@ -87,8 +100,8 @@ export async function updateProfileAction(
                 username: values.username,
                 full_name: values.full_name,
                 class_year: Number(values.class_year),
-                school_name: values.school_name || null,
-                school_state: values.school_state || null,
+                school_name: schoolName,
+                school_state: schoolState,
             },
             { onConflict: "id" }
         )

@@ -59,6 +59,15 @@ export async function ensureProfileAction() {
 // src/app/(protected)/me/actions.ts
 import { redirect } from "next/navigation"; // ← add this
 
+function normalizeState(input: string | null): string | null {
+    if (!input) return null;
+    const trimmed = input.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(trimmed)) {
+        throw new Error("School state must be a 2-letter code (e.g., CA).");
+    }
+    return trimmed;
+}
+
 export async function updateProfileAction(formData: FormData) {
     const user = await getSessionUser();
     if (!user) throw new Error("Not signed in");
@@ -71,7 +80,7 @@ export async function updateProfileAction(formData: FormData) {
     const username = toNull(formData.get("username"));
     const full_name = toNull(formData.get("full_name"));
     const school_name = toNull(formData.get("school_name"));
-    const school_state = toNull(formData.get("school_state"));
+    const rawState = toNull(formData.get("school_state"));
     const bio = toNull(formData.get("bio"));
     const genderRaw = toNull(formData.get("gender")); // "M" | "F" | null
     const classYearRaw = toNull(formData.get("class_year"));
@@ -79,6 +88,11 @@ export async function updateProfileAction(formData: FormData) {
     const class_year =
         classYearRaw && !Number.isNaN(Number(classYearRaw)) ? Number(classYearRaw) : null;
     const gender = genderRaw === "M" || genderRaw === "F" ? (genderRaw as "M" | "F") : null;
+
+    const school_state = rawState ? normalizeState(rawState) : null;
+    if (school_name && !school_state) {
+        throw new Error("Select a state to pair with the school.");
+    }
 
     const { error } = await admin
         .from("profiles")
