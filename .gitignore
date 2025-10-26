@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+data/public_schools.csv
+data/private_schools.csv
+data/us-public-schools.geojson
 
 # debug
 npm-debug.log*

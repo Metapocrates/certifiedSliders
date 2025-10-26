@@ -1,0 +1,61 @@
+name: Load High Schools
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create data directory
+        run: mkdir -p data
+
+      - name: Download public schools CSV
+        run: |
+          curl -L "https://public.opendatasoft.com/explore/dataset/us-public-schools/download/?format=csv&timezone=UTC" \
+            -o data/public_schools.csv
+
+      - name: Download private schools CSV
+        run: |
+          curl -L "https://public.opendatasoft.com/explore/dataset/us-private-schools/download/?format=csv&timezone=UTC" \
+            -o data/private_schools.csv
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Load staging tables
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase db remote exec --db-password "$SUPABASE_DB_PASSWORD" <<'SQL'
+          truncate staging.public_schools_stage;
+          truncate staging.private_schools_stage;
+          SQL
+
+          supabase db remote copy staging.public_schools_stage \
+            --file data/public_schools.csv \
+            --db-password "$SUPABASE_DB_PASSWORD" \
+            --csv --skip-header --delimiter ';'
+
+          supabase db remote copy staging.private_schools_stage \
+            --file data/private_schools.csv \
+            --db-password "$SUPABASE_DB_PASSWORD" \
+            --csv --skip-header --delimiter ';'
+
+      - name: Run high-schools upsert
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase db remote exec --db-password "$SUPABASE_DB_PASSWORD" \
+            < supabase/sql/high_schools_upsert.sql
