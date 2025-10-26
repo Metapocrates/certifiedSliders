@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { updateProfileAction } from "./actions";
+import { HighSchoolSelector } from "@/components/forms/HighSchoolSelector";
 
 type Initial = {
   username: string;
@@ -121,35 +122,12 @@ export default function SettingsForm({ initial }: { initial: Initial }) {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-medium">School name</label>
-          <input
-            name="school_name"
-            defaultValue={initial.school_name}
-            className="w-full rounded border px-3 py-2"
-            placeholder="High School"
-          />
-          {fe("school_name") ? (
-            <p className="mt-1 text-xs text-red-600">{fe("school_name")}</p>
-          ) : null}
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">
-            State (2-letter)
-          </label>
-          <input
-            name="school_state"
-            defaultValue={initial.school_state}
-            className="w-full rounded border px-3 py-2 uppercase"
-            placeholder="CA"
-            maxLength={2}
-          />
-          {fe("school_state") ? (
-            <p className="mt-1 text-xs text-red-600">{fe("school_state")}</p>
-          ) : null}
-        </div>
-      </div>
+      <HighSchoolSelector
+        defaultSchool={initial.school_name}
+        defaultState={initial.school_state}
+        schoolError={fe("school_name")}
+        stateError={fe("school_state")}
+      />
 
       <div>
         <label className="mb-1 block text-sm font-medium">Bio</label>
