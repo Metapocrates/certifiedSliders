@@ -226,11 +226,11 @@ export function HighSchoolSelector({
                   clearSuggestions();
                 }}
               >
-                <span className="text-sm font-semibold text-gray-900">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {item.school_name}
                 </span>
                 {item.city ? (
-                  <span className="mt-0.5 text-[0.7rem] text-gray-500">
+                  <span className="mt-0.5 text-[0.7rem] text-gray-500 dark:text-gray-300">
                     {item.city}, {item.state}
                   </span>
                 ) : null}
