@@ -35,13 +35,22 @@ export async function GET(
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return createFallbackResponse({ username });
   }
-
-  const profile = await fetchProfile(username);
+  let profile: Profile | null = null;
+  try {
+    profile = await fetchProfile(username);
+  } catch {
+    profile = null;
+  }
   if (!profile) {
     return createFallbackResponse({ username });
   }
 
-  const bestEvent = await fetchBestEvent(profile.id);
+  let bestEvent: BestEvent | null = null;
+  try {
+    bestEvent = await fetchBestEvent(profile.id);
+  } catch {
+    bestEvent = null;
+  }
 
   const name = profile.full_name ?? profile.username ?? username;
   const starTier =
@@ -207,7 +216,8 @@ async function fetchProfile(username: string): Promise<Profile | null> {
     select: "id,full_name,username,star_rating,school_name,school_state,class_year",
     username: `eq.${username}`,
   });
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?${params.toString()}`, {
+  const url = `${SUPABASE_URL}/rest/v1/profiles?${params.toString()}`;
+  const res = await fetch(url, {
     headers: {
       apikey: SUPABASE_ANON_KEY!,
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
@@ -226,7 +236,8 @@ async function fetchBestEvent(profileId: string): Promise<BestEvent | null> {
     order: "best_seconds_adj.asc.nullslast",
     limit: "1",
   });
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/mv_best_event?${params.toString()}`, {
+  const url = `${SUPABASE_URL}/rest/v1/mv_best_event?${params.toString()}`;
+  const res = await fetch(url, {
     headers: {
       apikey: SUPABASE_ANON_KEY!,
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
