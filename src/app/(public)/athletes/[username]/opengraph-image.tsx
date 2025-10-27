@@ -194,6 +194,8 @@ export const GET = async (
   }
 };
 
+export default GET;
+
 function parseSearch(params: URLSearchParams, username: string): CardData {
   const name = params.get("name")?.trim() || prettifyUsername(username);
   const tier = parseTier(params.get("tier"));
