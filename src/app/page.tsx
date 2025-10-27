@@ -115,9 +115,9 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,197,24,0.2),_transparent_52%)]" />
         <div className="relative flex flex-col gap-10 px-6 py-12 sm:px-10 lg:flex-row lg:items-center lg:gap-16 lg:p-16">
           <div className="max-w-xl space-y-6">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
-              <span className="relative h-6 w-6">
-                <Image src="/logo.svg" alt="Certified Sliders" fill sizes="24px" priority />
+            <span className="inline-flex items-center gap-3 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white/80 sm:text-sm sm:tracking-[0.3em]">
+              <span className="relative h-8 w-8 sm:h-10 sm:w-10">
+                <Image src="/logo.svg" alt="Certified Sliders" fill sizes="48px" priority />
               </span>
               <span>Certified Sliders</span>
             </span>
