@@ -3,6 +3,7 @@ import FeaturedProfilesCarousel from "@/components/home/FeaturedProfilesCarousel
 import BlogList from "@/components/home/BlogList";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SafeLink from "@/components/SafeLink";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -114,8 +115,11 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,197,24,0.2),_transparent_52%)]" />
         <div className="relative flex flex-col gap-10 px-6 py-12 sm:px-10 lg:flex-row lg:items-center lg:gap-16 lg:p-16">
           <div className="max-w-xl space-y-6">
-            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
-              Certified Sliders
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-white/80">
+              <span className="relative h-6 w-6">
+                <Image src="/logo.svg" alt="Certified Sliders" fill sizes="24px" priority />
+              </span>
+              <span>Certified Sliders</span>
             </span>
             <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
               Own the official high school track &amp; field leaderboard.
