@@ -18,10 +18,10 @@ type CardData = {
   mark: string | null;
 };
 
-export async function GET(
+export const GET = async (
   request: Request,
   { params }: { params: { username: string } }
-) {
+) => {
   try {
     const username = params.username;
     const search = new URL(request.url).searchParams;
@@ -192,7 +192,7 @@ export async function GET(
   } catch {
     return createFallbackResponse({ username: params.username });
   }
-}
+};
 
 function parseSearch(params: URLSearchParams, username: string): CardData {
   const name = params.get("name")?.trim() || prettifyUsername(username);
