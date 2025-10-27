@@ -4,6 +4,7 @@ import Image from "next/image";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import SafeLink from "@/components/SafeLink";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getStarTierAccent } from "@/lib/star-theme";
 
 export const revalidate = 300;
 
@@ -15,6 +16,7 @@ type Card = {
     school_name: string | null;
     school_state: string | null;
     profile_pic_url: string | null;
+    star_rating: number | null;
     // tiny summary line, e.g. "110H 14.76 • 400H 53.76"
     blurb: string;
 };
@@ -46,7 +48,7 @@ export default async function FeaturedProfilesCarousel() {
         profile_id,
         sort_order,
         profiles:profile_id (
-          id, username, full_name, class_year, school_name, school_state, profile_pic_url
+          id, username, full_name, class_year, school_name, school_state, profile_pic_url, star_rating
         )
       `
             )
@@ -66,6 +68,7 @@ export default async function FeaturedProfilesCarousel() {
                             school_name: p.school_name,
                             school_state: p.school_state,
                             profile_pic_url: p.profile_pic_url,
+                            star_rating: p.star_rating,
                             blurb: "",
                         }
                         : null;
@@ -98,6 +101,7 @@ export default async function FeaturedProfilesCarousel() {
                     school_name: p.school_name,
                     school_state: p.school_state,
                     profile_pic_url: p.profile_pic_url,
+                    star_rating: p.star_rating,
                     blurb: "",
                 })) ?? [];
         } catch {
@@ -163,13 +167,32 @@ export default async function FeaturedProfilesCarousel() {
                                 : null,
                             c.class_year ? `Class of ${c.class_year}` : null,
                         ].filter(Boolean);
+                        const accent = getStarTierAccent(c.star_rating ?? null);
+                        const hasAccent = Boolean(accent);
+                        const starLabel = accent
+                            ? `${accent.tier}★ Certified`
+                            : typeof c.star_rating === "number"
+                                ? `${c.star_rating}★`
+                                : null;
+                        const borderClass = accent?.borderClass ?? "border-app";
+                        const cardShadowClass = accent?.cardShadowClass ?? "";
+                        const ribbonBgClass = accent?.ribbonBgClass ?? "bg-[#F5C518]";
+                        const ribbonTextClass = accent?.ribbonTextClass ?? "text-[#111827]";
+                        const textAccentClass = accent?.textAccentClass ?? "text-scarlet";
 
                         return (
                             <li key={c.id} className="w-[300px] shrink-0">
                                 <SafeLink
                                     href={href}
-                                    className="group relative block h-full overflow-hidden rounded-3xl border border-app bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                                    className={`group relative block h-full overflow-hidden rounded-3xl border ${borderClass} bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${cardShadowClass}`}
                                 >
+                                    {hasAccent ? (
+                                        <div
+                                            className={`pointer-events-none absolute -left-24 top-8 z-20 w-64 -rotate-45 py-1 text-center text-[10px] font-semibold uppercase tracking-[0.6em] shadow-lg ${ribbonBgClass} ${ribbonTextClass}`}
+                                        >
+                                            Certified
+                                        </div>
+                                    ) : null}
                                     <div className="relative flex h-40 w-full items-end overflow-hidden">
                                         {c.profile_pic_url ? (
                                             <ImageWithFallback
@@ -194,6 +217,13 @@ export default async function FeaturedProfilesCarousel() {
                                             </h3>
                                             {subtitleParts.length > 0 ? (
                                                 <p className="truncate text-xs text-white/70">{subtitleParts.join(" • ")}</p>
+                                            ) : null}
+                                            {starLabel ? (
+                                                <p
+                                                    className={`mt-1 text-xs font-semibold uppercase tracking-[0.35em] ${textAccentClass}`}
+                                                >
+                                                    {starLabel}
+                                                </p>
                                             ) : null}
                                         </div>
                                     </div>

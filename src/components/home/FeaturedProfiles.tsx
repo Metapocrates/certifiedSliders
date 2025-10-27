@@ -2,6 +2,7 @@
 import Image from "next/image";
 import SafeLink from "@/components/SafeLink";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getStarTierAccent } from "@/lib/star-theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -46,50 +47,66 @@ export default async function FeaturedProfiles({
         );
     }
 
-    return (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        return (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {rows.map((p) => {
                 const href = p.username ? `/athletes/${p.username}` : undefined;
+                const accent = getStarTierAccent(p.star_rating ?? null);
+                const hasAccent = Boolean(accent);
+                const starText = accent
+                    ? `${accent.tier}★ Certified`
+                    : typeof p.star_rating === "number"
+                        ? `${p.star_rating}★`
+                        : "Unrated";
+                const borderClass = accent?.borderClass ?? "border-app";
+                const cardShadowClass = accent?.cardShadowClass ?? "";
+                const ribbonBgClass = accent?.ribbonBgClass ?? "bg-[#F5C518]";
+                const ribbonTextClass = accent?.ribbonTextClass ?? "text-[#111827]";
+                const starTextClass = accent?.textAccentClass ?? "text-scarlet";
                 return (
                     <SafeLink
                         key={p.id}
                         href={href}
-                        className="group block overflow-hidden rounded-xl border bg-card hover:shadow-sm transition"
+                        className={`group relative block overflow-hidden rounded-2xl border ${borderClass} bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${cardShadowClass}`}
                         fallback={
-                            <div className="block overflow-hidden rounded-xl border bg-card p-3">
-                                <div className="relative mb-2 h-24 w-full overflow-hidden rounded-lg bg-gray-100" />
-                                <div className="text-sm font-medium">{p.full_name ?? "—"}</div>
-                                <div className="text-xs text-gray-500">
-                                    {p.school_name ?? "—"}
-                                </div>
+                            <div className="relative block overflow-hidden rounded-2xl border border-app bg-card p-3 shadow-sm">
+                                <div className="relative mb-2 h-32 w-full overflow-hidden rounded-xl bg-gray-100" />
+                                <div className="text-sm font-semibold text-app">{p.full_name ?? "—"}</div>
+                                <div className="text-xs text-muted">{p.school_name ?? "—"}</div>
                             </div>
                         }
                     >
-                        <div className="relative mb-2 h-24 w-full overflow-hidden rounded-lg bg-gray-100">
+                        {hasAccent ? (
+                            <div
+                                className={`pointer-events-none absolute -left-20 top-6 z-10 w-56 -rotate-45 py-1 text-center text-[10px] font-semibold uppercase tracking-[0.55em] shadow-lg ${ribbonBgClass} ${ribbonTextClass}`}
+                            >
+                                Certified
+                            </div>
+                        ) : null}
+                        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-gray-100">
                             {p.profile_pic_url ? (
                                 <Image
                                     src={p.profile_pic_url}
                                     alt={p.full_name ?? p.username ?? "Athlete"}
                                     fill
                                     sizes="(max-width:768px) 50vw, 20vw"
-                                    className="object-cover"
+                                    className="object-cover transition duration-500 group-hover:scale-105"
                                 />
                             ) : (
                                 <div className="grid h-full w-full place-items-center text-xl">
                                     🙂
                                 </div>
                             )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/10 to-transparent opacity-90 transition group-hover:opacity-100" />
                         </div>
-                        <div className="px-3 pb-3">
-                            <div className="flex items-center justify-between gap-2">
-                                <div className="text-sm font-medium truncate">
-                                    {p.full_name ?? p.username ?? "—"}
-                                </div>
-                                <span className="shrink-0 rounded-md border px-1.5 py-0.5 text-[11px] text-neutral-700">
-                                    {p.star_rating ? `${p.star_rating}★` : "—"}
-                                </span>
+                        <div className="space-y-2 px-3 pb-4 pt-3">
+                            <div className="text-xs uppercase tracking-[0.35em] text-muted">
+                                Featured slider
                             </div>
-                            <div className="mt-1 text-xs text-gray-500">
+                            <div className="text-sm font-semibold text-app line-clamp-1">
+                                {p.full_name ?? p.username ?? "—"}
+                            </div>
+                            <div className="text-xs text-muted line-clamp-2">
                                 {p.school_name ? (
                                     <>
                                         {p.school_name}
@@ -98,12 +115,15 @@ export default async function FeaturedProfiles({
                                 ) : (
                                     "—"
                                 )}
-                                {p.class_year ? ` • ${p.class_year}` : ""}
+                                {p.class_year ? ` • Class of ${p.class_year}` : ""}
+                            </div>
+                            <div className={`text-xs font-semibold uppercase tracking-[0.3em] ${starTextClass}`}>
+                                {starText}
                             </div>
                         </div>
                     </SafeLink>
                 );
             })}
-        </div>
+            </div>
     );
 }

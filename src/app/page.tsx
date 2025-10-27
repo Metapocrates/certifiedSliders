@@ -17,30 +17,30 @@ function formatNumber(n: number) {
 const spotlightCards = [
   {
     title: "Verified PRs only",
-    description: "Admin-approved results keep the leaderboard clean and trustworthy.",
+    description: "Admin-approved results keep profiles clean and trustworthy.",
   },
   {
     title: "Built for athletes",
-    description: "Track your progression, pin top events, and showcase your highlights.",
+    description: "Upload your PRs, get rated, and share your college interest.",
   },
   {
-    title: "Coaches welcome",
-    description: "Manage squads, confirm marks, and surface top talent in seconds.",
+    title: "Colleges welcome",
+    description: "Top talent in one place, coach's portal with interested.",
   },
 ];
 
 const whatsNew = [
   {
     title: "Profile claiming",
-    detail: "Athletes can now claim profiles, update bios, and add highlight media.",
+    detail: "Athletes can now claim/create profiles, update bios, and add highlight media.",
   },
   {
     title: "Submission flow v2",
-    detail: "Paste an Athletic.net or MileSplit link and get a decision in hours.",
+    detail: "Paste an official Athletic.net link and get a decision in minutes.",
   },
   {
-    title: "Rankings refresh",
-    detail: "Verified boards update daily with notes on adjustments and wind.",
+    title: "Ratings refresh",
+    detail: "Our team assign's star-ratings by class year and athlete achievements.",
   },
 ];
 
@@ -93,7 +93,7 @@ export default async function HomePage() {
   const heroStats = [
     {
       id: "verified-week",
-      label: verifiedThisWeek === 1 ? "Verified PR this week" : "Verified PRs this week",
+      label: verifiedThisWeek === 1 ? "Certified PR this week" : "Certified PRs this week",
       value: verifiedThisWeek,
       description: "Every mark is reviewed by the admin crew before it hits the board.",
     },

@@ -1,7 +1,10 @@
 // src/app/(public)/athletes/[username]/page.tsx
-import { createSupabaseServer } from "@/lib/supabase/compat";
-import SafeLink from "@/components/SafeLink";
+import { headers } from "next/headers";
 import Image from "next/image";
+import SafeLink from "@/components/SafeLink";
+import AthleteShareActions from "@/components/athletes/AthleteShareActions";
+import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getStarTierAccent } from "@/lib/star-theme";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -45,7 +48,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, gender, claimed_by"
+      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, gender, claimed_by, star_rating"
     )
     .eq("username", username)
     .maybeSingle();
@@ -104,6 +107,14 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     : "Unlisted program";
   const classLabel = profile.class_year ? `Class of ${profile.class_year}` : "Class year TBD";
   const genderLabel = profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—";
+  const starLabel =
+    typeof profile.star_rating === "number" && profile.star_rating >= 3
+      ? `${profile.star_rating}★ Certified`
+      : typeof profile.star_rating === "number"
+        ? `${profile.star_rating}★`
+        : null;
+  const accent = getStarTierAccent(profile.star_rating ?? null);
+  const accentBadgeLabel = accent ? `${accent.tier}★ Certified` : null;
 
   const { data: interestsData } = await supabase
     .from("athlete_college_interests")
@@ -122,6 +133,21 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const claimHref = `/api/profile/claim?username=${encodeURIComponent(
     profile.username || ""
   )}&back=${encodeURIComponent(`/athletes/${profile.username}`)}`;
+
+  const hostHeaders = headers();
+  const proto = hostHeaders.get("x-forwarded-proto") ?? "https";
+  const host =
+    hostHeaders.get("x-forwarded-host") ??
+    hostHeaders.get("host") ??
+    "certifiedsliders.com";
+  const origin = (process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? `${proto}://${host}`).replace(/\/+$/, "");
+  const profileSlug = profile.username ?? username;
+  const profileUrl = `${origin}/athletes/${profileSlug}`;
+  const cardUrl = `${profileUrl}/opengraph-image`;
+  const shareText = starLabel
+    ? `${profile.full_name ?? profile.username ?? "This athlete"} is ${starLabel} on Certified Sliders.`
+    : `${profile.full_name ?? profile.username ?? "This athlete"} is verified on Certified Sliders.`;
+  const showInlineStar = !accent && starLabel;
 
   // Toasts from claim flow (?claimed=ok|already|not_found|fail)
   let toast: { kind: "success" | "error" | "info"; msg: string } | null = null;
@@ -144,9 +170,11 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     <div className="space-y-12 px-4 pb-16 pt-10 sm:px-6 lg:px-8">
       {toast ? <Toast kind={toast.kind} msg={toast.msg} /> : null}
 
-      <section className="relative overflow-hidden rounded-3xl border border-app bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] px-6 py-10 text-white shadow-2xl sm:px-10">
+      <section
+        className={`relative overflow-hidden rounded-3xl border ${accent?.borderClass ?? "border-app"} bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] px-6 py-10 text-white shadow-2xl sm:px-10 ${accent?.glowClass ?? ""}`}
+      >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,197,24,0.18),_transparent_55%)]" />
-        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-center gap-6">
             <div className="relative h-24 w-24 overflow-hidden rounded-3xl border border-white/30 bg-white/10 p-1 shadow-lg">
               {profile.profile_pic_url ? (
@@ -161,24 +189,37 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                 <div className="grid h-full place-items-center text-3xl">🙂</div>
               )}
             </div>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
-                  Athlete profile
-                </p>
-                <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                  {profile.full_name ?? profile.username}
-                </h1>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.28em] text-white/80">
-                <span>{teamLabel}</span>
-                <span>•</span>
-                <span>{classLabel}</span>
-                <span>•</span>
-                <span>{genderLabel}</span>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs text-white/70">
-                <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">
+                    Athlete profile
+                  </p>
+                  <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
+                    {profile.full_name ?? profile.username}
+                  </h1>
+                  {accentBadgeLabel ? (
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${accent.badgeContainerClass} ${accent.badgeTextClass}`}
+                    >
+                      {accentBadgeLabel}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.28em] text-white/80">
+                  <span>{teamLabel}</span>
+                  <span>•</span>
+                  <span>{classLabel}</span>
+                  <span>•</span>
+                  <span>{genderLabel}</span>
+                  {showInlineStar ? (
+                    <>
+                      <span>•</span>
+                      <span>{starLabel}</span>
+                    </>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap gap-2 text-xs text-white/70">
+                  <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
                   {best?.length ?? 0} verified events
                 </span>
                 {historyHref ? (
@@ -192,22 +233,30 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {isOwner ? (
-              <a
-                href="/settings"
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/10"
-              >
-                Edit profile
-              </a>
-            ) : showClaim ? (
-              <a
-                href={claimHref}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#F5C518] hover:text-[#111827]"
-              >
-                Claim this profile
-              </a>
-            ) : null}
+          <div className="flex w-full max-w-sm flex-col gap-4 lg:max-w-xs">
+            <div className="flex flex-wrap gap-2">
+              {isOwner ? (
+                <a
+                  href="/settings"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/10"
+                >
+                  Edit profile
+                </a>
+              ) : showClaim ? (
+                <a
+                  href={claimHref}
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-[#111827] transition hover:-translate-y-0.5 hover:bg-[#F5C518] hover:text-[#111827]"
+                >
+                  Claim this profile
+                </a>
+              ) : null}
+            </div>
+            <AthleteShareActions
+              profileUrl={profileUrl}
+              cardUrl={cardUrl}
+              shareText={shareText}
+              accent={accent}
+            />
           </div>
         </div>
       </section>
