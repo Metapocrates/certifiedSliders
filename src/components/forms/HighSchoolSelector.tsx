@@ -82,6 +82,7 @@ export function HighSchoolSelector({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [manualEntry, setManualEntry] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -94,6 +95,13 @@ export function HighSchoolSelector({
       abortRef.current = null;
     }
     if (!selectedState || schoolInput.trim().length < 2) {
+      setSuggestions([]);
+      setLookupError(null);
+      setLoading(false);
+      return;
+    }
+
+    if (manualEntry) {
       setSuggestions([]);
       setLookupError(null);
       setLoading(false);
@@ -143,7 +151,7 @@ export function HighSchoolSelector({
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (abortRef.current) abortRef.current.abort();
     };
-  }, [selectedState, schoolInput]);
+  }, [selectedState, schoolInput, manualEntry]);
 
   const clearSuggestions = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -163,6 +171,7 @@ export function HighSchoolSelector({
           onChange={(event) => {
             setSelectedState(event.target.value);
             clearSuggestions();
+            setManualEntry(false);
           }}
         className="w-full rounded border px-3 py-2 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100"
       >
@@ -189,7 +198,11 @@ export function HighSchoolSelector({
           onChange={(event) => setSchoolInput(event.target.value)}
         className="w-full rounded border px-3 py-2 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100"
           placeholder={
-            selectedState ? "Start typing your school…" : "Select state first"
+            !selectedState
+              ? "Select state first"
+              : manualEntry
+              ? "Type your school name…"
+              : "Start typing your school…"
           }
           disabled={!selectedState}
         />
@@ -197,7 +210,9 @@ export function HighSchoolSelector({
           <p className="mt-1 text-xs text-red-600">{schoolError}</p>
         ) : (
           <p className="mt-1 text-xs text-gray-500">
-            Pick a school from the list or choose “Other / Not Listed.”
+            {manualEntry
+              ? "Manual entry enabled. Suggestions are hidden until you pick a school."
+              : "Pick a school from the list or choose “Other / Not Listed.”"}
           </p>
         )}
       </div>
@@ -223,6 +238,7 @@ export function HighSchoolSelector({
                 onMouseDown={(event) => {
                   event.preventDefault();
                   setSchoolInput(item.school_name);
+                  setManualEntry(false);
                   clearSuggestions();
                 }}
               >
@@ -245,7 +261,8 @@ export function HighSchoolSelector({
         className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-left text-sm text-gray-600 transition hover:border-gray-400 hover:text-gray-900 dark:border-slate-600 dark:text-gray-300 dark:hover:border-slate-500 dark:hover:text-gray-100"
         onMouseDown={(event) => {
           event.preventDefault();
-          setSchoolInput("Other / Not Listed");
+          setManualEntry(true);
+          setSchoolInput("");
           clearSuggestions();
         }}
       >
