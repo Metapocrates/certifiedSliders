@@ -2,15 +2,17 @@
 // Server component
 
 import Link from "next/link";
+import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 import ThemeToggle from "@/components/ThemeToggle";
-import Image from "next/image";
-
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const NAV_LINK_CLASSES =
+  "text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm px-1.5 py-1";
 
 export default async function Header() {
   const supabase = createSupabaseServer();
@@ -31,51 +33,79 @@ export default async function Header() {
   }
 
   return (
-    <header className="border-b bg-card">
-      <div className="container h-14 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
-          {/* Brand only */}
-          <Link href="/" className="font-semibold tracking-tight">
-            Certified Sliders
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="container flex flex-wrap items-center justify-between gap-3 py-2 sm:py-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-semibold tracking-tight text-base sm:text-lg"
+          >
+            <span className="relative h-8 w-8 sm:h-9 sm:w-9">
+              <Image src="/logo.svg" alt="Certified Sliders" fill sizes="36px" priority />
+            </span>
+            <span className="hidden sm:inline">Certified Sliders</span>
           </Link>
 
-          {/* Left-side nav (always visible) */}
-          <nav className="flex items-center gap-3">
-            <Link href="/blog" className="text-sm hover:underline">Blog</Link>
-            <Link href="/athletes" className="text-sm hover:underline">Find athletes</Link>
-            {/* ✅ New: public Rankings link */}
-            <Link href="/rankings" className="text-sm hover:underline">Rankings</Link>
+          <nav className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Link href="/blog" className={NAV_LINK_CLASSES}>
+              Blog
+            </Link>
+            <Link href="/athletes" className={NAV_LINK_CLASSES}>
+              Find athletes
+            </Link>
+            <Link href="/rankings" className={NAV_LINK_CLASSES}>
+              Rankings
+            </Link>
 
             {admin && (
               <>
-                <Link href="/admin/results" className="text-sm hover:underline">Results Queue</Link>
-                <Link href="/admin/blog/new" className="text-sm hover:underline">New Post</Link>
-                <Link href="/admin/home" className="text-sm hover:underline">Home Manager</Link>
+                <Link href="/admin/results" className={NAV_LINK_CLASSES}>
+                  Results Queue
+                </Link>
+                <Link href="/admin/blog/new" className={NAV_LINK_CLASSES}>
+                  New Post
+                </Link>
+                <Link href="/admin/home" className={NAV_LINK_CLASSES}>
+                  Home Manager
+                </Link>
               </>
             )}
           </nav>
         </div>
 
-        {/* Right-side auth/profile + theme */}
-        <nav className="flex items-center gap-3">
-          <ThemeToggle /> {/* toggle shows in prod */}
+        <nav className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm">
+          <ThemeToggle />
 
           {!user ? (
-            <Link href="/login" className="btn">Sign in</Link>
+            <Link href="/login" className="btn whitespace-nowrap">
+              Sign in
+            </Link>
           ) : (
             <>
-              {/* Submit Result (only when signed in) */}
-              <Link href="/submit-result" className="btn">Submit Result</Link>
+              <Link
+                href="/submit-result"
+                className="btn whitespace-nowrap text-xs sm:text-sm"
+              >
+                Submit Result
+              </Link>
 
-              <Link href="/me" className="btn">My Profile</Link>
+              <Link href="/me" className="btn whitespace-nowrap text-xs sm:text-sm">
+                My Profile
+              </Link>
 
               <form action={signOut}>
-                <button type="submit" className="btn" title="Sign out">Sign out</button>
+                <button
+                  type="submit"
+                  className="btn whitespace-nowrap text-xs sm:text-sm"
+                  title="Sign out"
+                >
+                  Sign out
+                </button>
               </form>
 
               <Link
                 href="/me"
-                className="block w-8 h-8 rounded-full overflow-hidden bg-gray-100 relative"
+                className="relative block h-8 w-8 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
                 title="My profile"
               >
                 <Image
@@ -87,7 +117,6 @@ export default async function Header() {
                   unoptimized
                 />
               </Link>
-
             </>
           )}
         </nav>
