@@ -199,7 +199,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   </h1>
                   {accentBadgeLabel ? (
                     <span
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${accent.badgeContainerClass} ${accent.badgeTextClass}`}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${accent?.badgeContainerClass ?? "bg-white/20 border-white/40"} ${accent?.badgeTextClass ?? "text-white"}`}
                     >
                       {accentBadgeLabel}
                     </span>
