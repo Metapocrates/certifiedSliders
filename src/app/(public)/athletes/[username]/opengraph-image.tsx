@@ -22,172 +22,176 @@ export async function GET(
   request: Request,
   { params }: { params: { username: string } }
 ) {
-  const username = params.username;
-  const search = new URL(request.url).searchParams;
-  const data = parseSearch(search, username);
+  try {
+    const username = params.username;
+    const search = new URL(request.url).searchParams;
+    const data = parseSearch(search, username);
 
-  const certifiedLabel =
-    data.tier && data.tier >= 3
-      ? `${data.tier}★ Certified`
-      : data.fallbackTier
-        ? `${data.fallbackTier}★`
-        : "Certified slider";
+    const certifiedLabel =
+      data.tier && data.tier >= 3
+        ? `${data.tier}★ Certified`
+        : data.fallbackTier
+          ? `${data.fallbackTier}★`
+          : "Certified slider";
 
-  const metaBits = [
-    data.team
-      ? data.state
-        ? `${data.team}, ${data.state}`
-        : data.team
-      : null,
-    data.classYear ? `Class of ${data.classYear}` : null,
-  ].filter(Boolean);
-  const metaLine = metaBits.join(" • ");
-  const bestLine =
-    data.event && data.mark ? `${data.event} • ${data.mark}` : null;
+    const metaBits = [
+      data.team
+        ? data.state
+          ? `${data.team}, ${data.state}`
+          : data.team
+        : null,
+      data.classYear ? `Class of ${data.classYear}` : null,
+    ].filter(Boolean);
+    const metaLine = metaBits.join(" • ");
+    const bestLine =
+      data.event && data.mark ? `${data.event} • ${data.mark}` : null;
 
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          padding: "56px",
-          background:
-            "linear-gradient(135deg, #0f172a 0%, #1f2937 55%, #c8102e 100%)",
-          color: "white",
-          position: "relative",
-          fontFamily: "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif",
-        }}
-      >
+    return new ImageResponse(
+      (
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(circle at 15% 20%, rgba(245,197,24,0.28), transparent 55%)",
-          }}
-        />
-        <div
-          style={{
+            width: "100%",
+            height: "100%",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-between",
-            height: "100%",
+            padding: "56px",
+            background:
+              "linear-gradient(135deg, #0f172a 0%, #1f2937 55%, #c8102e 100%)",
+            color: "white",
             position: "relative",
+            fontFamily: "Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif",
           }}
         >
-          <div style={{ display: "flex", gap: "36px" }}>
-            <BrandMark />
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div
-                style={{
-                  fontSize: "32px",
-                  letterSpacing: "0.48em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.65)",
-                }}
-              >
-                Certified Sliders
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "10px 24px",
-                    borderRadius: "9999px",
-                    backgroundColor: "rgba(245,197,24,0.15)",
-                    border: "1px solid rgba(245,197,24,0.4)",
-                    color: "#f5c518",
-                    fontSize: "28px",
-                    fontWeight: 600,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.24em",
-                  }}
-                >
-                  {certifiedLabel}
-                </div>
-                <div
-                  style={{
-                    fontSize: "72px",
-                    lineHeight: 1.05,
-                    fontWeight: 600,
-                    maxWidth: "720px",
-                    textWrap: "balance",
-                  }}
-                >
-                  {data.name}
-                </div>
-                {metaLine ? (
-                  <div
-                    style={{
-                      fontSize: "28px",
-                      color: "rgba(255,255,255,0.75)",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    {metaLine}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at 15% 20%, rgba(245,197,24,0.28), transparent 55%)",
+            }}
+          />
           <div
             style={{
               display: "flex",
-              alignItems: "center",
+              flexDirection: "column",
               justifyContent: "space-between",
-              borderRadius: "32px",
-              padding: "28px 36px",
-              backgroundColor: "rgba(17,24,39,0.6)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              backdropFilter: "blur(6px)",
+              height: "100%",
+              position: "relative",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div
-                style={{
-                  fontSize: "24px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.35em",
-                  color: "rgba(255,255,255,0.7)",
-                }}
-              >
-                Verified highlight
-              </div>
-              <div
-                style={{
-                  fontSize: "44px",
-                  fontWeight: 600,
-                  letterSpacing: "0.02em",
-                }}
-              >
-                {bestLine ?? "Awaiting first certified mark"}
+            <div style={{ display: "flex", gap: "36px" }}>
+              <BrandMark />
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                <div
+                  style={{
+                    fontSize: "32px",
+                    letterSpacing: "0.48em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.65)",
+                  }}
+                >
+                  Certified Sliders
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      padding: "10px 24px",
+                      borderRadius: "9999px",
+                      backgroundColor: "rgba(245,197,24,0.15)",
+                      border: "1px solid rgba(245,197,24,0.4)",
+                      color: "#f5c518",
+                      fontSize: "28px",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.24em",
+                    }}
+                  >
+                    {certifiedLabel}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "72px",
+                      lineHeight: 1.05,
+                      fontWeight: 600,
+                      maxWidth: "720px",
+                      textWrap: "balance",
+                    }}
+                  >
+                    {data.name}
+                  </div>
+                  {metaLine ? (
+                    <div
+                      style={{
+                        fontSize: "28px",
+                        color: "rgba(255,255,255,0.75)",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      {metaLine}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
+
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-                gap: "8px",
-                color: "rgba(255,255,255,0.75)",
-                fontSize: "24px",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderRadius: "32px",
+                padding: "28px 36px",
+                backgroundColor: "rgba(17,24,39,0.6)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                backdropFilter: "blur(6px)",
               }}
             >
-              <span>Share your card</span>
-              <span style={{ fontSize: "20px" }}>certifiedsliders.com</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                <div
+                  style={{
+                    fontSize: "24px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.35em",
+                    color: "rgba(255,255,255,0.7)",
+                  }}
+                >
+                  Verified highlight
+                </div>
+                <div
+                  style={{
+                    fontSize: "44px",
+                    fontWeight: 600,
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  {bestLine ?? "Awaiting first certified mark"}
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                  gap: "8px",
+                  color: "rgba(255,255,255,0.75)",
+                  fontSize: "24px",
+                }}
+              >
+                <span>Share your card</span>
+                <span style={{ fontSize: "20px" }}>certifiedsliders.com</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    ),
-    size
-  );
+      ),
+      size
+    );
+  } catch {
+    return createFallbackResponse({ username: params.username });
+  }
 }
 
 function parseSearch(params: URLSearchParams, username: string): CardData {
@@ -327,4 +331,3 @@ function BrandMark({ size = 170 }: { size?: number }) {
     </div>
   );
 }
-
