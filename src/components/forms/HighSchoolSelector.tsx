@@ -164,8 +164,8 @@ export function HighSchoolSelector({
             setSelectedState(event.target.value);
             clearSuggestions();
           }}
-          className="w-full rounded border px-3 py-2"
-        >
+        className="w-full rounded border px-3 py-2 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100"
+      >
           {stateOptions.map((option) => (
             <option key={option.code || "blank"} value={option.code}>
               {option.name}
@@ -187,7 +187,7 @@ export function HighSchoolSelector({
           name="school_name"
           value={schoolInput}
           onChange={(event) => setSchoolInput(event.target.value)}
-          className="w-full rounded border px-3 py-2"
+        className="w-full rounded border px-3 py-2 dark:bg-slate-800 dark:border-slate-700 dark:text-gray-100"
           placeholder={
             selectedState ? "Start typing your school…" : "Select state first"
           }
@@ -214,12 +214,12 @@ export function HighSchoolSelector({
       selectedState &&
       schoolInput.trim().length >= 2 &&
       suggestions.length > 0 ? (
-        <ul className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-2 text-sm">
+        <ul className="max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-2 text-sm dark:border-slate-700 dark:bg-slate-800">
           {suggestions.map((item) => (
             <li key={`${item.state}-${item.school_name}-${item.city ?? ""}`}>
               <button
                 type="button"
-                className="flex w-full flex-col rounded-lg px-3 py-2 text-left transition hover:bg-gray-200"
+                className="flex w-full flex-col rounded-lg px-3 py-2 text-left transition hover:bg-gray-200 dark:hover:bg-slate-700"
                 onMouseDown={(event) => {
                   event.preventDefault();
                   setSchoolInput(item.school_name);
@@ -242,7 +242,7 @@ export function HighSchoolSelector({
 
       <button
         type="button"
-        className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-left text-sm text-gray-600 transition hover:border-gray-400 hover:text-gray-900"
+        className="w-full rounded-lg border border-dashed border-gray-300 px-3 py-2 text-left text-sm text-gray-600 transition hover:border-gray-400 hover:text-gray-900 dark:border-slate-600 dark:text-gray-300 dark:hover:border-slate-500 dark:hover:text-gray-100"
         onMouseDown={(event) => {
           event.preventDefault();
           setSchoolInput("Other / Not Listed");
