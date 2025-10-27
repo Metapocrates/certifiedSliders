@@ -271,12 +271,14 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                 </a>
               ) : null}
             </div>
-            <AthleteShareActions
-              profileUrl={profileUrl}
-              cardUrl={cardUrl}
-              shareText={shareText}
-              accent={accent}
-            />
+            {isOwner ? (
+              <AthleteShareActions
+                profileUrl={profileUrl}
+                cardUrl={cardUrl}
+                shareText={shareText}
+                accent={accent}
+              />
+            ) : null}
           </div>
         </div>
       </section>
