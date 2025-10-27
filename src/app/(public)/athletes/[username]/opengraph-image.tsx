@@ -1,5 +1,4 @@
 // src/app/(public)/athletes/[username]/opengraph-image.tsx
-import { Buffer } from "buffer";
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
@@ -8,10 +7,6 @@ export const contentType = "image/png";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-const logoSvgPromise = fetch(new URL("../../../../../public/logo.svg", import.meta.url))
-  .then((res) => res.text())
-  .catch(() => null);
 
 type Profile = {
   id: string;
@@ -34,19 +29,14 @@ export async function GET(
   { params }: { params: { username: string } }
 ) {
   const username = params.username;
-  const logoSvg = await logoSvgPromise;
-  const logoDataUri =
-    logoSvg && typeof Buffer !== "undefined"
-      ? `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString("base64")}`
-      : null;
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return createFallbackResponse({ username, logoDataUri });
+    return createFallbackResponse({ username });
   }
 
   const profile = await fetchProfile(username);
   if (!profile) {
-    return createFallbackResponse({ username, logoDataUri });
+    return createFallbackResponse({ username });
   }
 
   const bestEvent = await fetchBestEvent(profile.id);
@@ -99,31 +89,7 @@ export async function GET(
           }}
         >
           <div style={{ display: "flex", gap: "36px" }}>
-            <div
-              style={{
-                width: "170px",
-                height: "170px",
-                borderRadius: "48px",
-                background:
-                  "linear-gradient(135deg, rgba(17,24,39,0.4), rgba(255,255,255,0.08))",
-                border: "2px solid rgba(255,255,255,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-              }}
-            >
-              {logoDataUri ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={logoDataUri}
-                  alt="Certified Sliders"
-                  style={{ width: "70%", height: "70%", objectFit: "contain" }}
-                />
-              ) : (
-                <span style={{ fontSize: "72px" }}>🏃‍♂️</span>
-              )}
-            </div>
+            <BrandMark />
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               <div
                 style={{
@@ -289,13 +255,7 @@ function fmtMark(sec: number | null | undefined, text?: string | null) {
     : remainder.toFixed(2);
 }
 
-function createFallbackResponse({
-  username,
-  logoDataUri,
-}: {
-  username: string;
-  logoDataUri: string | null;
-}) {
+function createFallbackResponse({ username }: { username: string }) {
   return new ImageResponse(
     (
       <div
@@ -325,16 +285,7 @@ function createFallbackResponse({
             justifyContent: "center",
           }}
         >
-          {logoDataUri ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={logoDataUri}
-              alt="Certified Sliders"
-              style={{ width: "70%", height: "70%", objectFit: "contain" }}
-            />
-          ) : (
-            <span style={{ fontSize: "64px" }}>🏃‍♂️</span>
-          )}
+          <BrandMark size={140} />
         </div>
         <div style={{ textAlign: "center", maxWidth: "720px" }}>
           <div
@@ -354,5 +305,42 @@ function createFallbackResponse({
       </div>
     ),
     size
+  );
+}
+
+function BrandMark({ size = 170 }: { size?: number }) {
+  const dim = `${size}px`;
+  return (
+    <div
+      style={{
+        width: dim,
+        height: dim,
+        borderRadius: "48px",
+        background: "linear-gradient(135deg, rgba(17,24,39,0.4), rgba(255,255,255,0.08))",
+        border: "2px solid rgba(255,255,255,0.2)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          width: "70%",
+          height: "70%",
+          borderRadius: "36px",
+          background: "linear-gradient(135deg, rgba(245,197,24,0.9), rgba(200,16,46,0.85))",
+          color: "#111827",
+          fontSize: size > 140 ? "64px" : "48px",
+          fontWeight: 700,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+        }}
+      >
+        CS
+      </div>
+    </div>
   );
 }
