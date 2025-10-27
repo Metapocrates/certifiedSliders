@@ -143,7 +143,27 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const origin = (process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? `${proto}://${host}`).replace(/\/+$/, "");
   const profileSlug = profile.username ?? username;
   const profileUrl = `${origin}/athletes/${profileSlug}`;
-  const cardUrl = `${profileUrl}/opengraph-image`;
+  const topHighlight = best && best.length > 0 ? best[0] : null;
+  const topHighlightMark = topHighlight
+    ? fmtTime(
+        topHighlight.best_seconds_adj ?? topHighlight.mark_seconds_adj,
+        topHighlight.best_mark_text ?? topHighlight.mark
+      )
+    : null;
+
+  const cardUrlObj = new URL(`${origin}/athletes/${profileSlug}/opengraph-image`);
+  if (profile.full_name) cardUrlObj.searchParams.set("name", profile.full_name);
+  else if (profile.username) cardUrlObj.searchParams.set("name", profile.username);
+  if (accent?.tier) cardUrlObj.searchParams.set("tier", String(accent.tier));
+  if (typeof profile.star_rating === "number") {
+    cardUrlObj.searchParams.set("stars", String(profile.star_rating));
+  }
+  if (profile.school_name) cardUrlObj.searchParams.set("team", profile.school_name);
+  if (profile.school_state) cardUrlObj.searchParams.set("state", profile.school_state);
+  if (profile.class_year) cardUrlObj.searchParams.set("classYear", String(profile.class_year));
+  if (topHighlight?.event) cardUrlObj.searchParams.set("event", topHighlight.event);
+  if (topHighlightMark) cardUrlObj.searchParams.set("mark", topHighlightMark);
+  const cardUrl = cardUrlObj.toString();
   const shareText = starLabel
     ? `${profile.full_name ?? profile.username ?? "This athlete"} is ${starLabel} on Certified Sliders.`
     : `${profile.full_name ?? profile.username ?? "This athlete"} is verified on Certified Sliders.`;

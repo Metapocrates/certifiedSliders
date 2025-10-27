@@ -7,64 +7,43 @@ export const revalidate = 0;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-type Profile = {
-  id: string;
-  full_name: string | null;
-  username: string | null;
-  star_rating: number | null;
-  school_name: string | null;
-  school_state: string | null;
-  class_year: number | null;
-};
-
-type BestEvent = {
-  event: string;
-  best_seconds_adj: number | null;
-  best_mark_text: string | null;
+type CardData = {
+  name: string;
+  tier: number | null;
+  fallbackTier: number | null;
+  team: string | null;
+  state: string | null;
+  classYear: number | null;
+  event: string | null;
+  mark: string | null;
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { username: string } }
 ) {
   const username = params.username;
+  const search = new URL(request.url).searchParams;
+  const data = parseSearch(search, username);
 
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return createFallbackResponse({ username });
-  }
-  let profile: Profile | null = null;
-  try {
-    profile = await fetchProfile(username);
-  } catch {
-    profile = null;
-  }
-  if (!profile) {
-    return createFallbackResponse({ username });
-  }
+  const certifiedLabel =
+    data.tier && data.tier >= 3
+      ? `${data.tier}★ Certified`
+      : data.fallbackTier
+        ? `${data.fallbackTier}★`
+        : "Certified slider";
 
-  let bestEvent: BestEvent | null = null;
-  try {
-    bestEvent = await fetchBestEvent(profile.id);
-  } catch {
-    bestEvent = null;
-  }
-
-  const name = profile.full_name ?? profile.username ?? username;
-  const starTier =
-    typeof profile.star_rating === "number" ? profile.star_rating : null;
-  const certifiedLabel = starTier ? `${starTier}★ Certified` : "Certified slider";
-  const schoolBits = [
-    profile.school_name ? profile.school_name.trim() : null,
-    profile.school_state ? profile.school_state.trim() : null,
+  const metaBits = [
+    data.team
+      ? data.state
+        ? `${data.team}, ${data.state}`
+        : data.team
+      : null,
+    data.classYear ? `Class of ${data.classYear}` : null,
   ].filter(Boolean);
-  const schoolLine = schoolBits.length ? schoolBits.join(", ") : null;
-  const classLine = profile.class_year ? `Class of ${profile.class_year}` : null;
-
-  const metaLine = [schoolLine, classLine].filter(Boolean).join(" • ");
-  const bestLine = formatBest(bestEvent);
+  const metaLine = metaBits.join(" • ");
+  const bestLine =
+    data.event && data.mark ? `${data.event} • ${data.mark}` : null;
 
   return new ImageResponse(
     (
@@ -140,7 +119,7 @@ export async function GET(
                     textWrap: "balance",
                   }}
                 >
-                  {name}
+                  {data.name}
                 </div>
                 {metaLine ? (
                   <div
@@ -211,61 +190,51 @@ export async function GET(
   );
 }
 
-async function fetchProfile(username: string): Promise<Profile | null> {
-  const params = new URLSearchParams({
-    select: "id,full_name,username,star_rating,school_name,school_state,class_year",
-    username: `eq.${username}`,
-  });
-  const url = `${SUPABASE_URL}/rest/v1/profiles?${params.toString()}`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY!,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as Profile[];
-  return data?.[0] ?? null;
+function parseSearch(params: URLSearchParams, username: string): CardData {
+  const name = params.get("name")?.trim() || prettifyUsername(username);
+  const tier = parseTier(params.get("tier"));
+  const fallbackTier = parseTier(params.get("stars"));
+  const team = cleanParam(params.get("team"));
+  const state = cleanParam(params.get("state"));
+  const classYear = parseInteger(params.get("classYear"));
+  const event = cleanParam(params.get("event"));
+  const mark = cleanParam(params.get("mark"));
+
+  return {
+    name,
+    tier,
+    fallbackTier,
+    team,
+    state,
+    classYear,
+    event,
+    mark,
+  };
 }
 
-async function fetchBestEvent(profileId: string): Promise<BestEvent | null> {
-  const params = new URLSearchParams({
-    select: "event,best_seconds_adj,best_mark_text",
-    athlete_id: `eq.${profileId}`,
-    order: "best_seconds_adj.asc.nullslast",
-    limit: "1",
-  });
-  const url = `${SUPABASE_URL}/rest/v1/mv_best_event?${params.toString()}`;
-  const res = await fetch(url, {
-    headers: {
-      apikey: SUPABASE_ANON_KEY!,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
-  const data = (await res.json()) as BestEvent[];
-  return data?.[0] ?? null;
+function parseTier(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatBest(best: BestEvent | null): string | null {
-  if (!best) return null;
-  const time = fmtMark(best.best_seconds_adj, best.best_mark_text);
-  if (!time) return null;
-  return `${best.event} • ${time}`;
+function parseInteger(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
-function fmtMark(sec: number | null | undefined, text?: string | null) {
-  if (text && text.trim().length > 0) return text;
-  if (sec == null) return null;
-  const totalSeconds = Number(sec);
-  if (!Number.isFinite(totalSeconds)) return null;
-  const minutes = Math.floor(totalSeconds / 60);
-  const remainder = totalSeconds - minutes * 60;
-  return minutes > 0
-    ? `${minutes}:${remainder.toFixed(2).padStart(5, "0")}`
-    : remainder.toFixed(2);
+function cleanParam(value: string | null): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function prettifyUsername(username: string): string {
+  const parts = username.replace(/[-_]/g, " ").split(" ");
+  return parts
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function createFallbackResponse({ username }: { username: string }) {
@@ -298,7 +267,7 @@ function createFallbackResponse({ username }: { username: string }) {
             justifyContent: "center",
           }}
         >
-          <BrandMark size={140} />
+          <BrandMark size={120} />
         </div>
         <div style={{ textAlign: "center", maxWidth: "720px" }}>
           <div
@@ -312,7 +281,8 @@ function createFallbackResponse({ username }: { username: string }) {
             Certified Sliders
           </div>
           <div style={{ fontSize: "32px", color: "rgba(255,255,255,0.75)" }}>
-            {username} is ready to chase verified marks on certifiedsliders.com
+            {prettifyUsername(username)} is ready to chase verified marks on
+            certifiedsliders.com
           </div>
         </div>
       </div>
@@ -357,3 +327,4 @@ function BrandMark({ size = 170 }: { size?: number }) {
     </div>
   );
 }
+
