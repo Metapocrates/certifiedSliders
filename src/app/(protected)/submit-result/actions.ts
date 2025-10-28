@@ -26,6 +26,7 @@ export type ConfirmActionResult =
             formErrors?: string[];
             fieldErrors?: Record<string, string[]>;
         };
+        code?: string;
     };
 
 export async function confirmSubmitAction(
@@ -50,6 +51,29 @@ export async function confirmSubmitAction(
         };
     }
     const v = parsed.data;
+
+    // ✅ Require at least one verified Athletic.net link
+    const { data: verifiedIdentity } = await supabase
+        .from("external_identities")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("provider", "athleticnet")
+        .eq("verified", true)
+        .limit(1);
+
+    const hasVerifiedIdentity = Boolean(verifiedIdentity && verifiedIdentity.length > 0);
+
+    if (!hasVerifiedIdentity) {
+        return {
+            ok: false,
+            error: {
+                formErrors: [
+                    "You need to verify an Athletic.net profile before submitting results."
+                ],
+            },
+            code: "ATHLETICNET_REQUIRED",
+        };
+    }
 
     // ✅ Insert
     const { error } = await supabase
