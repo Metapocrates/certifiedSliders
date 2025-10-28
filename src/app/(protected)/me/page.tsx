@@ -103,7 +103,7 @@ export default async function MePage() {
     attempts: row.attempts,
     lastCheckedAt: row.last_checked_at,
     errorText: row.error_text,
-  }));
+  })) as LinkedIdentity[];
 
   return (
     <div className="container py-8">
