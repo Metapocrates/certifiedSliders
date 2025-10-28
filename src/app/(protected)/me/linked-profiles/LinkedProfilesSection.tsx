@@ -21,6 +21,23 @@ type ApiResult<T = unknown> =
   | ({ ok: true } & T)
   | { ok: false; error: string; code?: string };
 
+function normalizeIdentity(raw: any): LinkedIdentity {
+  return {
+    id: raw.id,
+    provider: raw.provider ?? "athleticnet",
+    externalId: raw.external_id ?? raw.externalId ?? "",
+    profileUrl: raw.profile_url ?? raw.profileUrl ?? "",
+    status: (raw.status ?? "pending") as LinkedIdentity["status"],
+    verified: Boolean(raw.verified),
+    verifiedAt: raw.verified_at ?? raw.verifiedAt ?? null,
+    isPrimary: Boolean(raw.is_primary ?? raw.isPrimary),
+    nonce: raw.nonce ?? null,
+    attempts: raw.attempts ?? 0,
+    lastCheckedAt: raw.last_checked_at ?? raw.lastCheckedAt ?? null,
+    errorText: raw.error_text ?? raw.errorText ?? null,
+  };
+}
+
 async function apiFetch<T>(input: RequestInfo, init?: RequestInit): Promise<ApiResult<T>> {
   const res = await fetch(input, {
     ...init,
@@ -94,20 +111,14 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
       setProfileUrl("");
       setMessage("Verification started — copy the code below and post it on your Athletic.net profile.");
 
-      upsertItem({
-        id: result.id,
-        provider: result.provider,
-        externalId: result.external_id,
-        profileUrl: result.profile_url,
-        status: result.status ?? "pending",
-        verified: false,
-        verifiedAt: null,
-        isPrimary: false,
-        nonce: result.nonce,
-        attempts: 0,
-        lastCheckedAt: null,
-        errorText: null,
-      });
+      upsertItem(
+        normalizeIdentity({
+          ...result,
+          verified: false,
+          verified_at: null,
+          is_primary: false,
+        })
+      );
     });
   }
 
@@ -136,20 +147,7 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
         return;
       }
 
-      upsertItem({
-        id: result.id,
-        provider: result.provider,
-        externalId: result.external_id,
-        profileUrl: result.profile_url,
-        status: result.status,
-        verified: result.verified,
-        verifiedAt: result.verified_at,
-        isPrimary: result.is_primary,
-        nonce: result.nonce ?? null,
-        attempts: result.attempts ?? 0,
-        lastCheckedAt: result.last_checked_at ?? null,
-        errorText: result.error_text ?? null,
-      });
+      upsertItem(normalizeIdentity(result));
 
       setMessage(result.verified ? "Profile verified!" : "Still pending. Make sure the code is visible and try again.");
     });
@@ -356,4 +354,3 @@ function statusBadgeClass(status: LinkedIdentity["status"], verified: boolean) {
   }
   return "rounded-full bg-yellow-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.35em] text-yellow-700";
 }
-
