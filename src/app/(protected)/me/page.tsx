@@ -4,7 +4,8 @@ import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import CollegeInterestsSection from "./college-interests/CollegeInterestsSection";
 import type { CollegeInterest } from "./college-interests/CollegeInterestsSection";
-import LinkedProfilesSection, { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
+import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
+import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
