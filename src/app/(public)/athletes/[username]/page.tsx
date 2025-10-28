@@ -127,6 +127,24 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     createdAt: row.created_at,
   }));
 
+  const { data: linkedIdentitiesData } = await supabase
+    .from("external_identities")
+    .select("profile_url, external_id, is_primary, verified")
+    .eq("user_id", profile.id)
+    .eq("provider", "athleticnet")
+    .eq("verified", true)
+    .order("is_primary", { ascending: false })
+    .order("verified_at", { ascending: false, nullsLast: true });
+
+  const verifiedIdentities = (linkedIdentitiesData ?? []).map((row) => ({
+    profileUrl: row.profile_url as string,
+    externalId: row.external_id as string,
+    isPrimary: row.is_primary as boolean,
+  }));
+
+  const primaryIdentity = verifiedIdentities.find((row) => row.isPrimary) ?? verifiedIdentities[0];
+  const secondaryIdentities = verifiedIdentities.filter((row) => row !== primaryIdentity);
+
   // Ownership + CTAs
   const isOwner = !!viewer && (viewer.id === profile.id || viewer.id === profile.claimed_by);
   const showClaim = !!viewer && !isOwner && profile.claimed_by == null;
@@ -278,6 +296,44 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                 shareText={shareText}
                 accent={accent}
               />
+            ) : null}
+            {primaryIdentity ? (
+              <div className="space-y-2 rounded-2xl border border-white/20 bg-white/10 p-4 text-xs text-white/80 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className="uppercase tracking-[0.35em] text-white/60">Athletic.net</span>
+                  <span className="rounded-full bg-[#F5C518]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.4em] text-[#F5C518]">
+                    Verified
+                  </span>
+                </div>
+                <SafeLink
+                  href={primaryIdentity.profileUrl}
+                  target="_blank"
+                  className="inline-flex h-9 items-center justify-center rounded-full border border-white/40 bg-white/10 px-4 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/20"
+                >
+                  View on Athletic.net
+                </SafeLink>
+                {secondaryIdentities.length ? (
+                  <details className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+                    <summary className="cursor-pointer list-none font-semibold text-white/80">
+                      Other linked profiles ({secondaryIdentities.length})
+                    </summary>
+                    <ul className="mt-2 space-y-1">
+                      {secondaryIdentities.map((identity) => (
+                        <li key={identity.profileUrl}>
+                          <a
+                            href={identity.profileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-white"
+                          >
+                            {identity.profileUrl}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </div>

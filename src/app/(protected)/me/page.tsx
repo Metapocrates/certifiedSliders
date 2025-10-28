@@ -4,6 +4,7 @@ import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import CollegeInterestsSection from "./college-interests/CollegeInterestsSection";
 import type { CollegeInterest } from "./college-interests/CollegeInterestsSection";
+import LinkedProfilesSection, { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -88,6 +89,21 @@ export default async function MePage() {
       createdAt: row.created_at,
     })) ?? [];
 
+  const linkedIdentities: LinkedIdentity[] = (identitiesData ?? []).map((row) => ({
+    id: row.id,
+    provider: row.provider,
+    externalId: row.external_id,
+    profileUrl: row.profile_url,
+    status: row.status,
+    verified: row.verified,
+    verifiedAt: row.verified_at,
+    isPrimary: row.is_primary,
+    nonce: row.nonce,
+    attempts: row.attempts,
+    lastCheckedAt: row.last_checked_at,
+    errorText: row.error_text,
+  }));
+
   return (
     <div className="container py-8">
       <div className="mb-6 flex items-center justify-between">
@@ -136,6 +152,8 @@ export default async function MePage() {
           </a>
         </div>
       </div>
+
+      <LinkedProfilesSection identities={linkedIdentities} />
 
       <CollegeInterestsSection interests={collegeInterests} />
 
@@ -260,3 +278,13 @@ function ResultsTable({
     </table>
   );
 }
+  const { data: identitiesData } = await supabase
+    .from("external_identities")
+    .select(
+      "id, provider, external_id, profile_url, status, verified, verified_at, is_primary, nonce, attempts, last_checked_at, error_text"
+    )
+    .eq("user_id", user.id)
+    .eq("provider", "athleticnet")
+    .order("is_primary", { ascending: false })
+    .order("verified", { ascending: false })
+    .order("verified_at", { ascending: false, nullsLast: true });

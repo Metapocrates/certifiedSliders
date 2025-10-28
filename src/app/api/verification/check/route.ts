@@ -102,6 +102,10 @@ export const POST = async (req: NextRequest) => {
       profile_url: updated.profile_url,
       external_id: updated.external_id,
       is_primary: updated.is_primary,
+      nonce: updated.nonce,
+      attempts: updated.attempts,
+      last_checked_at: updated.last_checked_at,
+      error_text: updated.error_text,
     });
   }
 
@@ -115,7 +119,7 @@ export const POST = async (req: NextRequest) => {
       last_checked_at: now,
     })
     .eq("id", row.id)
-    .select("id,status,verified,error_text,attempts,last_checked_at")
+    .select("*")
     .single();
 
   if (failErr) {
@@ -126,9 +130,14 @@ export const POST = async (req: NextRequest) => {
     id: failedRow.id,
     status: failedRow.status,
     verified: failedRow.verified,
-    error: failedRow.error_text,
+    provider: failedRow.provider,
+    profile_url: failedRow.profile_url,
+    external_id: failedRow.external_id,
+    nonce: failedRow.nonce,
     attempts: failedRow.attempts,
     last_checked_at: failedRow.last_checked_at,
+    error_text: failedRow.error_text,
+    is_primary: failedRow.is_primary,
     code: "NONCE_NOT_FOUND",
   });
 };
