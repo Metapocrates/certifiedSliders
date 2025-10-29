@@ -40,7 +40,7 @@ const whatsNew = [
   },
   {
     title: "Ratings refresh",
-    detail: "Our team assign's star-ratings by class year and athlete .",
+    detail: "Our team assign's star-ratings by class year and athlete.",
   },
 ];
 
