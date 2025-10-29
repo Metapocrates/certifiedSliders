@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { addCollegeInterest, removeCollegeInterest } from "./actions";
 
 export type CollegeInterest = {
   id: string;
   collegeName: string;
   createdAt: string;
+};
+
+type Suggestion = {
+  school_name: string;
+  school_short_name: string;
+  division: string | null;
+  conference: string | null;
+  school_slug: string;
 };
 
 export default function CollegeInterestsSection({
@@ -18,12 +26,17 @@ export default function CollegeInterestsSection({
   const [pending, startTransition] = useTransition();
   const [newCollege, setNewCollege] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const controllerRef = useRef<AbortController | null>(null);
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = newCollege.trim();
     if (!trimmed) return;
     setError(null);
+    setSuggestions([]);
     startTransition(async () => {
       const res = await addCollegeInterest(trimmed);
       if (!res?.ok) {
@@ -52,6 +65,48 @@ export default function CollegeInterestsSection({
       }
       setItems((prev) => prev.filter((p) => p.id !== id));
     });
+  }
+
+  async function fetchSuggestions(name: string) {
+    const query = name.trim();
+    if (query.length < 2) {
+      setSuggestions([]);
+      setLookupError(null);
+      setLookupLoading(false);
+      return;
+    }
+
+    if (controllerRef.current) controllerRef.current.abort();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    setLookupLoading(true);
+    try {
+      const res = await fetch(`/api/ncaa-programs?q=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        setLookupError(text || "Lookup failed.");
+        setSuggestions([]);
+        return;
+      }
+      const payload = (await res.json()) as { data?: Suggestion[]; error?: string };
+      if (payload.error) {
+        setLookupError(payload.error);
+        setSuggestions([]);
+      } else {
+        setLookupError(null);
+        setSuggestions(payload.data ?? []);
+      }
+    } catch (err) {
+      if ((err as DOMException)?.name === "AbortError") return;
+      console.error("[college-interests] lookup failed", err);
+      setLookupError("Could not reach NCAA directory.");
+      setSuggestions([]);
+    } finally {
+      setLookupLoading(false);
+      controllerRef.current = null;
+    }
   }
 
   return (
@@ -92,7 +147,10 @@ export default function CollegeInterestsSection({
       <form onSubmit={handleAdd} className="flex flex-wrap items-center gap-2">
         <input
           value={newCollege}
-          onChange={(e) => setNewCollege(e.target.value)}
+          onChange={(e) => {
+            setNewCollege(e.target.value);
+            fetchSuggestions(e.target.value);
+          }}
           placeholder="College name"
           className="flex-1 min-w-[200px] rounded-full border border-app px-4 py-2 text-sm"
           disabled={pending}
@@ -105,6 +163,36 @@ export default function CollegeInterestsSection({
           {pending ? "Adding..." : "Add"}
         </button>
       </form>
+
+      {lookupLoading ? (
+        <p className="text-xs text-muted">Searching NCAA programs…</p>
+      ) : lookupError ? (
+        <p className="text-sm text-scarlet">{lookupError}</p>
+      ) : null}
+
+      {suggestions.length > 0 ? (
+        <ul className="space-y-1 rounded-2xl border border-dashed border-app/60 bg-muted/40 p-3 text-sm">
+          {suggestions.map((suggestion) => (
+            <li key={suggestion.school_slug}>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewCollege(suggestion.school_name);
+                  setSuggestions([]);
+                  setLookupError(null);
+                }}
+                className="flex w-full flex-col rounded-xl px-3 py-2 text-left hover:bg-white/70"
+              >
+                <span className="font-semibold text-app">{suggestion.school_name}</span>
+                <span className="text-xs text-muted">
+                  Division {suggestion.division || "—"}
+                  {suggestion.conference ? ` • ${suggestion.conference}` : ""}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {error ? <p className="text-sm text-scarlet">{error}</p> : null}
     </section>
