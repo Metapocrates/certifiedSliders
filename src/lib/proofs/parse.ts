@@ -15,6 +15,7 @@ export async function parseBySource(
             event: raw.event ?? "",
             markText: raw.markText ?? "",
             markSeconds: raw.markSeconds ?? null,
+            markMetric: (raw as any).markMetric ?? null,
             timing: raw.timing ?? null,
             wind: raw.wind ?? null,
             meetName: raw.meetName ?? "",
@@ -31,7 +32,7 @@ export async function parseBySource(
         }
 
         if ((raw as any).athleteSlug) {
-            (parsed as any).athleteSlug = (raw as any).athleteSlug;
+            parsed.athleteSlug = (raw as any).athleteSlug;
         }
         return { source: "athleticnet", parsed };
     }

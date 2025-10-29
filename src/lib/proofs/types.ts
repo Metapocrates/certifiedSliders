@@ -16,12 +16,14 @@ export const TIMING_VALUES = ['FAT', 'hand', 'auto', 'unknown'] as const;
 export type ParsedProof = {
     event: string;               // e.g. "110H", "300H", "400m"
     markText: string;            // e.g. "14.76", "38.90", "4:12.35", "53.7h"
-    markSeconds: number;         // normalized to seconds
+    markSeconds: number | null;  // normalized to seconds; null when distance-only
+    markMetric?: number | null;  // for field events requiring metric distances
     timing?: 'FAT' | 'hand' | null; // keep null to avoid changing existing code
     wind?: number | null;        // +1.8, -0.2, etc.
     meetName?: string | null;
     meetDate?: string | null;    // ISO date string if available
     athleteName?: string | null;
+    athleteSlug?: string | null; // canonical identifier from source
     school?: string | null;
     lane?: string | null;
     place?: number | null;
