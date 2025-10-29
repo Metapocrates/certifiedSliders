@@ -90,6 +90,17 @@ export default async function MePage() {
       createdAt: row.created_at,
     })) ?? [];
 
+  const { data: identitiesData } = await supabase
+    .from("external_identities")
+    .select(
+      "id, provider, external_id, profile_url, status, verified, verified_at, is_primary, nonce, attempts, last_checked_at, error_text"
+    )
+    .eq("user_id", user.id)
+    .eq("provider", "athleticnet")
+    .order("is_primary", { ascending: false })
+    .order("verified", { ascending: false })
+    .order("verified_at", { ascending: false, nullsLast: true });
+
   type IdentityRow = {
     id: string;
     provider: string;
@@ -296,13 +307,3 @@ function ResultsTable({
     </table>
   );
 }
-  const { data: identitiesData } = await supabase
-    .from("external_identities")
-    .select(
-      "id, provider, external_id, profile_url, status, verified, verified_at, is_primary, nonce, attempts, last_checked_at, error_text"
-    )
-    .eq("user_id", user.id)
-    .eq("provider", "athleticnet")
-    .order("is_primary", { ascending: false })
-    .order("verified", { ascending: false })
-    .order("verified_at", { ascending: false, nullsLast: true });
