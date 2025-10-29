@@ -99,7 +99,7 @@ export default async function MePage() {
     .eq("provider", "athleticnet")
     .order("is_primary", { ascending: false })
     .order("verified", { ascending: false })
-    .order("verified_at", { ascending: false, nullsLast: true });
+    .order("verified_at", { ascending: false });
 
   type IdentityRow = {
     id: string;
