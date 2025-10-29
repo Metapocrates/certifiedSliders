@@ -134,7 +134,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     .eq("provider", "athleticnet")
     .eq("verified", true)
     .order("is_primary", { ascending: false })
-    .order("verified_at", { ascending: false, nullsLast: true });
+    .order("verified_at", { ascending: false });
 
   const verifiedIdentities = (linkedIdentitiesData ?? []).map((row) => ({
     profileUrl: row.profile_url as string,
