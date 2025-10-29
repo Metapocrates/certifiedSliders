@@ -48,19 +48,33 @@ export function containsNonce(html: string, nonce: string): boolean {
 }
 
 export async function fetchPageContainsNonce(url: string, nonce: string): Promise<boolean> {
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      "User-Agent": "CertifiedSliders/1.0 (+https://certifiedsliders.com)",
-      "Accept": "text/html,application/xhtml+xml",
-    },
-  });
+  const normalized = url.replace(/\/+$/, "");
+  const candidates = new Set<string>([
+    normalized,
+    `${normalized}/feed`,
+    `${normalized}/about`,
+  ]);
 
-  if (!res.ok) {
-    return false;
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(candidate, {
+        method: "GET",
+        headers: {
+          "User-Agent": "CertifiedSliders/1.0 (+https://certifiedsliders.com)",
+          Accept: "text/html,application/xhtml+xml",
+        },
+      });
+
+      if (!res.ok) continue;
+
+      const html = await res.text();
+      if (containsNonce(html, nonce)) {
+        return true;
+      }
+    } catch {
+      // ignore fetch errors and continue with next candidate
+    }
   }
 
-  const html = await res.text();
-  return containsNonce(html, nonce);
+  return false;
 }
-
