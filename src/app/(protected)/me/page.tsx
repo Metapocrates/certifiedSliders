@@ -90,20 +90,22 @@ export default async function MePage() {
       createdAt: row.created_at,
     })) ?? [];
 
-  const linkedIdentities: LinkedIdentity[] = (identitiesData ?? []).map((row) => ({
-    id: row.id,
-    provider: row.provider,
-    externalId: row.external_id,
-    profileUrl: row.profile_url,
-    status: row.status,
-    verified: row.verified,
-    verifiedAt: row.verified_at,
-    isPrimary: row.is_primary,
-    nonce: row.nonce,
-    attempts: row.attempts,
-    lastCheckedAt: row.last_checked_at,
-    errorText: row.error_text,
-  })) as LinkedIdentity[];
+  const linkedIdentities: LinkedIdentity[] = (identitiesData ?? []).map(
+    (row): LinkedIdentity => ({
+      id: row.id,
+      provider: row.provider,
+      externalId: row.external_id,
+      profileUrl: row.profile_url,
+      status: row.status as LinkedIdentity["status"],
+      verified: Boolean(row.verified),
+      verifiedAt: row.verified_at,
+      isPrimary: Boolean(row.is_primary),
+      nonce: row.nonce,
+      attempts: row.attempts ?? 0,
+      lastCheckedAt: row.last_checked_at,
+      errorText: row.error_text,
+    })
+  );
 
   return (
     <div className="container py-8">
