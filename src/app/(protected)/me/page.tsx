@@ -90,7 +90,22 @@ export default async function MePage() {
       createdAt: row.created_at,
     })) ?? [];
 
-  const linkedIdentities: LinkedIdentity[] = (identitiesData ?? []).map(
+  type IdentityRow = {
+    id: string;
+    provider: string;
+    external_id: string;
+    profile_url: string;
+    status: LinkedIdentity["status"];
+    verified: boolean;
+    verified_at: string | null;
+    is_primary: boolean;
+    nonce: string | null;
+    attempts: number | null;
+    last_checked_at: string | null;
+    error_text: string | null;
+  };
+
+  const linkedIdentities: LinkedIdentity[] = ((identitiesData ?? []) as IdentityRow[]).map(
     (row): LinkedIdentity => ({
       id: row.id,
       provider: row.provider,
