@@ -14,7 +14,7 @@ export async function parseBySource(
         const parsed: ParsedProof = {
             event: raw.event ?? "",
             markText: raw.markText ?? "",
-            markSeconds: raw.markSeconds ?? 0,          // if unknown, use 0 (ingest can treat 0 as invalid)
+            markSeconds: raw.markSeconds ?? null,
             timing: raw.timing ?? null,
             wind: raw.wind ?? null,
             meetName: raw.meetName ?? "",
@@ -30,6 +30,9 @@ export async function parseBySource(
             (parsed as any).confidence = (raw as any).confidence;
         }
 
+        if ((raw as any).athleteSlug) {
+            (parsed as any).athleteSlug = (raw as any).athleteSlug;
+        }
         return { source: "athleticnet", parsed };
     }
 

@@ -41,6 +41,13 @@ export async function confirmSubmitAction(
         return { ok: false, error: { formErrors: ["You must be signed in."] } };
     }
 
+    if (input.source === "athleticnet") {
+        return {
+            ok: false,
+            error: { formErrors: ["Athletic.net submissions use the secure workflow." ] },
+        };
+    }
+
     // ✅ Validate
     const parsed = ConfirmInputSchema.safeParse(input);
     if (!parsed.success) {

@@ -108,6 +108,29 @@ export default function SubmitResultURLPage() {
 
   async function handleConfirm() {
     setErr(null);
+    setBlockCode(null);
+
+    if (source === "athleticnet") {
+      try {
+        const resp = await fetch("/api/athleticnet/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data?.ok) {
+          const message = data?.error || "Unable to submit.";
+          setErr(message);
+          return;
+        }
+        router.push("/me");
+        return;
+      } catch (e: any) {
+        setErr(e?.message || "Unable to submit.");
+        return;
+      }
+    }
+
     const payload: ConfirmInput = {
       source,
       proofUrl: url,

@@ -232,7 +232,7 @@ function extractMeetName(
 }
 
 // ---------- main ----------
-export async function parseAthleticNet(url: string): Promise<Parsed> {
+export async function parseAthleticNet(url: string): Promise<Parsed & { athleteSlug?: string | null }> {
     const { html, finalUrl } = await fetchHtml(url);
 
     // Title & base text
@@ -302,6 +302,9 @@ export async function parseAthleticNet(url: string): Promise<Parsed> {
         if (confidence > 0.98) confidence = 0.98;
     }
 
+    const slugMatch = html.match(/href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/profile\/([A-Za-z0-9_-]+)/i);
+    const athleteSlug = slugMatch ? slugMatch[1] : null;
+
     return {
         event,
         markText,
@@ -311,5 +314,6 @@ export async function parseAthleticNet(url: string): Promise<Parsed> {
         meetName,
         meetDate,
         confidence,
+        athleteSlug,
     };
 }
