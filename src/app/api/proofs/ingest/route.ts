@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 
+export const runtime = "nodejs";
+
 type ParsedProof = {
     event: string;
     markText: string;

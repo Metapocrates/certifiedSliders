@@ -26,6 +26,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   const navItems = [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/results", label: "Verify Results" },
+    { href: "/admin/identities", label: "Linked Profiles" },
     { href: "/admin/ratings", label: "Star Ratings" },
     { href: "/admin/standards", label: "Standards" },
     { href: "/admin/featured", label: "Featured Profiles" },
