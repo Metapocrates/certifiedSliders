@@ -2,10 +2,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getAppBaseUrl } from "@/lib/env";
+import { makeClaimToken } from "@/lib/verification/claimToken";
 import CollegeInterestsSection from "./college-interests/CollegeInterestsSection";
 import type { CollegeInterest } from "./college-interests/CollegeInterestsSection";
 import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
+import CertifyResultSection from "./certify/CertifyResultSection";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -93,7 +96,7 @@ export default async function MePage() {
   const { data: identitiesData } = await supabase
     .from("external_identities")
     .select(
-      "id, provider, external_id, profile_url, status, verified, verified_at, is_primary, nonce, attempts, last_checked_at, error_text"
+      "id, provider, external_id, external_numeric_id, profile_url, status, verified, verified_at, is_primary, nonce, attempts, last_checked_at, error_text"
     )
     .eq("user_id", user.id)
     .eq("provider", "athleticnet")
@@ -101,37 +104,94 @@ export default async function MePage() {
     .order("verified", { ascending: false })
     .order("verified_at", { ascending: false });
 
-  type IdentityRow = {
-    id: string;
-    provider: string;
-    external_id: string;
-    profile_url: string;
-    status: LinkedIdentity["status"];
-    verified: boolean;
-    verified_at: string | null;
-    is_primary: boolean;
-    nonce: string | null;
-    attempts: number | null;
-    last_checked_at: string | null;
-    error_text: string | null;
-  };
+type IdentityRow = {
+  id: string;
+  provider: string;
+  external_id: string;
+  external_numeric_id: string | null;
+  profile_url: string;
+  status: LinkedIdentity["status"];
+  verified: boolean;
+  verified_at: string | null;
+  is_primary: boolean;
+  nonce: string | null;
+  attempts: number | null;
+  last_checked_at: string | null;
+  error_text: string | null;
+};
 
-  const linkedIdentities: LinkedIdentity[] = ((identitiesData ?? []) as IdentityRow[]).map(
-    (row): LinkedIdentity => ({
-      id: row.id,
-      provider: row.provider,
-      externalId: row.external_id,
-      profileUrl: row.profile_url,
-      status: row.status as LinkedIdentity["status"],
-      verified: Boolean(row.verified),
-      verifiedAt: row.verified_at,
-      isPrimary: Boolean(row.is_primary),
-      nonce: row.nonce,
-      attempts: row.attempts ?? 0,
-      lastCheckedAt: row.last_checked_at,
-      errorText: row.error_text,
+type SubmissionRow = {
+  id: string;
+  mode: "two_link" | "bookmarklet" | "manual";
+  status: "pending" | "accepted" | "rejected" | "needs_review";
+  profile_url: string | null;
+  result_url: string | null;
+  context_url: string | null;
+  created_at: string;
+  decided_at: string | null;
+  reason: string | null;
+};
+
+  const appBaseUrl = getAppBaseUrl();
+  const linkedIdentities: LinkedIdentity[] = await Promise.all(
+    ((identitiesData ?? []) as IdentityRow[]).map(async (row) => {
+      let claimUrl: string | null = null;
+      if (row.nonce) {
+        try {
+          const token = await makeClaimToken({
+            row_id: row.id,
+            user_id: user.id,
+            provider: "athleticnet",
+            external_id: row.external_id,
+            external_numeric_id: row.external_numeric_id,
+            nonce: row.nonce,
+          });
+          claimUrl = `${appBaseUrl}/claim/${encodeURIComponent(token)}`;
+        } catch {
+          claimUrl = null;
+        }
+      }
+
+      return {
+        id: row.id,
+        provider: row.provider,
+        externalId: row.external_id,
+        profileUrl: row.profile_url,
+        numericId: row.external_numeric_id,
+        claimUrl,
+        status: row.status as LinkedIdentity["status"],
+        verified: Boolean(row.verified),
+        verifiedAt: row.verified_at,
+        isPrimary: Boolean(row.is_primary),
+        nonce: row.nonce,
+        attempts: row.attempts ?? 0,
+        lastCheckedAt: row.last_checked_at,
+        errorText: row.error_text,
+      };
     })
   );
+
+  const hasVerifiedIdentity = linkedIdentities.some((identity) => identity.verified);
+
+  const { data: submissionsData } = await supabase
+    .from("results_submissions")
+    .select(
+      "id, mode, status, profile_url, result_url, context_url, created_at, decided_at, reason"
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const submissions = ((submissionsData ?? []) as SubmissionRow[]).map((row) => ({
+    id: row.id,
+    mode: row.mode,
+    status: row.status,
+    profileUrl: row.profile_url,
+    resultUrl: row.result_url,
+    contextUrl: row.context_url,
+    createdAt: row.created_at,
+    decidedAt: row.decided_at,
+    reason: row.reason,
+  }));
 
   return (
     <div className="container py-8">
@@ -182,9 +242,11 @@ export default async function MePage() {
         </div>
       </div>
 
-      <LinkedProfilesSection identities={linkedIdentities} />
+	  <LinkedProfilesSection identities={linkedIdentities} />
 
-      <CollegeInterestsSection interests={collegeInterests} />
+	  <CertifyResultSection submissions={submissions} hasVerifiedIdentity={hasVerifiedIdentity} />
+
+	  <CollegeInterestsSection interests={collegeInterests} />
 
       {/* Pending */}
       <Section title={`Pending (${pending.length})`}>

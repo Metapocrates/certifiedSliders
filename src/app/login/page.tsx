@@ -17,6 +17,22 @@ export default function LoginPage() {
   const [who, setWho] = useState<{ id: string; email: string | null } | null>(null);
   const [pendingGoogle, setPendingGoogle] = useState(false);
 
+  async function syncServerSession(sb: ReturnType<typeof supabaseBrowser>) {
+    try {
+      const { data: sessionData } = await sb.auth.getSession();
+      await fetch("/auth/callback", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          access_token: sessionData.session?.access_token ?? null,
+          refresh_token: sessionData.session?.refresh_token ?? null,
+        }),
+      });
+    } catch {
+      // Ignore sync errors; AuthListener will retry shortly.
+    }
+  }
+
   // Show current session (if already logged in)
   useEffect(() => {
     const supabase = supabaseBrowser();
@@ -49,10 +65,13 @@ export default function LoginPage() {
       const { data } = await supabase.auth.getUser();
       if (data?.user) setWho({ id: data.user.id, email: data.user.email ?? null });
 
+      await syncServerSession(supabase);
+
       // ✅ Redirect: honor ?next=/... if present and safe; else go home
       const nextParam = new URLSearchParams(window.location.search).get("next");
       const next = nextParam && /^\/(?!\/)/.test(nextParam) ? nextParam : "/";
-      window.location.href = next;
+      router.replace(next);
+      return;
     } catch (err: any) {
       setMsg(err?.message || "Auth error");
     } finally {

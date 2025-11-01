@@ -302,8 +302,22 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
         if (confidence > 0.98) confidence = 0.98;
     }
 
-    const slugMatch = html.match(/href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/profile\/([A-Za-z0-9_-]+)/i);
-    const athleteSlug = slugMatch ? slugMatch[1] : null;
+    const slugMatchers: RegExp[] = [
+        /href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/profile\/([A-Za-z0-9_-]+)/i,
+        /href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/athlete\/([A-Za-z0-9_-]+)/i,
+        /data-athlete-id="([A-Za-z0-9-]+)"/i,
+        /"athleteId"\s*[:=]\s*"([A-Za-z0-9-]+)"/i,
+        /"profileUrl"\s*:\s*"(?:https?:\/\/(?:www\.)?athletic\.net)?\/profile\/([A-Za-z0-9_-]+)"/i,
+    ];
+
+    let athleteSlug: string | null = null;
+    for (const rx of slugMatchers) {
+        const m = html.match(rx);
+        if (m && m[1]) {
+            athleteSlug = m[1];
+            break;
+        }
+    }
 
     return {
         event,

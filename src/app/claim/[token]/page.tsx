@@ -1,0 +1,107 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type ClaimState =
+  | { status: "pending" }
+  | { status: "success" }
+  | { status: "error"; message: string };
+
+function decodeTokenParam(token: string): string {
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token;
+  }
+}
+
+export default function ClaimPage({ params }: { params: { token: string } }) {
+  const [state, setState] = useState<ClaimState>({ status: "pending" });
+  const decodedToken = decodeTokenParam(params.token);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function submitClaim() {
+      try {
+        const res = await fetch("/api/verification/claim", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ token: decodedToken }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && data?.ok) {
+          setState({ status: "success" });
+          setTimeout(() => {
+            window.location.href = "/settings?claimed=1";
+          }, 1500);
+        } else {
+          setState({
+            status: "error",
+            message: data?.error ?? "We couldn’t verify that link. Generate a fresh link from Settings and try again.",
+          });
+        }
+      } catch (err: any) {
+        if (cancelled) return;
+        setState({
+          status: "error",
+          message: err?.message ?? "Unexpected error. Generate a fresh link from Settings and try again.",
+        });
+      }
+    }
+
+    submitClaim();
+    return () => {
+      cancelled = true;
+    };
+  }, [decodedToken]);
+
+  return (
+    <div className="mx-auto flex min-h-[70vh] max-w-xl flex-col justify-center gap-6 px-6 py-16 text-center">
+      <div>
+        <h1 className="text-3xl font-semibold text-app">Verifying Athletic.net link…</h1>
+        <p className="mt-2 text-sm text-muted">
+          Keep this tab open. We’ll redirect you back to your Certified Sliders settings once verification completes.
+        </p>
+      </div>
+
+      <div className="rounded-3xl border border-app bg-card p-6 shadow-lg">
+        {state.status === "pending" && (
+          <p className="text-sm text-muted">
+            Checking your claim link. If nothing happens after a few seconds, press the button below.
+          </p>
+        )}
+        {state.status === "success" && (
+          <p className="text-sm font-semibold text-green-600">
+            Verified! Redirecting you back to your settings…
+          </p>
+        )}
+        {state.status === "error" && (
+          <p className="text-sm text-scarlet">
+            {state.message}
+          </p>
+        )}
+
+        <form
+          action="/api/verification/claim"
+          method="POST"
+          className="mt-5 flex flex-col gap-3"
+          onSubmit={(e) => {
+            setState({ status: "pending" });
+          }}
+        >
+          <input type="hidden" name="token" value={decodedToken} />
+          <button
+            type="submit"
+            className="rounded-full bg-scarlet px-4 py-2 text-sm font-semibold text-white transition hover:bg-scarlet/90"
+          >
+            Verify now
+          </button>
+          <p className="text-xs text-muted">
+            If you see an error, go back to Certified Sliders &gt; Settings &gt; Athletic.net profiles and generate a new claim link.
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}

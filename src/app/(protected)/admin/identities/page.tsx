@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getAppBaseUrl } from "@/lib/env";
+import { makeClaimToken } from "@/lib/verification/claimToken";
 import SafeLink from "@/components/SafeLink";
 import {
+  clearAllIdentitiesAction,
   deleteIdentityAction,
   forceVerifyIdentityAction,
   resetIdentityAction,
@@ -16,6 +19,7 @@ type IdentityRow = {
   user_id: string;
   provider: string;
   external_id: string | null;
+  external_numeric_id: string | null;
   profile_url: string | null;
   status: string;
   verified: boolean;
@@ -87,6 +91,7 @@ export default async function AdminIdentitiesPage() {
       user_id,
       provider,
       external_id,
+      external_numeric_id,
       profile_url,
       status,
       verified,
@@ -121,10 +126,32 @@ export default async function AdminIdentitiesPage() {
     );
   }
 
-  const rows: IdentityRow[] = (data ?? []).map((row: any) => ({
+  const rawRows: IdentityRow[] = (data ?? []).map((row: any) => ({
     ...row,
     profiles: Array.isArray(row.profiles) ? row.profiles[0] ?? null : row.profiles ?? null,
   }));
+  const appBaseUrl = getAppBaseUrl();
+  const rows: (IdentityRow & { claimUrl: string | null })[] = await Promise.all(
+    rawRows.map(async (row) => {
+      let claimUrl: string | null = null;
+      if (row.nonce) {
+        try {
+          const token = await makeClaimToken({
+            row_id: row.id,
+            user_id: row.user_id,
+            provider: "athleticnet",
+            external_id: row.external_id ?? "",
+            external_numeric_id: row.external_numeric_id ?? null,
+            nonce: row.nonce,
+          });
+          claimUrl = `${appBaseUrl}/claim/${encodeURIComponent(token)}`;
+        } catch {
+          claimUrl = null;
+        }
+      }
+      return { ...row, claimUrl };
+    })
+  );
   const total = rows.length;
   const verifiedCount = rows.filter((row) => row.verified).length;
   const pendingCount = rows.filter((row) => !row.verified).length;
@@ -245,6 +272,26 @@ export default async function AdminIdentitiesPage() {
                     <dd className="font-mono text-white">{row.external_id ?? "—"}</dd>
                   </div>
                   <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted">Athlete ID</dt>
+                    <dd className="font-mono text-white">{row.external_numeric_id ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs uppercase tracking-wide text-muted">Claim link</dt>
+                    <dd className="break-all font-mono text-white">
+                      {row.claimUrl ? (
+                        <SafeLink
+                          href={row.claimUrl}
+                          target="_blank"
+                          className="underline hover:text-app"
+                        >
+                          {row.claimUrl}
+                        </SafeLink>
+                      ) : (
+                        "—"
+                      )}
+                    </dd>
+                  </div>
+                  <div>
                     <dt className="text-xs uppercase tracking-wide text-muted">Nonce / Code</dt>
                     <dd className="font-mono text-white">{row.nonce ?? "—"}</dd>
                   </div>
@@ -305,6 +352,33 @@ export default async function AdminIdentitiesPage() {
           })}
         </div>
       )}
+
+      <section className="rounded-xl border border-red-500/40 bg-red-900/20 p-5 text-sm text-red-100">
+        <h2 className="text-lg font-semibold text-red-100">Danger zone</h2>
+        <p className="mt-2 text-red-200">
+          Remove <strong>all</strong> Athletic.net links across every user. This cannot be undone. Use only for
+          emergency resets or pre-launch testing.
+        </p>
+        <form action={clearAllIdentitiesAction} className="mt-4 flex flex-col gap-3 text-red-100 sm:flex-row sm:items-center">
+          <label className="w-full sm:w-auto">
+            <span className="block text-xs uppercase tracking-wide text-red-200">
+              Type <code className="rounded bg-red-800/60 px-1 py-0.5 text-xs">CONFIRM</code> to proceed
+            </span>
+            <input
+              type="text"
+              name="confirm"
+              placeholder="CONFIRM"
+              className="mt-1 w-full rounded-md border border-red-500/40 bg-red-800/40 px-3 py-2 text-sm text-red-100 placeholder:text-red-300 focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-300"
+            />
+          </label>
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-500"
+          >
+            Delete all linked profiles
+          </button>
+        </form>
+      </section>
     </div>
   );
 }

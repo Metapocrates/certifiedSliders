@@ -37,14 +37,33 @@ export function makeNonce(length = 8): string {
 }
 
 export function containsNonce(html: string, nonce: string): boolean {
-  const cleaned = html
+  const cleanWhitespace = html
     .replace(/<script[^>]*>.*?<\/script>/gis, " ")
     .replace(/<style[^>]*>.*?<\/style>/gis, " ")
     .replace(/\u2026/g, "...")
     .replace(/\s+/g, " ")
     .toUpperCase();
 
-  return cleaned.includes(nonce.toUpperCase());
+  const normalizeDashes = (value: string) =>
+    value
+      .replace(/[\u2010-\u2015\u2212\u00AD]/g, "-") // map fancy dashes & soft hyphen
+      .replace(/&#8209;/g, "-")
+      .replace(/\u200B/g, ""); // zero-width space
+
+  const cleaned = normalizeDashes(cleanWhitespace);
+  const target = normalizeDashes(nonce.toUpperCase());
+
+  if (cleaned.includes(target)) return true;
+
+  // Some feeds inject extra separators, fall back to ignoring hyphen differences.
+  const squashed = cleaned.replace(/-/g, "");
+  const targetSquashed = target.replace(/-/g, "");
+  if (targetSquashed.length > 0 && squashed.includes(targetSquashed)) return true;
+
+  // Final fallback: ignore all non-alphanumeric characters to tolerate emoji or bullet separators.
+  const alnumSource = cleaned.replace(/[^A-Z0-9]/g, "");
+  const alnumTarget = target.replace(/[^A-Z0-9]/g, "");
+  return alnumTarget.length > 0 && alnumSource.includes(alnumTarget);
 }
 
 export async function fetchPageContainsNonce(url: string, nonce: string): Promise<boolean> {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
+import { getAppBaseUrl } from "@/lib/env";
+import { makeClaimToken } from "@/lib/verification/claimToken";
 import { fetchPageContainsNonce } from "@/lib/verification/athleticnet";
 
 export const runtime = "nodejs";
@@ -18,6 +20,22 @@ export const POST = async (req: NextRequest) => {
   if (!user) {
     return jsonError("Unauthorized", "UNAUTHORIZED", 401);
   }
+  const appBaseUrl = getAppBaseUrl();
+  const buildClaimUrl = async (record: any) => {
+    try {
+      const token = await makeClaimToken({
+        row_id: record.id,
+        user_id: record.user_id,
+        provider: record.provider,
+        external_id: record.external_id,
+        external_numeric_id: record.external_numeric_id ?? null,
+        nonce: record.nonce,
+      });
+      return `${appBaseUrl}/claim/${encodeURIComponent(token)}`;
+    } catch {
+      return null;
+    }
+  };
 
   let body: CheckBody;
   try {
@@ -93,6 +111,7 @@ export const POST = async (req: NextRequest) => {
       }
     }
 
+    const claimUrl = await buildClaimUrl(updated);
     return NextResponse.json({
       id: updated.id,
       status: updated.status,
@@ -101,11 +120,13 @@ export const POST = async (req: NextRequest) => {
       provider: updated.provider,
       profile_url: updated.profile_url,
       external_id: updated.external_id,
+      external_numeric_id: updated.external_numeric_id,
       is_primary: updated.is_primary,
       nonce: updated.nonce,
       attempts: updated.attempts,
       last_checked_at: updated.last_checked_at,
       error_text: updated.error_text,
+      claim_url: claimUrl,
     });
   }
 
@@ -126,6 +147,7 @@ export const POST = async (req: NextRequest) => {
     return jsonError(failErr.message, "DB_ERROR", 500);
   }
 
+  const claimUrl = await buildClaimUrl(failedRow);
   return NextResponse.json({
     id: failedRow.id,
     status: failedRow.status,
@@ -133,11 +155,13 @@ export const POST = async (req: NextRequest) => {
     provider: failedRow.provider,
     profile_url: failedRow.profile_url,
     external_id: failedRow.external_id,
+    external_numeric_id: failedRow.external_numeric_id,
     nonce: failedRow.nonce,
     attempts: failedRow.attempts,
     last_checked_at: failedRow.last_checked_at,
     error_text: failedRow.error_text,
     is_primary: failedRow.is_primary,
+    claim_url: claimUrl,
     code: "NONCE_NOT_FOUND",
   });
 };

@@ -3,6 +3,7 @@
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
 const ADMIN_PATH = "/admin/identities";
 
@@ -137,6 +138,27 @@ export async function deleteIdentityAction(formData: FormData) {
   const { supabase } = await requireAdmin();
 
   const { error } = await supabase.from("external_identities").delete().eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(ADMIN_PATH);
+}
+
+export async function clearAllIdentitiesAction(formData: FormData) {
+  const confirm = formData.get("confirm");
+  if (confirm !== "CONFIRM") {
+    throw new Error("confirmation_required");
+  }
+
+  await requireAdmin();
+  const admin = createSupabaseAdmin();
+
+  const { error } = await admin
+    .from("external_identities")
+    .delete()
+    .not("id", "is", null);
 
   if (error) {
     throw new Error(error.message);
