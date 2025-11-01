@@ -173,7 +173,8 @@ export const POST = async (req: NextRequest) => {
       external_numeric_id: row.external_numeric_id ?? numericId,
       nonce: row.nonce,
     });
-    claimUrl = `${getAppBaseUrl()}/claim/${encodeURIComponent(token)}`;
+    // Use query param to avoid Next.js path length limits, but keep dummy path param to route to correct page
+    claimUrl = `${getAppBaseUrl()}/claim/verify?t=${token}`;
   } catch (err: any) {
     return jsonError(err?.message ?? "Failed to generate claim link.", "CLAIM_TOKEN_ERROR", 500);
   }

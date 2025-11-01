@@ -45,9 +45,15 @@ export const POST = async (req: NextRequest) => {
     return jsonError("Missing claim token.", "MISSING_TOKEN");
   }
 
+  // Debug: log what we received
+  console.log('[claim] Received token length:', token.length);
+  console.log('[claim] Received token:', token);
+  console.log('[claim] Dots in token:', (token.match(/\./g) || []).length);
+
   let payload;
   try {
-    payload = await verifyClaimToken(decodeURIComponent(token));
+    // Token arrives already decoded by Next.js from path params; no need to decode again
+    payload = await verifyClaimToken(token);
   } catch (err: any) {
     return jsonError(err?.message ?? "Invalid or expired claim token.", "BAD_TOKEN", 400);
   }

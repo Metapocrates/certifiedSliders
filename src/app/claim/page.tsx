@@ -10,7 +10,8 @@ type ApiResp =
 export default function ClaimPage() {
     const router = useRouter();
     const search = useSearchParams();
-    const initialToken = useMemo(() => search.get("token") || "", [search]);
+    // Support both ?t= (new Athletic.net flow) and ?token= (legacy profile claim)
+    const initialToken = useMemo(() => search.get("t") || search.get("token") || "", [search]);
 
     const [token, setToken] = useState(initialToken);
     const [busy, setBusy] = useState(false);

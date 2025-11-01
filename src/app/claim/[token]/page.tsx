@@ -1,23 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type ClaimState =
   | { status: "pending" }
   | { status: "success" }
   | { status: "error"; message: string };
 
-function decodeTokenParam(token: string): string {
-  try {
-    return decodeURIComponent(token);
-  } catch {
-    return token;
-  }
-}
-
 export default function ClaimPage({ params }: { params: { token: string } }) {
   const [state, setState] = useState<ClaimState>({ status: "pending" });
-  const decodedToken = decodeTokenParam(params.token);
+  const searchParams = useSearchParams();
+
+  // Prefer query param ?t= (avoids Next.js path length limits), fall back to path param
+  const token = searchParams.get('t') || params.token;
 
   useEffect(() => {
     let cancelled = false;
@@ -26,7 +22,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
         const res = await fetch("/api/verification/claim", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ token: decodedToken }),
+          body: JSON.stringify({ token }),
         });
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
@@ -38,7 +34,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
         } else {
           setState({
             status: "error",
-            message: data?.error ?? "We couldn’t verify that link. Generate a fresh link from Settings and try again.",
+            message: data?.error ?? "We couldn't verify that link. Generate a fresh link from Settings and try again.",
           });
         }
       } catch (err: any) {
@@ -54,7 +50,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
     return () => {
       cancelled = true;
     };
-  }, [decodedToken]);
+  }, [token]);
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-xl flex-col justify-center gap-6 px-6 py-16 text-center">
@@ -90,7 +86,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
             setState({ status: "pending" });
           }}
         >
-          <input type="hidden" name="token" value={decodedToken} />
+          <input type="hidden" name="token" value={token} />
           <button
             type="submit"
             className="rounded-full bg-scarlet px-4 py-2 text-sm font-semibold text-white transition hover:bg-scarlet/90"
