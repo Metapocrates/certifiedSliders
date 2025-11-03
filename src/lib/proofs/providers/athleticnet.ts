@@ -1,7 +1,7 @@
 // src/lib/proofs/providers/athleticnet.ts
 import { fetchHtml } from "../fetch";
 
-type Timing = "FAT" | "hand" | null;
+type Timing = "FAT" | "Hand" | null;
 
 type Parsed = {
     event: string | null;
