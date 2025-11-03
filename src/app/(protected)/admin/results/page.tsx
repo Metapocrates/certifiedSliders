@@ -97,7 +97,7 @@ export default async function AdminResultsPage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border">
-          <table className="min-w-full text-sm">
+          <table className="min-w-full text-sm relative">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Athlete</th>
@@ -166,14 +166,14 @@ export default async function AdminResultsPage() {
                               Reject
                             </span>
                           </summary>
-                          <div className="absolute z-10 mt-2 w-64 rounded-lg border bg-white p-3 shadow">
+                          <div className="absolute right-0 z-10 mt-2 w-64 rounded-lg border bg-white p-3 shadow-lg">
                             <form action={rejectResultAction} className="space-y-2">
                               <input type="hidden" name="id" value={r.id} />
                               <textarea
                                 name="reason"
                                 rows={3}
                                 className="w-full rounded-md border px-2 py-1 text-xs"
-                                placeholder="Optional reason…"
+                                placeholder="Reason for rejection (optional but recommended)"
                               />
                               <button
                                 className="w-full rounded-md bg-red-600 px-3 py-1.5 text-white text-xs hover:opacity-90"

@@ -45,28 +45,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: err?.message || "parse_failed" }, { status: 400 });
   }
 
-  // Get the user's verified Athletic.net numeric ID
-  const { data: verifiedProfile } = await supabase
+  // Get ALL verified Athletic.net identities for this user
+  const { data: verifiedIdentities } = await supabase
     .from("external_identities")
-    .select("external_numeric_id")
+    .select("external_id, external_numeric_id")
     .eq("user_id", user.id)
     .eq("provider", "athleticnet")
-    .eq("verified", true)
-    .eq("is_primary", true)
-    .maybeSingle();
+    .eq("verified", true);
 
-  let athleteSlug = (parsed as any).athleteSlug as string | undefined;
-
-  // If parser couldn't extract athlete ID from result page, use verified profile's numeric ID
-  if (!athleteSlug && verifiedProfile?.external_numeric_id) {
-    athleteSlug = verifiedProfile.external_numeric_id;
-  }
-
-  if (!athleteSlug) {
+  if (!verifiedIdentities || verifiedIdentities.length === 0) {
     return NextResponse.json({
       ok: false,
       error: "No verified Athletic.net profile found. Please verify your Athletic.net account in Settings first."
     }, { status: 400 });
+  }
+
+  // Extract athlete slug from parsed result
+  const athleteSlug = (parsed as any).athleteSlug as string | undefined;
+
+  // CRITICAL: We MUST extract the athlete ID from the result page
+  // Do NOT fall back to the user's verified ID - that would allow submitting any result!
+  if (!athleteSlug) {
+    return NextResponse.json({
+      ok: false,
+      error: "Could not determine which athlete this result belongs to. The result page may not contain athlete information."
+    }, { status: 400 });
+  }
+
+  // CRITICAL: Verify the extracted athlete slug matches one of the user's verified identities
+  const athleteSlugLower = athleteSlug.toLowerCase();
+  const isVerifiedIdentity = verifiedIdentities.some(
+    (id) =>
+      id.external_id?.toLowerCase() === athleteSlugLower ||
+      id.external_numeric_id === athleteSlug
+  );
+
+  if (!isVerifiedIdentity) {
+    return NextResponse.json({
+      ok: false,
+      error: "This result belongs to a different athlete. You can only submit results for your verified Athletic.net profile(s)."
+    }, { status: 403 });
   }
 
   const markSeconds = typeof parsed.markSeconds === "number" && Number.isFinite(parsed.markSeconds)

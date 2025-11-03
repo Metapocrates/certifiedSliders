@@ -2,6 +2,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 async function assertAdmin() {
@@ -33,7 +34,7 @@ export async function approveResultAction(formData: FormData) {
         .update({
             status: "verified",
             // if you want to clear any previous rejection reason on approve:
-            reject_reason: null,
+            rejection_reason: null,
         })
         .eq("id", id)
         .select("id")
@@ -41,8 +42,8 @@ export async function approveResultAction(formData: FormData) {
 
     if (error) return { ok: false, error: error.message };
 
-    revalidatePath("/(protected)/admin/results");
-    return { ok: true };
+    revalidatePath("/admin/results");
+    redirect("/admin/results");
 }
 
 export async function rejectResultAction(formData: FormData) {
@@ -58,18 +59,69 @@ export async function rejectResultAction(formData: FormData) {
     if (!id) return { ok: false, error: "Missing id." };
 
     const { supabase } = gate;
-    const { error } = await supabase
+
+    console.log("Rejecting result:", id, "with reason:", reason);
+
+    const { error, data } = await supabase
         .from("results")
         .update({
             status: "rejected",
-            reject_reason: reason, // <-- persists the reason
+            rejection_reason: reason, // <-- persists the reason
         })
         .eq("id", id)
         .select("id")
         .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    console.log("Reject result:", { error, data });
 
-    revalidatePath("/(protected)/admin/results");
-    return { ok: true };
+    if (error) {
+        console.error("Reject error:", error);
+        return { ok: false, error: error.message };
+    }
+
+    revalidatePath("/admin/results");
+    redirect("/admin/results");
+}
+
+export async function deleteResultAction(formData: FormData) {
+    const gate = await assertAdmin();
+    if (!gate.ok) return gate;
+
+    const id = Number(formData.get("id"));
+    if (!id) return { ok: false, error: "Missing id." };
+
+    const { supabase } = gate;
+
+    console.log("Deleting result:", id);
+
+    // First delete related proofs (cascade delete)
+    const { error: proofsError, data: proofsData } = await supabase
+        .from("proofs")
+        .delete()
+        .eq("result_id", id)
+        .select();
+
+    console.log("Deleted proofs:", { proofsError, count: proofsData?.length });
+
+    // Then delete the result
+    const { error, data } = await supabase
+        .from("results")
+        .delete()
+        .eq("id", id)
+        .select();
+
+    console.log("Deleted result:", { error, data });
+
+    if (error) {
+        console.error("Delete error:", error);
+        return { ok: false, error: error.message };
+    }
+
+    if (!data || data.length === 0) {
+        console.error("No result was deleted - might not exist or permission denied");
+        return { ok: false, error: "Result not found or permission denied" };
+    }
+
+    revalidatePath("/admin/results");
+    redirect("/admin/results");
 }

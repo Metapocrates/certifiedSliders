@@ -416,11 +416,27 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
     }
 
     const slugMatchers: RegExp[] = [
+        // Profile/athlete URL patterns
         /href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/profile\/([A-Za-z0-9_-]+)/i,
         /href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/athlete\/([A-Za-z0-9_-]+)/i,
+        /href="(?:https?:\/\/(?:www\.)?athletic\.net)?\/TrackAndField\/Athlete\.aspx\?AID=([A-Za-z0-9_-]+)/i,
+
+        // Data attributes
         /data-athlete-id="([A-Za-z0-9-]+)"/i,
+        /data-athlete="([A-Za-z0-9-]+)"/i,
+
+        // JSON/JavaScript patterns
         /"athleteId"\s*[:=]\s*"([A-Za-z0-9-]+)"/i,
+        /"athlete_id"\s*[:=]\s*"([A-Za-z0-9-]+)"/i,
         /"profileUrl"\s*:\s*"(?:https?:\/\/(?:www\.)?athletic\.net)?\/profile\/([A-Za-z0-9_-]+)"/i,
+
+        // Athlete link in breadcrumb or navigation
+        /<a[^>]*href="[^"]*\/athlete\/([A-Za-z0-9_-]+)"[^>]*>/i,
+        /<a[^>]*href="[^"]*\/profile\/([A-Za-z0-9_-]+)"[^>]*>/i,
+
+        // Numeric ID patterns (for when slug isn't available)
+        /athleteID["\s:=]+(\d{6,10})/i,
+        /athlete[_-]?id["\s:=]+(\d{6,10})/i,
     ];
 
     let athleteSlug: string | null = null;
@@ -429,6 +445,20 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
         if (m && m[1]) {
             athleteSlug = m[1];
             break;
+        }
+    }
+
+    // If still not found, try to extract from any link containing the athlete's name
+    // This is a last resort and less reliable
+    if (!athleteSlug) {
+        // Look for links to athlete profiles near the result
+        const athleteNamePattern = /<a[^>]*href="[^"]*\/(?:athlete|profile)\/([A-Za-z0-9_-]+)"[^>]*>.*?<\/a>/gi;
+        const matches = html.matchAll(athleteNamePattern);
+        for (const match of matches) {
+            if (match[1]) {
+                athleteSlug = match[1];
+                break;
+            }
         }
     }
 
