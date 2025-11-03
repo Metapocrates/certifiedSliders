@@ -10,7 +10,7 @@ type ParsedProof = {
     markText: string;
     markSeconds: number | null;
     markMetric?: number | null; // for field events (distance in meters)
-    timing: "FAT" | "Hand" | null;
+    timing: "FAT" | "hand" | null;
     wind: number | null;
     meetName: string;
     meetDate: string; // YYYY-MM-DD

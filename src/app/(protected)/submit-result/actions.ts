@@ -9,7 +9,7 @@ const ConfirmInputSchema = z.object({
     event: z.string().min(1),
     markText: z.string().min(1),
     markSeconds: z.number().nullable(),
-    timing: z.enum(["FAT", "Hand"]).nullable(),
+    timing: z.enum(["FAT", "hand"]).nullable(),
     wind: z.number().nullable(),
     season: z.enum(["indoor", "outdoor"]),
     meetName: z.string().min(1),

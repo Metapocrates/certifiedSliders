@@ -9,7 +9,7 @@ type ParsedProof = {
   event: string;
   markText: string;
   markSeconds: number | null;
-  timing: "FAT" | "Hand" | null;
+  timing: "FAT" | "hand" | null;
   wind: number | null;
   meetName: string;
   meetDate: string; // YYYY-MM-DD
@@ -39,7 +39,7 @@ export default function SubmitResultURLPage() {
   const [event, setEvent] = useState("");
   const [markText, setMarkText] = useState("");
   const [markSeconds, setMarkSeconds] = useState<number | null>(null);
-  const [timing, setTiming] = useState<"FAT" | "Hand" | null>(null);
+  const [timing, setTiming] = useState<"FAT" | "hand" | null>(null);
   const [wind, setWind] = useState<number | null>(null);
   const [season, setSeason] = useState<"indoor" | "outdoor">("outdoor");
   const [meetName, setMeetName] = useState("");
@@ -290,13 +290,13 @@ export default function SubmitResultURLPage() {
               className="w-full rounded-lg border px-3 py-2"
               value={timing ?? ""}
               onChange={(e) =>
-                setTiming((e.target.value || null) as "FAT" | "Hand" | null)
+                setTiming((e.target.value || null) as "FAT" | "hand" | null)
               }
               disabled={!editable}
             >
               <option value="">—</option>
               <option value="FAT">FAT</option>
-              <option value="Hand">Hand</option>
+              <option value="hand">Hand</option>
             </select>
           </div>
 
