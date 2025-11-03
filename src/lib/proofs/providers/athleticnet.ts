@@ -61,11 +61,25 @@ function parseTimingBlob(text: string): Timing {
 
 function normalizeEventToken(human: string): string | null {
     const s = human.replace(/\u2026/g, "...").trim(); // normalize ellipsis
-    // Hurdles first
-    let m = s.match(/\b(60|80|100|110|200|300|400)\s*m?\s*Hurdles\b/i);
+
+    // Field events - throwing
+    if (/\bShot\s*Put\b/i.test(s)) return "SP";
+    if (/\bDiscus(?:\s+Throw)?\b/i.test(s)) return "DT";
+    if (/\bJavelin(?:\s+Throw)?\b/i.test(s)) return "JT";
+    if (/\bHammer(?:\s+Throw)?\b/i.test(s)) return "HM";
+
+    // Field events - jumping
+    if (/\bLong\s*Jump\b/i.test(s)) return "LJ";
+    if (/\bTriple\s*Jump\b/i.test(s)) return "TJ";
+    if (/\bHigh\s*Jump\b/i.test(s)) return "HJ";
+    if (/\bPole\s*Vault\b/i.test(s)) return "PV";
+
+    // Hurdles - match "110m Hurdles", "110 Hurdles", "110 Meter Hurdles", etc.
+    let m = s.match(/\b(60|80|100|110|200|300|400)\s*(?:m(?:eter)?s?)?\s*Hurdles\b/i);
     if (m) return `${m[1]}H`;
-    // Flats
-    m = s.match(/\b(60|100|200|300|400|800|1600|3200|5000|10000)\s*m\b/i);
+
+    // Flats - match "100m", "100 m", "100 Meters", "100 Meter", etc.
+    m = s.match(/\b(60|100|200|300|400|800|1600|3200|5000|10000)\s*(?:m(?:eters?)?)\b/i);
     return m ? `${m[1]}m` : null;
 }
 
@@ -113,10 +127,52 @@ function extractEvent(title: string | null, labelsText: string, body: string): s
 
     // 3) body fallback
     const bodyHuman =
-        body.match(/\b(60|80|100|110|200|300|400)\s*m\s*Hurdles\b/i)?.[0] ||
-        body.match(/\b(60|100|200|300|400|800|1600|3200|5000|10000)\s*m\b/i)?.[0] ||
+        // Field events
+        body.match(/\bShot\s*Put\b/i)?.[0] ||
+        body.match(/\bDiscus(?:\s+Throw)?\b/i)?.[0] ||
+        body.match(/\bJavelin(?:\s+Throw)?\b/i)?.[0] ||
+        body.match(/\bHammer(?:\s+Throw)?\b/i)?.[0] ||
+        body.match(/\bLong\s*Jump\b/i)?.[0] ||
+        body.match(/\bTriple\s*Jump\b/i)?.[0] ||
+        body.match(/\bHigh\s*Jump\b/i)?.[0] ||
+        body.match(/\bPole\s*Vault\b/i)?.[0] ||
+        // Running events
+        body.match(/\b(60|80|100|110|200|300|400)\s*(?:m(?:eter)?s?)?\s*Hurdles\b/i)?.[0] ||
+        body.match(/\b(60|100|200|300|400|800|1600|3200|5000|10000)\s*(?:m(?:eters?)?)\b/i)?.[0] ||
         "";
     return normalizeEventToken(bodyHuman);
+}
+
+// Extract distance marks for field events (feet/inches or meters)
+function extractDistance(title: string | null, labelsText: string, body: string): { markText: string | null; markMetric: number | null } {
+    // Try title first, then labels, then body
+    const tryStrs = [title ?? "", labelsText, body];
+
+    for (const s of tryStrs) {
+        // Match feet/inches format FIRST (e.g., "40' 8\"", "40' 8"" with typographic or ASCII quotes)
+        // Unicode: \u2018\u2019 ('' curly single), \u201C\u201D ("" curly double), \u02BC (modifier apostrophe)
+        const imperialMatch = s.match(/\b(\d+)[\u2018\u2019'\u02BC]?\s*[-\s]?\s*(\d+(?:\.\d+)?)[\u201C\u201D"\u02BA]?\b/);
+        if (imperialMatch) {
+            const feet = parseInt(imperialMatch[1], 10);
+            const inches = parseFloat(imperialMatch[2]);
+            if (feet >= 0 && feet < 200 && inches >= 0 && inches < 12) {
+                // Convert to meters
+                const meters = (feet * 0.3048) + (inches * 0.0254);
+                return { markText: `${feet}' ${inches}"`, markMetric: meters };
+            }
+        }
+
+        // Match metric (e.g., "12.40m" or "12.40M")
+        const metricMatch = s.match(/\b(\d+(?:\.\d+)?)\s*m\b/i);
+        if (metricMatch) {
+            const meters = parseFloat(metricMatch[1]);
+            if (meters > 0 && meters < 100) { // sanity check
+                return { markText: `${meters}m`, markMetric: meters };
+            }
+        }
+    }
+
+    return { markText: null, markMetric: null };
 }
 
 function extractTime(title: string | null, labelsText: string, body: string): { markText: string | null; markSeconds: number | null } {
@@ -144,8 +200,27 @@ function extractTime(title: string | null, labelsText: string, body: string): { 
 }
 function humanEventFromNorm(event: string | null): string | null {
     if (!event) return null;
+
+    // Field events - throws
+    const fieldEventMap: Record<string, string> = {
+        "SP": "Shot Put",
+        "DT": "Discus",
+        "JT": "Javelin",
+        "HM": "Hammer",
+        "LJ": "Long Jump",
+        "TJ": "Triple Jump",
+        "HJ": "High Jump",
+        "PV": "Pole Vault",
+    };
+
+    if (fieldEventMap[event]) return fieldEventMap[event];
+
+    // Hurdles
     if (/H$/.test(event)) return `${event.replace(/H$/, "")}m Hurdles`; // "110H" -> "110m Hurdles"
+
+    // Running events
     if (/m$/.test(event)) return event;                                // "400m"
+
     return null;
 }
 
@@ -178,8 +253,18 @@ function extractMeetNameFromTitle(
     if (eventIdx === -1) {
         eventIdx = parts.findIndex(
             (p) =>
+                // Running events
                 /\b(60|80|100|110|200|300|400)\s*m\s*Hurdles\b/i.test(p) ||
-                /\b(60|100|200|300|400|800|1600|3200|5000|10000)\s*m\b/i.test(p)
+                /\b(60|100|200|300|400|800|1600|3200|5000|10000)\s*(?:m(?:eters?)?)\b/i.test(p) ||
+                // Field events
+                /\bShot\s*Put\b/i.test(p) ||
+                /\bDiscus(?:\s+Throw)?\b/i.test(p) ||
+                /\bJavelin(?:\s+Throw)?\b/i.test(p) ||
+                /\bHammer(?:\s+Throw)?\b/i.test(p) ||
+                /\bLong\s*Jump\b/i.test(p) ||
+                /\bTriple\s*Jump\b/i.test(p) ||
+                /\bHigh\s*Jump\b/i.test(p) ||
+                /\bPole\s*Vault\b/i.test(p)
         );
     }
 
@@ -239,7 +324,7 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
     const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || null;
     const lowerTitle = (title || "").toLowerCase();
     if (BAD_TITLES.has(lowerTitle)) {
-        return { event: null, markText: null, markSeconds: null, timing: null, wind: null, meetName: null, meetDate: null, confidence: 0 };
+        return { event: null, markText: null, markSeconds: null, markMetric: null, timing: null, wind: null, meetName: null, meetDate: null, confidence: 0 };
     }
 
     const body = html
@@ -257,7 +342,26 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
 
     // Extract fields
     const event = extractEvent(title, labelsText, body);
-    const { markText, markSeconds } = extractTime(title, labelsText, body);
+
+    // Determine if this is a field event (throws/jumps) or running event
+    const fieldEvents = ['SP', 'DT', 'JT', 'HM', 'LJ', 'TJ', 'HJ', 'PV'];
+    const isFieldEvent = event ? fieldEvents.includes(event) : false;
+
+    // Extract mark based on event type
+    let markText: string | null = null;
+    let markSeconds: number | null = null;
+    let markMetric: number | null = null;
+
+    if (isFieldEvent) {
+        const distance = extractDistance(title, labelsText, body);
+        markText = distance.markText;
+        markMetric = distance.markMetric;
+    } else {
+        const time = extractTime(title, labelsText, body);
+        markText = time.markText;
+        markSeconds = time.markSeconds;
+    }
+
     const timing = parseTimingBlob(body);
     const wind = clampWind(parseWindBlob(body));
 
@@ -282,6 +386,7 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
                 event,
                 markText: null,
                 markSeconds: null,
+                markMetric: null,
                 timing,
                 wind,
                 meetName,
@@ -293,7 +398,7 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
 
     // Confidence scoring
     let confidence = 0;
-    if (event && markSeconds != null) {
+    if (event && (markSeconds != null || markMetric != null)) {
         confidence = 0.7;
         if (meetName) confidence += 0.1;
         if (meetDate) confidence += 0.05;
@@ -323,6 +428,7 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
         event,
         markText,
         markSeconds,
+        markMetric,
         timing,
         wind,
         meetName,

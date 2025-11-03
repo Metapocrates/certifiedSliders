@@ -9,12 +9,13 @@ function jsonError(message: string, code: string, status = 400) {
   return NextResponse.json({ ok: false, error: message, code }, { status });
 }
 
-async function extractToken(req: NextRequest): Promise<string | null> {
+async function extractRowId(req: NextRequest): Promise<string | null> {
   const contentType = req.headers.get("content-type") ?? "";
+
   if (contentType.toLowerCase().includes("application/json")) {
     try {
       const body = await req.json();
-      return typeof body?.token === "string" ? body.token : null;
+      return typeof body?.row_id === "string" ? body.row_id : null;
     } catch {
       return null;
     }
@@ -23,7 +24,7 @@ async function extractToken(req: NextRequest): Promise<string | null> {
   if (contentType.toLowerCase().includes("application/x-www-form-urlencoded") || contentType.toLowerCase().includes("multipart/form-data")) {
     try {
       const form = await req.formData();
-      const value = form.get("token");
+      const value = form.get("row_id");
       return typeof value === "string" ? value : null;
     } catch {
       return null;
@@ -33,36 +34,25 @@ async function extractToken(req: NextRequest): Promise<string | null> {
   // Try JSON as fallback even if header missing
   try {
     const body = await req.json();
-    return typeof body?.token === "string" ? body.token : null;
+    return typeof body?.row_id === "string" ? body.row_id : null;
   } catch {
     return null;
   }
 }
 
 export const POST = async (req: NextRequest) => {
-  const token = await extractToken(req);
-  if (!token) {
-    return jsonError("Missing claim token.", "MISSING_TOKEN");
-  }
-
-  // Debug: log what we received
-  console.log('[claim] Received token length:', token.length);
-  console.log('[claim] Received token:', token);
-  console.log('[claim] Dots in token:', (token.match(/\./g) || []).length);
-
-  let payload;
-  try {
-    // Token arrives already decoded by Next.js from path params; no need to decode again
-    payload = await verifyClaimToken(token);
-  } catch (err: any) {
-    return jsonError(err?.message ?? "Invalid or expired claim token.", "BAD_TOKEN", 400);
+  const rowId = await extractRowId(req);
+  if (!rowId) {
+    return jsonError("Missing row ID.", "MISSING_ROW_ID");
   }
 
   const admin = createSupabaseAdmin();
+
+  // Fetch the row and its stored claim token
   const { data: row, error } = await admin
     .from("external_identities")
     .select("*")
-    .eq("id", payload.row_id)
+    .eq("id", rowId)
     .maybeSingle();
 
   if (error) {
@@ -73,8 +63,29 @@ export const POST = async (req: NextRequest) => {
     return jsonError("Verification entry not found.", "NOT_FOUND", 404);
   }
 
-  const tokenNumericId = payload.external_numeric_id ?? null;
+  // Check if already verified first (before checking token)
+  if (row.verified) {
+    return NextResponse.json({ ok: true, already: true });
+  }
 
+  if (!row.claim_token) {
+    return jsonError("No claim token found for this verification.", "NO_TOKEN", 400);
+  }
+
+  if (row.claim_token_expires_at && new Date(row.claim_token_expires_at) < new Date()) {
+    return jsonError("Claim link has expired. Generate a new one from Settings.", "TOKEN_EXPIRED", 410);
+  }
+
+  // Verify the stored claim token
+  let payload;
+  try {
+    payload = await verifyClaimToken(row.claim_token);
+  } catch (err: any) {
+    return jsonError(err?.message ?? "Invalid or expired claim token.", "BAD_TOKEN", 400);
+  }
+
+  // Validate that the token matches the row
+  const tokenNumericId = payload.external_numeric_id ?? null;
   if (
     row.user_id !== payload.user_id ||
     row.provider !== payload.provider ||
@@ -83,10 +94,6 @@ export const POST = async (req: NextRequest) => {
     (row.external_numeric_id && tokenNumericId && row.external_numeric_id !== tokenNumericId)
   ) {
     return jsonError("Claim token no longer matches this verification.", "TOKEN_MISMATCH", 409);
-  }
-
-  if (row.verified) {
-    return NextResponse.json({ ok: true, already: true });
   }
 
   const referer = req.headers.get("referer");
@@ -104,6 +111,8 @@ export const POST = async (req: NextRequest) => {
       nonce: newNonce,
       external_numeric_id: numericToPersist,
       error_text: referer ? `claimed_via_link (${referer})` : "claimed_via_link",
+      claim_token: null, // Clear token after use for security
+      claim_token_expires_at: null,
     })
     .eq("id", row.id)
     .select("*")

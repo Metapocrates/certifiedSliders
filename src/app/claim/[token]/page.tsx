@@ -10,10 +10,9 @@ type ClaimState =
 
 export default function ClaimPage({ params }: { params: { token: string } }) {
   const [state, setState] = useState<ClaimState>({ status: "pending" });
-  const searchParams = useSearchParams();
 
-  // Prefer query param ?t= (avoids Next.js path length limits), fall back to path param
-  const token = searchParams.get('t') || params.token;
+  // The token param is actually the row ID now (short UUID)
+  const rowId = params.token;
 
   useEffect(() => {
     let cancelled = false;
@@ -22,7 +21,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
         const res = await fetch("/api/verification/claim", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ row_id: rowId }),
         });
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
@@ -50,7 +49,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [rowId]);
 
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-xl flex-col justify-center gap-6 px-6 py-16 text-center">
@@ -86,7 +85,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
             setState({ status: "pending" });
           }}
         >
-          <input type="hidden" name="token" value={token} />
+          <input type="hidden" name="row_id" value={rowId} />
           <button
             type="submit"
             className="rounded-full bg-scarlet px-4 py-2 text-sm font-semibold text-white transition hover:bg-scarlet/90"

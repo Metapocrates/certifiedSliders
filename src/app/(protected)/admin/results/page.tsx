@@ -60,7 +60,7 @@ export default async function AdminResultsPage() {
       meet_date,
       proof_url,
       status,
-      profiles:athlete_id (
+      profiles!results_athlete_id_fkey (
         id,
         full_name,
         username,

@@ -45,9 +45,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: err?.message || "parse_failed" }, { status: 400 });
   }
 
-  const athleteSlug = (parsed as any).athleteSlug as string | undefined;
+  // Get the user's verified Athletic.net numeric ID
+  const { data: verifiedProfile } = await supabase
+    .from("external_identities")
+    .select("external_numeric_id")
+    .eq("user_id", user.id)
+    .eq("provider", "athleticnet")
+    .eq("verified", true)
+    .eq("is_primary", true)
+    .maybeSingle();
+
+  let athleteSlug = (parsed as any).athleteSlug as string | undefined;
+
+  // If parser couldn't extract athlete ID from result page, use verified profile's numeric ID
+  if (!athleteSlug && verifiedProfile?.external_numeric_id) {
+    athleteSlug = verifiedProfile.external_numeric_id;
+  }
+
   if (!athleteSlug) {
-    return NextResponse.json({ ok: false, error: "athlete_id_missing" }, { status: 400 });
+    return NextResponse.json({
+      ok: false,
+      error: "No verified Athletic.net profile found. Please verify your Athletic.net account in Settings first."
+    }, { status: 400 });
   }
 
   const markSeconds = typeof parsed.markSeconds === "number" && Number.isFinite(parsed.markSeconds)
@@ -99,6 +118,13 @@ export async function POST(req: NextRequest) {
   });
 
   if (rpcError) {
+    // Handle duplicate submission error with friendly message
+    if (rpcError.message?.includes("duplicate key") || rpcError.message?.includes("ux_results_athlete_url")) {
+      return NextResponse.json({
+        ok: false,
+        error: "You've already submitted this result. Check your results page to see it."
+      }, { status: 409 });
+    }
     return NextResponse.json({ ok: false, error: rpcError.message }, { status: 400 });
   }
 

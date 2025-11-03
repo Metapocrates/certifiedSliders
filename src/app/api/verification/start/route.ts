@@ -163,6 +163,8 @@ export const POST = async (req: NextRequest) => {
     };
   }
 
+  // Generate claim token and store it in the database
+  // Use short row ID in URL to avoid truncation issues
   let claimUrl: string;
   try {
     const token = await makeClaimToken({
@@ -173,8 +175,19 @@ export const POST = async (req: NextRequest) => {
       external_numeric_id: row.external_numeric_id ?? numericId,
       nonce: row.nonce,
     });
-    // Use query param to avoid Next.js path length limits, but keep dummy path param to route to correct page
-    claimUrl = `${getAppBaseUrl()}/claim/verify?t=${token}`;
+
+    // Store token in database with 24h expiration
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    await admin
+      .from("external_identities")
+      .update({
+        claim_token: token,
+        claim_token_expires_at: expiresAt,
+      })
+      .eq("id", row.id);
+
+    // Use short row ID in URL instead of long token
+    claimUrl = `${getAppBaseUrl()}/claim/${row.id}`;
   } catch (err: any) {
     return jsonError(err?.message ?? "Failed to generate claim link.", "CLAIM_TOKEN_ERROR", 500);
   }

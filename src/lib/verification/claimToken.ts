@@ -7,8 +7,6 @@ function requireSecret(): string {
   if (!secret) {
     throw new Error("CLAIM_TOKEN_SECRET env var is required for claim links.");
   }
-  // Temporary: log secret length to verify it's loaded
-  console.log('[claimToken] Secret loaded, length:', secret.trim().length);
   return secret.trim();
 }
 
@@ -61,14 +59,6 @@ export async function verifyClaimToken(token: string): Promise<EncodedPayload> {
   }
   const [body, providedSignature] = parts;
   const expectedSignature = sign(body, secret);
-
-  // Debug logging
-  console.log('[verify] Token length:', token.length);
-  console.log('[verify] Provided sig length:', providedSignature.length);
-  console.log('[verify] Expected sig length:', expectedSignature.length);
-  console.log('[verify] Provided sig FULL:', providedSignature);
-  console.log('[verify] Expected sig FULL:', expectedSignature);
-  console.log('[verify] Match:', providedSignature === expectedSignature);
 
   const safeProvided = Buffer.from(providedSignature);
   const safeExpected = Buffer.from(expectedSignature);
