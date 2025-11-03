@@ -7,6 +7,7 @@ type Parsed = {
     event: string | null;
     markText: string | null;
     markSeconds: number | null;
+    markMetric?: number | null; // for field events (distance in meters)
     timing: Timing;
     wind: number | null;
     meetName: string | null;
