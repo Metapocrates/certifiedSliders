@@ -1,6 +1,7 @@
 // src/app/api/proofs/ingest/route.ts
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import { parseAthleticNet as parseAthleticNetNew } from "@/lib/proofs/providers/athleticnet";
 
 export const runtime = "nodejs";
 
@@ -8,6 +9,7 @@ type ParsedProof = {
     event: string;
     markText: string;
     markSeconds: number | null;
+    markMetric?: number | null; // for field events (distance in meters)
     timing: "FAT" | "Hand" | null;
     wind: number | null;
     meetName: string;
@@ -118,89 +120,53 @@ function bestTimeFromText(bigText: string): { markText: string; seconds: number 
     return { markText: "", seconds: null };
 }
 
-function parseAthleticNet(html: string, url: URL) {
-    const $ = cheerio.load(html);
-    const ogTitle = $('meta[property="og:title"]').attr("content") || "";
-    const pageTitle = $("title").text().trim() || ogTitle;
-    const metaDesc = $('meta[name="description"]').attr("content") || "";
-    const ogDesc = $('meta[property="og:description"]').attr("content") || "";
-    const bigText = [pageTitle, metaDesc, ogDesc, $("main").text(), $("body").text()]
-        .filter(Boolean)
-        .join("\n");
+async function parseAthleticNet(url: string) {
+    try {
+        // Use the new, improved parser
+        const result = await parseAthleticNetNew(url);
 
-    // If we only got the generic site title, call it out early.
-    const genericTitle = /Track\s*&\s*Field,\s*Cross\s*Country Results/i.test(pageTitle);
-    if (genericTitle) {
+        // Check if we got a generic/blocked page
+        if (!result.event && !result.markText && result.confidence === 0) {
+            return {
+                ok: false,
+                error: "Blocked or generic page returned. Please try again or paste page HTML.",
+                parsed: null as ParsedProof | null,
+            };
+        }
+
+        const parsed: ParsedProof = {
+            event: result.event || "",
+            markText: result.markText || "",
+            markSeconds: result.markSeconds,
+            markMetric: result.markMetric,
+            timing: result.timing,
+            wind: result.wind,
+            meetName: result.meetName || "Athletic.net",
+            meetDate: result.meetDate || "",
+            confidence: result.confidence,
+        };
+
+        const hasCore =
+            (parsed.event && parsed.event.trim()) ||
+            (parsed.markText && parsed.markText.trim());
+
+        if (!hasCore) {
+            return {
+                ok: false,
+                error:
+                    "Parsed successfully, but no structured fields were returned. Paste HTML or use a direct result URL.",
+                parsed,
+            };
+        }
+
+        return { ok: true, error: null, parsed };
+    } catch (error: any) {
         return {
             ok: false,
-            error: "Blocked or generic page returned. Please try again or paste page HTML.",
+            error: error.message || "Failed to parse Athletic.net page",
             parsed: null as ParsedProof | null,
         };
     }
-
-    const event = guessEventFromTitleOrUrl(pageTitle, url);
-    const meetName =
-        cleanMeetName(ogTitle) || cleanMeetName(pageTitle) || "Athletic.net";
-
-    const metaDate =
-        $('meta[itemprop="startDate"]').attr("content") ||
-        $('time[itemprop="startDate"]').attr("datetime") ||
-        $('meta[property="event:start_time"]').attr("content") ||
-        "";
-    const meetDate = normDate(metaDate) || normDate(bigText);
-
-    // Try precise table read first, then text sweep
-    let markText = nearbyCellMark($);
-    if (!markText) {
-        const t = bestTimeFromText(bigText);
-        markText = t.markText;
-    }
-
-    let markSeconds: number | null = null;
-    if (markText) {
-        if (!/^\d{1,2}-\d{1,2}$/.test(markText)) {
-            markSeconds = toSeconds(markText);
-        }
-    }
-
-    let timing: "FAT" | "Hand" | null = null;
-    if (/\bFAT\b/i.test(bigText)) timing = "FAT";
-    else if (/\bhand[-\s]?timed\b/i.test(bigText)) timing = "Hand";
-
-    const wind = extractWind(bigText);
-
-    let confidence = 0.2;
-    if (event) confidence += 0.3;
-    if (markText) confidence += 0.3;
-    if (meetDate) confidence += 0.1;
-    if (timing) confidence += 0.1;
-    if (confidence > 0.95) confidence = 0.95;
-
-    const parsed: ParsedProof = {
-        event,
-        markText,
-        markSeconds,
-        timing,
-        wind,
-        meetName,
-        meetDate,
-        confidence,
-    };
-
-    const hasCore =
-        (parsed.event && parsed.event.trim()) ||
-        (parsed.markText && parsed.markText.trim());
-
-    if (!hasCore) {
-        return {
-            ok: false,
-            error:
-                "Parsed successfully, but no structured fields were returned. Paste HTML or use a direct result URL.",
-            parsed,
-        };
-    }
-
-    return { ok: true, error: null, parsed };
 }
 
 export async function POST(req: Request) {
@@ -228,57 +194,8 @@ export async function POST(req: Request) {
 
         if (isAthleticNet) {
             source = "athleticnet";
-
-            // If HTML was pasted (fallback), parse directly.
-            if (pastedHtml && pastedHtml.trim().length > 200) {
-                parsedBlock = parseAthleticNet(pastedHtml, u);
-            } else {
-                // Try to fetch the page
-                const resp = await fetch(url, {
-                    method: "GET",
-                    headers: {
-                        "user-agent":
-                            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                        "accept-language": "en-US,en;q=0.9",
-                        accept: "text/html,application/xhtml+xml",
-                        referer: "https://www.google.com/",
-                    },
-                    redirect: "follow",
-                    cache: "no-store",
-                });
-
-                if (!resp.ok) {
-                    return NextResponse.json({
-                        ok: false,
-                        source,
-                        error: `Could not load page (${resp.status}).`,
-                    });
-                }
-
-                // Guard against cross-domain redirect
-                const finalURL = new URL(resp.url || url);
-                if (finalURL.hostname !== u.hostname) {
-                    return NextResponse.json({
-                        ok: false,
-                        source,
-                        error:
-                            "Unexpected redirect away from Athletic.net. Try again or paste the page HTML.",
-                    });
-                }
-
-                const html = await resp.text();
-                if (!html || html.length < 500) {
-                    return NextResponse.json({
-                        ok: false,
-                        source,
-                        error:
-                            "Received an unusually small response. Site may be blocking automated fetch. Paste HTML instead.",
-                    });
-                }
-
-                parsedBlock = parseAthleticNet(html, u);
-            }
+            // Use the new parser which handles fetching internally
+            parsedBlock = await parseAthleticNet(url);
         } else {
             source = host.includes("milesplit") ? "milesplit" : "other";
             parsedBlock = {
