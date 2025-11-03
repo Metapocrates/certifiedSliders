@@ -151,7 +151,8 @@ function extractDistance(title: string | null, labelsText: string, body: string)
     for (const s of tryStrs) {
         // Match feet/inches format FIRST (e.g., "40' 8\"", "40' 8"" with typographic or ASCII quotes)
         // Unicode: \u2018\u2019 ('' curly single), \u201C\u201D ("" curly double), \u02BC (modifier apostrophe)
-        const imperialMatch = s.match(/\b(\d+)[\u2018\u2019'\u02BC]?\s*[-\s]?\s*(\d+(?:\.\d+)?)[\u201C\u201D"\u02BA]?\b/);
+        // Removed trailing \b because it fails after quote characters
+        const imperialMatch = s.match(/(\d+)[\u2018\u2019'\u02BC\u2032]\s*(\d+(?:\.\d+)?)[\u201C\u201D"\u02BA\u2033]?(?!\d)/);
         if (imperialMatch) {
             const feet = parseInt(imperialMatch[1], 10);
             const inches = parseFloat(imperialMatch[2]);
@@ -236,20 +237,24 @@ function extractMeetNameFromTitle(
     // Title format often:
     // "<Athlete> - <Team> - <Time> - <Event> - <Meet> - <Date>"
     const parts = title.split(/\s+-\s+/);
+    console.log("[extractMeetNameFromTitle] Split title into parts:", parts);
 
     // find date segment (e.g., "Jul 27, 2025")
     const dateIdx = parts.findIndex((p) =>
         /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.? \d{1,2}, \d{4}\b/i.test(p)
     );
+    console.log("[extractMeetNameFromTitle] dateIdx:", dateIdx);
 
     // find event segment (prefer normalized -> human, otherwise pattern)
     const eventHuman = humanEventFromNorm(eventNorm);
+    console.log("[extractMeetNameFromTitle] eventHuman:", eventHuman);
     let eventIdx = -1;
     if (eventHuman) {
         eventIdx = parts.findIndex((p) =>
             p.toLowerCase().includes(eventHuman.toLowerCase())
         );
     }
+    console.log("[extractMeetNameFromTitle] eventIdx after humanEventFromNorm check:", eventIdx);
     if (eventIdx === -1) {
         eventIdx = parts.findIndex(
             (p) =>
@@ -282,6 +287,7 @@ function extractMeetNameFromTitle(
     // meet typically follows the event, up to (but not including) the date
     const end = dateIdx > -1 ? dateIdx : parts.length;
     let candidates = parts.slice(eventIdx + 1, end);
+    console.log("[extractMeetNameFromTitle] Initial candidates (between event and date):", candidates);
 
     // filter out obvious non-meet tokens
     candidates = candidates.filter(
@@ -289,10 +295,12 @@ function extractMeetNameFromTitle(
             !toSecondsFromString(p) && // drop time tokens like "14.76"
             !/\b(heat|final|prelim|round|section)\b/i.test(p)
     );
+    console.log("[extractMeetNameFromTitle] Filtered candidates:", candidates);
 
     if (!candidates.length) return null;
     // choose the longest remaining segment
     const meet = candidates.reduce((a, b) => (a.length >= b.length ? a : b));
+    console.log("[extractMeetNameFromTitle] Selected meet:", meet);
     return cleanMeetName(meet);
 }
 
@@ -307,8 +315,14 @@ function extractMeetName(
 
     // Fallback to title heuristics
     if (title) {
+        // Strip common Athletic.net suffixes
+        let cleanedTitle = title
+            .replace(/\s*[-|]\s*Track\s*&\s*Field\s+and\s+Cross\s+Country\s+Statistics.*$/i, "")
+            .replace(/\s*[-|]\s*Athletic\.net.*$/i, "")
+            .trim();
+
         const fromTitle = extractMeetNameFromTitle(
-            title.replace(/\s*\|\s*Athletic\.net.*$/i, "").trim(),
+            cleanedTitle,
             eventNorm
         );
         if (fromTitle) return fromTitle;
@@ -322,6 +336,9 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
 
     // Title & base text
     const title = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() || null;
+    console.log("[athleticnet] Raw title:", title);
+    console.log("[athleticnet] Title char codes:", title?.split("").map((c, i) => `${i}:${c}(${c.charCodeAt(0)})`).join(" "));
+
     const lowerTitle = (title || "").toLowerCase();
     if (BAD_TITLES.has(lowerTitle)) {
         return { event: null, markText: null, markSeconds: null, markMetric: null, timing: null, wind: null, meetName: null, meetDate: null, confidence: 0 };
@@ -342,10 +359,12 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
 
     // Extract fields
     const event = extractEvent(title, labelsText, body);
+    console.log("[athleticnet] Extracted event:", event);
 
     // Determine if this is a field event (throws/jumps) or running event
     const fieldEvents = ['SP', 'DT', 'JT', 'HM', 'LJ', 'TJ', 'HJ', 'PV'];
     const isFieldEvent = event ? fieldEvents.includes(event) : false;
+    console.log("[athleticnet] Is field event?", isFieldEvent);
 
     // Extract mark based on event type
     let markText: string | null = null;
@@ -353,7 +372,11 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
     let markMetric: number | null = null;
 
     if (isFieldEvent) {
+        console.log("[athleticnet] Trying to extract distance from:");
+        console.log("  - title:", title);
+        console.log("  - labelsText preview:", labelsText.slice(0, 200));
         const distance = extractDistance(title, labelsText, body);
+        console.log("[athleticnet] Extracted distance:", distance);
         markText = distance.markText;
         markMetric = distance.markMetric;
     } else {
@@ -365,7 +388,9 @@ export async function parseAthleticNet(url: string): Promise<Parsed & { athleteS
     const timing = parseTimingBlob(body);
     const wind = clampWind(parseWindBlob(body));
 
+    console.log("[athleticnet] Calling extractMeetName with event:", event, "humanEventFromNorm:", humanEventFromNorm(event));
     const meetName: string | null = extractMeetName(title, labelsText, event);
+    console.log("[athleticnet] Extracted meet name:", meetName);
 
 
     const meetDate = extractDateFromTitleOrLabels(title, labelsText);
