@@ -150,16 +150,20 @@ function extractDistance(title: string | null, labelsText: string, body: string)
 
     for (const s of tryStrs) {
         // Match feet/inches format FIRST (e.g., "40' 8\"", "40' 8"" with typographic or ASCII quotes)
-        // Unicode: \u2018\u2019 ('' curly single), \u201C\u201D ("" curly double), \u02BC (modifier apostrophe)
-        // Removed trailing \b because it fails after quote characters
-        const imperialMatch = s.match(/(\d+)[\u2018\u2019'\u02BC\u2032]\s*(\d+(?:\.\d+)?)[\u201C\u201D"\u02BA\u2033]?(?!\d)/);
+        // Unicode: \u2018\u2019 ('' curly single), \u201C\u201D ("" curly double), \u02BC (modifier apostrophe), \u2032 (prime), \u2033 (double prime)
+        // Patterns: "40' 8\"", "40'8\"", "40′ 8″", "40-8"
+        // Requires either: quote after feet, OR whitespace/dash separator
+        const imperialMatch = s.match(/(\d+)(?:['\u2018\u2019\u02BC\u2032]\s*|(?:\s*-\s*|\s+))(\d+(?:\.\d+)?)\s*["\u201C\u201D\u02BA\u2033]?(?!\d)/);
         if (imperialMatch) {
             const feet = parseInt(imperialMatch[1], 10);
             const inches = parseFloat(imperialMatch[2]);
+            console.log(`[extractDistance] Matched imperial: feet=${feet}, inches=${inches} from "${imperialMatch[0]}"`);
             if (feet >= 0 && feet < 200 && inches >= 0 && inches < 12) {
                 // Convert to meters
                 const meters = (feet * 0.3048) + (inches * 0.0254);
                 return { markText: `${feet}' ${inches}"`, markMetric: meters };
+            } else {
+                console.log(`[extractDistance] Imperial validation failed: feet=${feet}, inches=${inches}`);
             }
         }
 
