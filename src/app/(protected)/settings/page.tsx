@@ -60,7 +60,7 @@ export default async function SettingsPage() {
               className="object-cover"
             />
           ) : (
-            <div className="grid h-14 w-14 place-items-center">🙂</div>
+            <Image src="/favicon-64x64.png" alt="Avatar" fill sizes="56px" className="object-contain p-1" />
           )}
         </div>
         <div className="min-w-0">

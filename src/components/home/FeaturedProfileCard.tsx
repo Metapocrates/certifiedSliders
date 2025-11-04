@@ -92,7 +92,7 @@ export default async function FeaturedProfileCard() {
             unoptimized
           />
         ) : (
-          <div className="grid h-full w-full place-items-center text-4xl">🙂</div>
+          <Image src="/favicon-64x64.png" alt="" fill sizes="160px" className="object-contain p-4" unoptimized />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/10 to-transparent opacity-90 transition group-hover:opacity-100" />
       </div>

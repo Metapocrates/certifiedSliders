@@ -224,7 +224,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   className="rounded-2xl object-cover"
                 />
               ) : (
-                <div className="grid h-full place-items-center text-3xl">🙂</div>
+                <Image src="/favicon-64x64.png" alt="Default avatar" fill sizes="96px" className="rounded-2xl object-contain p-3" />
               )}
             </div>
               <div className="space-y-3">

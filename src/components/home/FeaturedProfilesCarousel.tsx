@@ -203,8 +203,8 @@ export default async function FeaturedProfilesCarousel() {
                                                 className="object-cover transition duration-500 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E] text-4xl text-white">
-                                                🙂
+                                            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E]">
+                                                <Image src="/favicon-64x64.png" alt="" fill sizes="320px" className="object-contain p-8" />
                                             </div>
                                         )}
                                         <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/20 to-transparent" />

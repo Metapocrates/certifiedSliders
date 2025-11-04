@@ -201,7 +201,7 @@ type SubmissionRow = {
             {profile?.profile_pic_url ? (
               <Image src={profile.profile_pic_url} alt="" fill sizes="48px" className="object-cover" />
             ) : (
-              <div className="grid h-12 w-12 place-items-center">🙂</div>
+              <Image src="/favicon-64x64.png" alt="" fill sizes="48px" className="object-contain p-1" />
             )}
           </div>
           <div>
