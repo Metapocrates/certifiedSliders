@@ -8,7 +8,6 @@ import CollegeInterestsSection from "./college-interests/CollegeInterestsSection
 import type { CollegeInterest } from "./college-interests/CollegeInterestsSection";
 import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
-import CertifyResultSection from "./certify/CertifyResultSection";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -120,18 +119,6 @@ type IdentityRow = {
   error_text: string | null;
 };
 
-type SubmissionRow = {
-  id: string;
-  mode: "two_link" | "bookmarklet" | "manual";
-  status: "pending" | "accepted" | "rejected" | "needs_review";
-  profile_url: string | null;
-  result_url: string | null;
-  context_url: string | null;
-  created_at: string;
-  decided_at: string | null;
-  reason: string | null;
-};
-
   const appBaseUrl = getAppBaseUrl();
   const linkedIdentities: LinkedIdentity[] = await Promise.all(
     ((identitiesData ?? []) as IdentityRow[]).map(async (row) => {
@@ -171,82 +158,64 @@ type SubmissionRow = {
     })
   );
 
-  const hasVerifiedIdentity = linkedIdentities.some((identity) => identity.verified);
-
-  const { data: submissionsData } = await supabase
-    .from("results_submissions")
-    .select(
-      "id, mode, status, profile_url, result_url, context_url, created_at, decided_at, reason"
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  const submissions = ((submissionsData ?? []) as SubmissionRow[]).map((row) => ({
-    id: row.id,
-    mode: row.mode,
-    status: row.status,
-    profileUrl: row.profile_url,
-    resultUrl: row.result_url,
-    contextUrl: row.context_url,
-    createdAt: row.created_at,
-    decidedAt: row.decided_at,
-    reason: row.reason,
-  }));
 
   return (
-    <div className="container py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative h-12 w-12 overflow-hidden rounded-full bg-gray-100">
-            {profile?.profile_pic_url ? (
-              <Image src={profile.profile_pic_url} alt="" fill sizes="48px" className="object-cover" />
-            ) : (
-              <Image src="/favicon-64x64.png" alt="" fill sizes="48px" className="object-contain p-1" />
-            )}
-          </div>
+    <div className="max-w-6xl">
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold">
-              {profile?.full_name || user.email || "Me"}
-            </h1>
-            <p className="text-xs text-gray-500">
-              {profile?.school_name
-                ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
-                : "—"}
-              {" • "}
-              {profile?.class_year ?? "—"}
-              {profile?.username ? (
-                <>
-                  {" • "}
-                  <Link className="underline" href={`/athletes/${profile.username}`}>
-                    Public profile
-                  </Link>
-                </>
-              ) : null}
+            <h1 className="text-2xl font-semibold text-app">My Dashboard</h1>
+            <p className="mt-1 text-sm text-muted">
+              Manage your results, linked profiles, and college interests
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2">
           <a
             href="/submit-result"
-            className="rounded-md border px-3 py-2 text-sm bg-black text-white hover:opacity-90"
+            className="rounded-lg border border-app px-4 py-2 text-sm font-semibold bg-scarlet text-white hover:bg-scarlet/90 transition"
           >
             Submit a result
-          </a>
-          <a
-            href="/settings"
-            className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
-          >
-            Edit profile
           </a>
         </div>
       </div>
 
-	  <LinkedProfilesSection identities={linkedIdentities} />
+      <div className="mb-8 flex items-center gap-4 rounded-xl border border-app bg-card p-5">
+        <div className="relative h-16 w-16 overflow-hidden rounded-full bg-gray-100">
+          {profile?.profile_pic_url ? (
+            <Image src={profile.profile_pic_url} alt="" fill sizes="64px" className="object-cover" />
+          ) : (
+            <Image src="/favicon-64x64.png" alt="" fill sizes="64px" className="object-contain p-2" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-app">
+            {profile?.full_name || user.email || "Athlete"}
+          </h2>
+          <p className="text-sm text-muted">
+            {profile?.school_name
+              ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
+              : "No school set"}
+            {" • "}
+            {profile?.class_year ? `Class of ${profile.class_year}` : "No class year"}
+          </p>
+          {profile?.username && (
+            <p className="mt-1 text-xs text-muted">
+              Public page:{" "}
+              <Link
+                className="font-medium text-scarlet hover:underline"
+                href={`/athletes/${profile.username}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                /athletes/{profile.username} →
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
 
-	  <CertifyResultSection submissions={submissions} hasVerifiedIdentity={hasVerifiedIdentity} />
+      <LinkedProfilesSection identities={linkedIdentities} />
 
-	  <CollegeInterestsSection interests={collegeInterests} />
+      <CollegeInterestsSection interests={collegeInterests} />
 
       {/* Pending */}
       <Section title={`Pending (${pending.length})`}>

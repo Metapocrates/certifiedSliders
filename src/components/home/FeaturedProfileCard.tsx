@@ -60,10 +60,11 @@ export default async function FeaturedProfileCard() {
 
   const accent = getStarTierAccent(profile.star_rating ?? null);
   const hasAccent = Boolean(accent);
-  const starText = accent
-    ? `${accent.tier}★ Certified`
-    : typeof profile.star_rating === "number"
-      ? `${profile.star_rating}★`
+  const starRating = profile.star_rating ?? 0;
+  const starText = starRating >= 3 && starRating <= 5
+    ? "★".repeat(starRating)
+    : starRating > 0
+      ? `${starRating}★`
       : "Unrated";
   const href = profile.username ? `/athletes/${profile.username}` : undefined;
   const borderClass = accent?.borderClass ?? "border-app";
@@ -81,28 +82,35 @@ export default async function FeaturedProfileCard() {
           Certified
         </div>
       ) : null}
-      <div className="relative h-40 w-40 shrink-0 overflow-hidden bg-gray-200">
+      {/* Full background image */}
+      <div className="absolute inset-0">
         {profile.profile_pic_url ? (
           <Image
             src={profile.profile_pic_url}
             alt={profile.display_name ?? profile.username ?? "Athlete"}
             fill
-            sizes="160px"
+            sizes="400px"
             className="object-cover transition duration-500 group-hover:scale-105"
             unoptimized
           />
         ) : (
-          <Image src="/favicon-64x64.png" alt="" fill sizes="160px" className="object-contain p-4" unoptimized />
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+            <Image src="/runner-default.png" alt="" width={120} height={120} className="opacity-20" unoptimized />
+          </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/10 to-transparent opacity-90 transition group-hover:opacity-100" />
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
       </div>
-      <div className="flex flex-1 flex-col justify-between gap-3 px-6 py-5">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-muted">Featured slider</p>
-          <h3 className="text-lg font-semibold text-app">
+      {/* Text content overlay */}
+      <div className="relative flex h-full flex-col justify-end p-6 text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8)' }}>
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-[0.35em] text-white/90">
+            Featured Slider
+          </p>
+          <h3 className="text-xl font-bold">
             {profile.display_name ?? profile.username}
           </h3>
-          <p className="text-sm text-muted">
+          <p className="text-sm text-white/90">
             {profile.school_name ? (
               <>
                 {profile.school_name}
@@ -113,11 +121,11 @@ export default async function FeaturedProfileCard() {
             )}
           </p>
         </div>
-        <div className="flex items-center justify-between text-sm font-semibold uppercase tracking-[0.35em]">
-          <span className={starTextClass}>
+        <div className="mt-4 flex items-center justify-between">
+          <span className={`text-lg font-bold tracking-wider ${starTextClass === 'text-scarlet' ? 'text-scarlet-300' : 'text-yellow-300'}`}>
             {starText}
           </span>
-          <span className="text-scarlet/80 transition group-hover:text-scarlet">
+          <span className="text-sm font-semibold text-white transition group-hover:text-white">
             View profile →
           </span>
         </div>
@@ -128,9 +136,9 @@ export default async function FeaturedProfileCard() {
   return (
     <SafeLink
       href={href}
-      className={`group relative flex overflow-hidden rounded-3xl border ${borderClass} bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${cardShadowClass}`}
+      className={`group relative block h-64 overflow-hidden rounded-3xl border ${borderClass} shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${cardShadowClass}`}
       fallback={
-        <div className="group relative flex overflow-hidden rounded-3xl border border-app bg-card shadow-sm">
+        <div className="group relative block h-64 overflow-hidden rounded-3xl border border-app shadow-lg">
           <CardInner />
         </div>
       }

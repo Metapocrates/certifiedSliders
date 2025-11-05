@@ -157,8 +157,13 @@ export default async function FeaturedProfilesCarousel() {
 
     return (
         <section className="space-y-4">
-            <div className="no-scrollbar -mx-4 overflow-x-auto px-4 py-1">
-                <ul className="flex gap-5">
+            <div className="relative">
+                {/* Fade indicators for scroll hint */}
+                <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-background to-transparent" />
+                <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-background to-transparent" />
+
+                <div className="-mx-4 overflow-x-auto px-4 py-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400" style={{ scrollSnapType: 'x mandatory', scrollPaddingLeft: '1rem' }}>
+                    <ul className="flex gap-5" style={{ scrollSnapAlign: 'start' }}>
                     {cards.map((c) => {
                         const href = c.username ? `/athletes/${c.username}` : undefined;
                         const subtitleParts = [
@@ -169,10 +174,11 @@ export default async function FeaturedProfilesCarousel() {
                         ].filter(Boolean);
                         const accent = getStarTierAccent(c.star_rating ?? null);
                         const hasAccent = Boolean(accent);
-                        const starLabel = accent
-                            ? `${accent.tier}★ Certified`
-                            : typeof c.star_rating === "number"
-                                ? `${c.star_rating}★`
+                        const starRating = c.star_rating ?? 0;
+                        const starLabel = starRating >= 3 && starRating <= 5
+                            ? "★".repeat(starRating)
+                            : starRating > 0
+                                ? `${starRating}★`
                                 : null;
                         const borderClass = accent?.borderClass ?? "border-app";
                         const cardShadowClass = accent?.cardShadowClass ?? "";
@@ -181,7 +187,7 @@ export default async function FeaturedProfilesCarousel() {
                         const textAccentClass = accent?.textAccentClass ?? "text-scarlet";
 
                         return (
-                            <li key={c.id} className="w-[300px] shrink-0">
+                            <li key={c.id} className="w-[300px] shrink-0" style={{ scrollSnapAlign: 'start' }}>
                                 <SafeLink
                                     href={href}
                                     className={`group relative block h-full overflow-hidden rounded-3xl border ${borderClass} bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${cardShadowClass}`}
@@ -203,37 +209,33 @@ export default async function FeaturedProfilesCarousel() {
                                                 className="object-cover transition duration-500 group-hover:scale-105"
                                             />
                                         ) : (
-                                            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-[#111827] via-[#1f2937] to-[#C8102E]">
-                                                <Image src="/favicon-64x64.png" alt="" fill sizes="320px" className="object-contain p-8" />
+                                            <div className="grid h-full w-full place-items-center bg-gradient-to-br from-gray-800 to-gray-900">
+                                                <Image src="/runner-default.png" alt="" width={120} height={120} className="opacity-20" unoptimized />
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/20 to-transparent" />
-                                        <div className="relative w-full px-5 pb-5">
-                                            <p className="text-xs uppercase tracking-[0.35em] text-white/70">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                                        <div className="relative w-full px-5 pb-5" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8)' }}>
+                                            <p className="text-xs uppercase tracking-[0.35em] text-white/90">
                                                 Featured slider
                                             </p>
                                             <h3 className="truncate text-lg font-semibold text-white">
                                                 {c.full_name || c.username}
                                             </h3>
                                             {subtitleParts.length > 0 ? (
-                                                <p className="truncate text-xs text-white/70">{subtitleParts.join(" • ")}</p>
+                                                <p className="truncate text-xs text-white/90">{subtitleParts.join(" • ")}</p>
                                             ) : null}
                                             {starLabel ? (
                                                 <p
-                                                    className={`mt-1 text-xs font-semibold uppercase tracking-[0.35em] ${textAccentClass}`}
+                                                    className={`mt-1 text-base font-bold tracking-wider ${textAccentClass === 'text-scarlet' ? 'text-scarlet-300' : 'text-yellow-300'}`}
                                                 >
                                                     {starLabel}
                                                 </p>
                                             ) : null}
                                         </div>
                                     </div>
-                                    <div className="space-y-3 px-5 py-4">
-                                        {c.blurb ? (
-                                            <p className="text-sm text-muted line-clamp-2">{c.blurb}</p>
-                                        ) : (
-                                            <p className="text-sm text-muted">
-                                                Tap through to see this athlete&apos;s verified marks.
-                                            </p>
+                                    <div className="px-5 py-4">
+                                        {c.blurb && (
+                                            <p className="mb-3 text-sm text-muted line-clamp-2">{c.blurb}</p>
                                         )}
                                         <span className="inline-flex items-center gap-1 text-sm font-semibold text-scarlet transition group-hover:text-scarlet/80">
                                             View profile →
@@ -243,7 +245,8 @@ export default async function FeaturedProfilesCarousel() {
                             </li>
                         );
                     })}
-                </ul>
+                    </ul>
+                </div>
             </div>
         </section>
     );

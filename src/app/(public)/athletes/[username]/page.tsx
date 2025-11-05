@@ -84,6 +84,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       .select("event, mark, mark_seconds_adj, wind, meet_name, meet_date, proof_url, season")
       .eq("athlete_id", profile.id)
       .eq("status", "verified")
+      .eq("visible_on_profile", true)
       .limit(1000);
 
     const map = new Map<string, any>();
@@ -107,12 +108,12 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     : "Unlisted program";
   const classLabel = profile.class_year ? `Class of ${profile.class_year}` : "Class year TBD";
   const genderLabel = profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—";
-  const starLabel =
-    typeof profile.star_rating === "number" && profile.star_rating >= 3
-      ? `${profile.star_rating}★ Certified`
-      : typeof profile.star_rating === "number"
-        ? `${profile.star_rating}★`
-        : null;
+  const starRating = profile.star_rating ?? 0;
+  const starLabel = starRating >= 3 && starRating <= 5
+    ? "★".repeat(starRating)
+    : starRating > 0
+      ? `${starRating}★`
+      : null;
   const accent = getStarTierAccent(profile.star_rating ?? null);
   const accentBadgeLabel = accent ? `${accent.tier}★ Certified` : null;
 
@@ -252,7 +253,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   {showInlineStar ? (
                     <>
                       <span>•</span>
-                      <span>{starLabel}</span>
+                      <span className="text-base font-bold tracking-wider text-yellow-300">{starLabel}</span>
                     </>
                   ) : null}
                 </div>

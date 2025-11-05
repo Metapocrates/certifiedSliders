@@ -293,12 +293,18 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
             >
               <div className="flex flex-wrap items-center gap-2">
                 <a
-                  href={item.profileUrl}
+                  href={
+                    item.verified && item.numericId
+                      ? `https://www.athletic.net/athlete/${item.numericId}/track-and-field/`
+                      : item.profileUrl
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-app font-medium underline"
                 >
-                  {item.profileUrl}
+                  {item.verified && item.numericId
+                    ? `View on Athletic.net`
+                    : item.profileUrl}
                 </a>
                 {item.isPrimary ? (
                   <span className="rounded-full bg-[#F5C518]/20 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.35em] text-[#F5C518]">

@@ -24,8 +24,8 @@ const spotlightCards = [
     description: "Upload your PRs, get rated, and share your college interest.",
   },
   {
-    title: "Colleges welcome",
-    description: "Top talent in one place, coach's portal with interested.",
+    title: "College Coaches Portal",
+    description: "Top talent in one place, coach's portal with analytics and insights.",
   },
 ];
 
@@ -107,7 +107,7 @@ export default async function HomePage() {
 
   const primaryCta = user
     ? { href: "/submit-result", label: "Submit a result" }
-    : { href: "/login", label: "Join the leaderboard" };
+    : { href: "/login", label: "Completely free" };
 
   return (
     <div className="space-y-16 px-4 pb-16 pt-8 sm:px-6 lg:px-8">
@@ -122,10 +122,10 @@ export default async function HomePage() {
               <span>Certified Sliders</span>
             </span>
             <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-              Own the official high school track &amp; field leaderboard.
+              The official high school track &amp; field ratings platform
             </h1>
             <p className="text-base text-white/80 sm:text-lg">
-              Submit marks with proof, get verified by coaches, and see exactly where you rank—without the noise. Built by people who live and breathe the sport.
+              Submit marks with proof, get verified, and get noticed. Built by athletes, coaches, and parents.
             </p>
             <div className="flex flex-wrap gap-3">
               <SafeLink
@@ -147,9 +147,9 @@ export default async function HomePage() {
             <div className="flex flex-col gap-6 text-sm text-white/80">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-white/60">
-                  Why sliders trust us
+                  Why Certified Sliders?
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-white">Manual verification, transparent adjustments.</p>
+                <p className="mt-2 text-2xl font-semibold text-white">Certfied results, dependable ratings</p>
               </div>
               <div className="space-y-4">
                 {heroStats.map((stat) => {

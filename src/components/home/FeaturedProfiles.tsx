@@ -53,10 +53,11 @@ export default async function FeaturedProfiles({
                 const href = p.username ? `/athletes/${p.username}` : undefined;
                 const accent = getStarTierAccent(p.star_rating ?? null);
                 const hasAccent = Boolean(accent);
-                const starText = accent
-                    ? `${accent.tier}★ Certified`
-                    : typeof p.star_rating === "number"
-                        ? `${p.star_rating}★`
+                const starRating = p.star_rating ?? 0;
+                const starText = starRating >= 3 && starRating <= 5
+                    ? "★".repeat(starRating)
+                    : starRating > 0
+                        ? `${starRating}★`
                         : "Unrated";
                 const borderClass = accent?.borderClass ?? "border-app";
                 const cardShadowClass = accent?.cardShadowClass ?? "";
@@ -67,7 +68,7 @@ export default async function FeaturedProfiles({
                     <SafeLink
                         key={p.id}
                         href={href}
-                        className={`group relative block overflow-hidden rounded-2xl border ${borderClass} bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${cardShadowClass}`}
+                        className={`group relative block h-48 overflow-hidden rounded-2xl border ${borderClass} shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${cardShadowClass}`}
                         fallback={
                             <div className="relative block overflow-hidden rounded-2xl border border-app bg-card p-3 shadow-sm">
                                 <div className="relative mb-2 h-32 w-full overflow-hidden rounded-xl bg-gray-100" />
@@ -83,7 +84,8 @@ export default async function FeaturedProfiles({
                                 Certified
                             </div>
                         ) : null}
-                        <div className="relative h-32 w-full overflow-hidden rounded-xl bg-gray-100">
+                        {/* Full background image */}
+                        <div className="absolute inset-0">
                             {p.profile_pic_url ? (
                                 <Image
                                     src={p.profile_pic_url}
@@ -91,38 +93,48 @@ export default async function FeaturedProfiles({
                                     fill
                                     sizes="(max-width:768px) 50vw, 20vw"
                                     className="object-cover transition duration-500 group-hover:scale-105"
+                                    unoptimized
                                 />
                             ) : (
-                                <Image
-                                    src="/favicon-64x64.png"
-                                    alt=""
-                                    fill
-                                    sizes="(max-width:768px) 50vw, 20vw"
-                                    className="object-contain p-4"
-                                />
+                                <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                                    <Image
+                                        src="/runner-default.png"
+                                        alt=""
+                                        width={80}
+                                        height={80}
+                                        className="opacity-20"
+                                        unoptimized
+                                    />
+                                </div>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#111827] via-black/10 to-transparent opacity-90 transition group-hover:opacity-100" />
+                            {/* Gradient overlay for text readability */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                         </div>
-                        <div className="space-y-2 px-3 pb-4 pt-3">
-                            <div className="text-xs uppercase tracking-[0.35em] text-muted">
-                                Featured slider
+                        {/* Text content overlay */}
+                        <div className="relative flex h-full flex-col justify-end p-4 text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8)' }}>
+                            <div className="space-y-1.5">
+                                <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-white/90">
+                                    Featured Slider
+                                </p>
+                                <h3 className="text-sm font-bold line-clamp-1">
+                                    {p.full_name ?? p.username ?? "—"}
+                                </h3>
+                                <p className="text-xs text-white/90 line-clamp-2">
+                                    {p.school_name ? (
+                                        <>
+                                            {p.school_name}
+                                            {p.school_state ? `, ${p.school_state}` : ""}
+                                        </>
+                                    ) : (
+                                        "—"
+                                    )}
+                                    {p.class_year ? ` • Class of ${p.class_year}` : ""}
+                                </p>
                             </div>
-                            <div className="text-sm font-semibold text-app line-clamp-1">
-                                {p.full_name ?? p.username ?? "—"}
-                            </div>
-                            <div className="text-xs text-muted line-clamp-2">
-                                {p.school_name ? (
-                                    <>
-                                        {p.school_name}
-                                        {p.school_state ? `, ${p.school_state}` : ""}
-                                    </>
-                                ) : (
-                                    "—"
-                                )}
-                                {p.class_year ? ` • Class of ${p.class_year}` : ""}
-                            </div>
-                            <div className={`text-xs font-semibold uppercase tracking-[0.3em] ${starTextClass}`}>
-                                {starText}
+                            <div className="mt-2 flex items-center justify-between text-base font-bold tracking-wider">
+                                <span className={`${starTextClass === 'text-scarlet' ? 'text-scarlet-300' : 'text-yellow-300'}`}>
+                                    {starText}
+                                </span>
                             </div>
                         </div>
                     </SafeLink>

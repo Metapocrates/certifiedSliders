@@ -109,9 +109,9 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const supabase = supabaseBrowser();
-      await supabase.auth.signOut().catch(() => {});
+      await supabase.auth.signOut().catch(() => { });
       // Clear server cookies too so SSR sees signed-out state
-      await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});
+      await fetch("/api/auth/signout", { method: "POST" }).catch(() => { });
       setWho(null);
       setMsg("Signed out.");
       router.refresh();
@@ -131,10 +131,10 @@ export default function LoginPage() {
               Certified Sliders
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight">
-              Own your season.
+              Are you a slider?
             </h1>
             <p className="mt-3 max-w-sm text-sm text-white/85">
-              Sign in to manage verified marks, submit results, and follow teammates.
+              Sign in to manage verified marks, submit results, and follow other athletes.
             </p>
           </div>
 
@@ -144,10 +144,10 @@ export default function LoginPage() {
                 Certified Sliders
               </p>
               <h1 className="mt-6 max-w-sm text-4xl font-semibold leading-tight">
-                Own your season with verified results.
+                Certified Results. Certified Ratings.
               </h1>
               <p className="mt-4 max-w-sm text-base text-white/80">
-                Log marks, climb official rankings, and stay ready for meet day.
+                Create your account, claim your profile, and post your PRs!
               </p>
             </div>
             <ul className="mt-12 space-y-4 text-sm text-white/85">
@@ -157,11 +157,11 @@ export default function LoginPage() {
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-white/80" />
-                <span>Track personal bests across every event in one place.</span>
+                <span>Easily share your PRs with athletes and coaches.</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-white/80" />
-                <span>Unlock admin tools for managing athletes and results.</span>
+                <span>Built exclusively for high school track and field!</span>
               </li>
             </ul>
           </div>
@@ -224,11 +224,10 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setMode("signin")}
-                    className={`flex-1 rounded-full px-4 py-1.5 transition ${
-                      mode === "signin"
-                        ? "bg-card text-app shadow-sm"
-                        : "text-muted"
-                    }`}
+                    className={`flex-1 rounded-full px-4 py-1.5 transition ${mode === "signin"
+                      ? "bg-card text-app shadow-sm"
+                      : "text-muted"
+                      }`}
                     disabled={busy}
                   >
                     Email sign in
@@ -236,11 +235,10 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setMode("signup")}
-                    className={`flex-1 rounded-full px-4 py-1.5 transition ${
-                      mode === "signup"
-                        ? "bg-card text-app shadow-sm"
-                        : "text-muted"
-                    }`}
+                    className={`flex-1 rounded-full px-4 py-1.5 transition ${mode === "signup"
+                      ? "bg-card text-app shadow-sm"
+                      : "text-muted"
+                      }`}
                     disabled={busy}
                   >
                     Create account

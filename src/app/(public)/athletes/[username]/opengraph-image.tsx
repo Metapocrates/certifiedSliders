@@ -27,12 +27,12 @@ export const GET = async (
     const search = new URL(request.url).searchParams;
     const data = parseSearch(search, username);
 
-    const certifiedLabel =
-      data.tier && data.tier >= 3
-        ? `${data.tier}★ Certified`
-        : data.fallbackTier
-          ? `${data.fallbackTier}★`
-          : "Certified slider";
+    const tier = data.tier ?? data.fallbackTier ?? 0;
+    const certifiedLabel = tier >= 3 && tier <= 5
+      ? "★".repeat(tier)
+      : tier > 0
+        ? `${tier}★`
+        : "Certified slider";
 
     const metaBits = [
       data.team
