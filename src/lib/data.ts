@@ -21,11 +21,30 @@ export async function getResultsForAthlete(athleteId: string, limit = 25) {
 }
 
 export async function searchAthletes(q: string, state?: string, year?: number) {
+    // Search for athletes by full_name or aliases
+    // First, find athlete IDs from public aliases that match the search query
+    const { data: aliasMatches } = await supabaseAdmin
+        .from('athlete_aliases')
+        .select('athlete_id')
+        .ilike('alias', `%${q}%`)
+        .eq('is_public', true);
+
+    const aliasAthleteIds = aliasMatches?.map(a => a.athlete_id) ?? [];
+
+    // Now search profiles: either full_name matches OR id is in aliasAthleteIds
     let query = supabaseAdmin.from('profiles')
-        .select('id,username,display_name,school_name,school_state,grad_year,avatar_url')
-        .ilike('display_name', `%${q}%`);
+        .select('id,username,full_name,school_name,school_state,class_year,profile_pic_url');
+
+    // Build OR condition: full_name ILIKE query OR id IN (alias matches)
+    if (aliasAthleteIds.length > 0) {
+        query = query.or(`full_name.ilike.%${q}%,id.in.(${aliasAthleteIds.join(',')})`);
+    } else {
+        query = query.ilike('full_name', `%${q}%`);
+    }
+
     if (state) query = query.eq('school_state', state);
-    if (year) query = query.eq('grad_year', year);
+    if (year) query = query.eq('class_year', year);
+
     const { data } = await query.limit(50);
     return data ?? [];
 }

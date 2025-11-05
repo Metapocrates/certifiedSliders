@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SettingsForm from "../../settings/SettingsForm";
+import AliasesManager from "../../settings/AliasesManager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -29,6 +30,12 @@ export default async function EditProfilePage() {
     )
     .eq("id", user.id)
     .maybeSingle();
+
+  const { data: aliases } = await supabase
+    .from("athlete_aliases")
+    .select("id, alias, type, is_public, created_at")
+    .eq("athlete_id", user.id)
+    .order("created_at", { ascending: false });
 
   const initial = {
     username: profile?.username ?? "",
@@ -74,6 +81,14 @@ export default async function EditProfilePage() {
       </div>
 
       <SettingsForm initial={initial} />
+
+      <div className="mt-12 border-t border-app pt-8">
+        <h2 className="text-xl font-semibold text-app mb-2">Aliases & Nicknames</h2>
+        <p className="text-sm text-muted mb-6">
+          Add alternate names to make your profile easier to find in search. You can control which aliases are visible to the public.
+        </p>
+        <AliasesManager initialAliases={aliases ?? []} />
+      </div>
     </div>
   );
 }

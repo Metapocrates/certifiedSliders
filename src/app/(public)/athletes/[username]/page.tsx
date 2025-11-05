@@ -146,6 +146,32 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const primaryIdentity = verifiedIdentities.find((row) => row.isPrimary) ?? verifiedIdentities[0];
   const secondaryIdentities = verifiedIdentities.filter((row) => row !== primaryIdentity);
 
+  // Fetch event preferences for organizing featured vs other events
+  const { data: eventPreferences } = await supabase
+    .from("athlete_event_preferences")
+    .select("event, is_featured, display_order")
+    .eq("athlete_id", profile.id);
+
+  const prefsMap = new Map(
+    (eventPreferences ?? []).map((p) => [p.event, { is_featured: p.is_featured, display_order: p.display_order }])
+  );
+
+  // Organize events into featured and other
+  const featuredEvents: Array<any> = [];
+  const otherEvents: Array<any> = [];
+
+  for (const event of best ?? []) {
+    const pref = prefsMap.get(event.event);
+    if (pref?.is_featured) {
+      featuredEvents.push({ ...event, display_order: pref.display_order });
+    } else {
+      otherEvents.push(event);
+    }
+  }
+
+  // Sort featured events by display_order
+  featuredEvents.sort((a, b) => a.display_order - b.display_order);
+
   // Ownership + CTAs
   const isOwner = !!viewer && (viewer.id === profile.id || viewer.id === profile.claimed_by);
   const showClaim = !!viewer && !isOwner && profile.claimed_by == null;
@@ -347,31 +373,42 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
         </section>
       ) : null}
 
-      <section className="space-y-5">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Verified marks</p>
-            <h2 className="text-2xl font-semibold text-app">
-              Highlights across {best?.length ?? 0} events
-            </h2>
+      {(!best || best.length === 0) ? (
+        <section className="space-y-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Verified marks</p>
+              <h2 className="text-2xl font-semibold text-app">No events yet</h2>
+            </div>
           </div>
-          {historyHref ? (
-            <SafeLink
-              href={historyHref}
-              className="inline-flex h-10 items-center justify-center rounded-full border border-app px-4 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
-            >
-              See all results
-            </SafeLink>
-          ) : null}
-        </div>
-
-        {(!best || best.length === 0) ? (
           <div className="rounded-3xl border border-app bg-muted px-6 py-10 text-sm text-muted shadow-inner">
-            No verified marks yet. Once results are approved they’ll appear here.
+            No verified marks yet. Once results are approved they&apos;ll appear here.
           </div>
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2">
-            {best.map((r: any, i: number) => {
+        </section>
+      ) : (
+        <>
+          {/* Featured Events */}
+          {featuredEvents.length > 0 && (
+            <section className="space-y-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Featured Events</p>
+                  <h2 className="text-2xl font-semibold text-app">
+                    Top {featuredEvents.length} {featuredEvents.length === 1 ? "event" : "events"}
+                  </h2>
+                </div>
+                {historyHref ? (
+                  <SafeLink
+                    href={historyHref}
+                    className="inline-flex h-10 items-center justify-center rounded-full border border-app px-4 text-sm font-semibold text-app transition hover:border-scarlet hover:text-scarlet"
+                  >
+                    See all results
+                  </SafeLink>
+                ) : null}
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                {featuredEvents.map((r: any, i: number) => {
               const mark = fmtTime(
                 r.best_seconds_adj ?? r.mark_seconds_adj,
                 r.best_mark_text ?? r.mark
@@ -416,8 +453,83 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
               );
             })}
           </div>
-        )}
-      </section>
+        </section>
+      )}
+
+      {/* Other Events */}
+      {otherEvents.length > 0 && (
+        <section className="space-y-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">
+                {featuredEvents.length > 0 ? "Other Events" : "All Events"}
+              </p>
+              <h2 className="text-2xl font-semibold text-app">
+                {otherEvents.length} {otherEvents.length === 1 ? "event" : "events"}
+              </h2>
+            </div>
+          </div>
+
+          <details className="rounded-3xl border border-app bg-card shadow-sm" open={featuredEvents.length === 0}>
+            <summary className="cursor-pointer list-none px-6 py-4 font-semibold text-app hover:bg-muted/30 transition">
+              <div className="flex items-center justify-between">
+                <span>View {featuredEvents.length > 0 ? "other" : "all"} events</span>
+                <span className="text-muted">▼</span>
+              </div>
+            </summary>
+            <div className="border-t border-app p-6">
+              <div className="grid gap-5 md:grid-cols-2">
+                {otherEvents.map((r: any, i: number) => {
+                  const mark = fmtTime(
+                    r.best_seconds_adj ?? r.mark_seconds_adj,
+                    r.best_mark_text ?? r.mark
+                  );
+                  const meetDate = r.meet_date ? new Date(r.meet_date).toLocaleDateString() : "—";
+                  const wind =
+                    r.wind != null
+                      ? `${Number(r.wind).toFixed(1)} m/s`
+                      : r.wind_legal === false
+                        ? "NWI / IL"
+                        : "—";
+                  return (
+                    <div
+                      key={`${r.event}-${i}`}
+                      className="group relative overflow-hidden rounded-3xl border border-app bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                    >
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted">
+                        <span>{r.season ?? "Season TBD"}</span>
+                        <span>{meetDate}</span>
+                      </div>
+                      <h3 className="mt-3 text-xl font-semibold text-app">{r.event}</h3>
+                      <p className="mt-1 text-sm text-muted">Best mark</p>
+                      <p className="text-2xl font-semibold text-app">{mark}</p>
+                      <div className="mt-4 space-y-1 text-sm text-muted">
+                        <p>
+                          <span className="font-medium text-app">Meet:</span> {r.meet_name ?? "—"}
+                        </p>
+                        <p>
+                          <span className="font-medium text-app">Wind:</span> {wind}
+                        </p>
+                      </div>
+                      {r.proof_url ? (
+                        <SafeLink
+                          href={r.proof_url}
+                          target="_blank"
+                          className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-scarlet transition hover:text-scarlet/80"
+                        >
+                          View proof →
+                        </SafeLink>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </details>
+        </section>
+      )}
+    </>
+  )}
 
       <section className="space-y-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
