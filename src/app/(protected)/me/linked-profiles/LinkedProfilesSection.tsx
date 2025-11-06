@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition, useEffect } from "react";
+import ToSModal from "@/components/ToSModal";
 
 export type LinkedIdentity = {
   id: string;
@@ -73,7 +74,29 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ToS gate
+  const [tosAccepted, setTosAccepted] = useState<boolean | null>(null); // null = loading
+  const [showTosModal, setShowTosModal] = useState(false);
+
   const verifiedCount = useMemo(() => items.filter((item) => item.verified).length, [items]);
+
+  // Check ToS acceptance on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/tos/accept?action_type=link_account");
+        if (res.ok) {
+          const data = await res.json();
+          setTosAccepted(data.accepted);
+        } else {
+          setTosAccepted(false);
+        }
+      } catch (error) {
+        console.error("Failed to check ToS acceptance:", error);
+        setTosAccepted(false);
+      }
+    })();
+  }, []);
 
   function upsertItem(entry: LinkedIdentity) {
     setItems((prev) => {
@@ -89,6 +112,13 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
 
   function handleAdd(e: React.FormEvent) {
     e.preventDefault();
+
+    // Check ToS acceptance before allowing linking
+    if (!tosAccepted) {
+      setShowTosModal(true);
+      return;
+    }
+
     const trimmed = profileUrl.trim();
     const trimmedNumeric = numericId.trim();
     if (!trimmed) return;
@@ -233,8 +263,21 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
   }
 
   return (
-    <section className="mt-8 space-y-5 rounded-3xl border border-app bg-card p-6 shadow-sm">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <>
+      <ToSModal
+        isOpen={showTosModal}
+        actionType="link_account"
+        onAccept={() => {
+          setTosAccepted(true);
+          setShowTosModal(false);
+        }}
+        onDecline={() => {
+          setShowTosModal(false);
+        }}
+      />
+
+      <section className="mt-8 space-y-5 rounded-3xl border border-app bg-card p-6 shadow-sm">
+        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Verification</p>
           <h2 className="text-2xl font-semibold text-app">Athletic.net profiles</h2>
@@ -419,7 +462,8 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
           ))}
         </ul>
       )}
-    </section>
+      </section>
+    </>
   );
 }
 

@@ -1,9 +1,10 @@
 // src/app/(protected)/submit-result/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { confirmSubmitAction, type ConfirmInput } from "./actions";
+import ToSModal from "@/components/ToSModal";
 
 type ParsedProof = {
   event: string;
@@ -50,6 +51,33 @@ export default function SubmitResultURLPage() {
 
   // Track original parsed values to detect edits
   const [originalData, setOriginalData] = useState<ParsedProof | null>(null);
+
+  // ToS gate
+  const [tosAccepted, setTosAccepted] = useState<boolean | null>(null); // null = loading
+  const [showTosModal, setShowTosModal] = useState(false);
+
+  // Check ToS acceptance on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/tos/accept?action_type=submit_result");
+        if (res.ok) {
+          const data = await res.json();
+          setTosAccepted(data.accepted);
+          if (!data.accepted) {
+            setShowTosModal(true);
+          }
+        } else {
+          setTosAccepted(false);
+          setShowTosModal(true);
+        }
+      } catch (error) {
+        console.error("Failed to check ToS acceptance:", error);
+        setTosAccepted(false);
+        setShowTosModal(true);
+      }
+    })();
+  }, []);
 
   async function handleParse(e: React.FormEvent) {
     e.preventDefault();
@@ -185,8 +213,21 @@ export default function SubmitResultURLPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-semibold mb-2">Submit a Result (Paste Link)</h1>
+    <>
+      <ToSModal
+        isOpen={showTosModal}
+        actionType="submit_result"
+        onAccept={() => {
+          setTosAccepted(true);
+          setShowTosModal(false);
+        }}
+        onDecline={() => {
+          router.push("/");
+        }}
+      />
+
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-semibold mb-2">Submit a Result (Paste Link)</h1>
       <p className="text-sm text-gray-500 mb-6">
         Paste an Athletic.net result link. If the site blocks us, paste the page HTML below and we’ll parse that instead.
       </p>
@@ -429,5 +470,6 @@ export default function SubmitResultURLPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
