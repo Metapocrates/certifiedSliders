@@ -6,6 +6,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { setPostStatus } from "@/app/(protected)/admin/blog/actions";
 import { TEAM_AUTHOR_NAME } from "@/app/(protected)/admin/blog/constants";
+import ShareButtons from "@/components/ShareButtons";
 
 export const revalidate = 600;
 
@@ -318,6 +319,17 @@ export default async function BlogPostPage({
         className="space-y-4"
         dangerouslySetInnerHTML={{ __html: html }}
       />
+
+      {/* Share buttons */}
+      <section className="border-t border-app/30 pt-8">
+        <h3 className="mb-4 text-lg font-semibold text-app">Share this post</h3>
+        <ShareButtons
+          url={`/blog/${post.slug}`}
+          title={post.title}
+          description={post.excerpt || undefined}
+          hashtags={["CertifiedSliders", "TrackAndField", ...(post.tags || [])]}
+        />
+      </section>
     </article>
   );
 }

@@ -122,10 +122,10 @@ export default async function HomePage() {
               <span>Certified Sliders</span>
             </span>
             <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
-              The official high school track &amp; field ratings platform
+              The premier high school track &amp; field recruitment and ratings platform
             </h1>
             <p className="text-base text-white/80 sm:text-lg">
-              Submit marks with proof, get verified, and get noticed. Built by athletes, coaches, and parents.
+              Submit marks with proof, get verified, and get noticed. Built with love by athletes, coaches, and parents.
             </p>
             <div className="flex flex-wrap gap-3">
               <SafeLink

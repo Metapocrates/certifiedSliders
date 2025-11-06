@@ -204,16 +204,16 @@ type IdentityRow = {
             {" • "}
             {profile?.class_year ? `Class of ${profile.class_year}` : "No class year"}
           </p>
-          {profile?.username && (
+          {profile?.profile_id && (
             <p className="mt-1 text-xs text-muted">
               Public page:{" "}
               <Link
                 className="font-medium text-scarlet hover:underline"
-                href={`/athletes/${profile.username}`}
+                href={`/athletes/${profile.profile_id}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                /athletes/{profile.username} →
+                /athletes/{profile.profile_id} →
               </Link>
             </p>
           )}

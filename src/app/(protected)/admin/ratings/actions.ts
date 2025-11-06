@@ -160,7 +160,7 @@ export async function setStarRatingAction(formData: FormData) {
 
     const { data: profile, error: profErr } = await supabase
         .from("profiles")
-        .select("id, username, full_name, star_rating, class_year, gender")
+        .select("id, username, profile_id, full_name, star_rating, class_year, gender")
         .eq("username", username)
         .single();
     if (profErr) return { ok: false as const, error: `Athlete not found: ${profErr.message}` };
@@ -208,7 +208,7 @@ export async function setStarRatingAction(formData: FormData) {
         if (!res.ok) console.warn("[ratings] all history insert attempts failed (no note).");
     }
 
-    revalidatePath(`/athletes/${profile.username}`);
+    revalidatePath(`/athletes/${profile.profile_id}`);
     revalidatePath(`/rankings`);
     revalidatePath(`/`);
 

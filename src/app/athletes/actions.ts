@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser } from "@/lib/auth";
+import { getGradeAtDate } from "@/lib/grade";
 
 /* ---------- Edit profile ---------- */
 const EditProfileSchema = z.object({
@@ -38,12 +39,12 @@ export async function updateProfile(formData: FormData) {
 
     const { data: current, error: curErr } = await supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, username, profile_id")
         .eq("id", user.id)
         .maybeSingle();
 
     if (curErr || !current) return { ok: false, message: "Profile not found." };
-    const oldUsername = current.username;
+    const oldProfileId = current.profile_id;
 
     const { error } = await supabase
         .from("profiles")
@@ -61,8 +62,7 @@ export async function updateProfile(formData: FormData) {
 
     if (error) return { ok: false, message: error.message };
 
-    if (oldUsername) revalidatePath(`/athletes/${oldUsername}`);
-    revalidatePath(`/athletes/${parsed.username}`);
+    if (oldProfileId) revalidatePath(`/athletes/${oldProfileId}`);
     revalidatePath(`/me`);
     return { ok: true, message: "Profile updated." };
 }
@@ -95,8 +95,8 @@ export async function uploadAvatar(formData: FormData) {
 
     if (profErr) return { ok: false, message: profErr.message };
 
-    const { data: p } = await supabase.from("profiles").select("username").eq("id", user.id).maybeSingle();
-    if (p?.username) revalidatePath(`/athletes/${p.username}`);
+    const { data: p } = await supabase.from("profiles").select("profile_id").eq("id", user.id).maybeSingle();
+    if (p?.profile_id) revalidatePath(`/athletes/${p.profile_id}`);
     revalidatePath(`/me`);
     return { ok: true, message: "Avatar updated.", url: pub.publicUrl };
 }
@@ -136,11 +136,16 @@ export async function submitResult(formData: FormData) {
 
     const { data: prof, error: profErr } = await supabase
         .from("profiles")
-        .select("id, username")
+        .select("id, profile_id, class_year")
         .eq("id", user.id)
         .maybeSingle();
 
     if (profErr || !prof) return { ok: false, message: "Profile not found." };
+
+    // Calculate grade from class_year and meet_date
+    const grade = prof.class_year
+        ? getGradeAtDate(prof.class_year, new Date(parsed.meet_date))
+        : null;
 
     const { error } = await supabase.from("results").insert({
         athlete_id: prof.id,
@@ -154,11 +159,12 @@ export async function submitResult(formData: FormData) {
         proof_url: parsed.proof_url,
         status: "pending",
         source: "user_submit",
+        grade: grade,
     });
 
     if (error) return { ok: false, message: error.message };
 
-    if (prof.username) revalidatePath(`/athletes/${prof.username}`);
+    if (prof.profile_id) revalidatePath(`/athletes/${prof.profile_id}`);
     revalidatePath(`/me`);
     return { ok: true, message: "Result submitted for review." };
 }

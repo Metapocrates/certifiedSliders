@@ -17,7 +17,7 @@ export default async function NewsMergedGrid() {
   const items = await getMergedNews(4);
 
   if (!items.length) {
-    return <div className="text-sm text-neutral-500">Couldn’t load the news feed right now.</div>;
+    return <div className="text-sm text-neutral-500">Couldn't load the news feed right now.</div>;
   }
 
   return (
@@ -48,7 +48,7 @@ export default async function NewsMergedGrid() {
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-between">
                     <span className="relative inline-flex items-center rounded-md border border-neutral-300 bg-card/80 px-2 py-1 text-xs font-medium text-neutral-700">
                       {item.source}
                     </span>

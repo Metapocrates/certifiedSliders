@@ -3,11 +3,11 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export const runtime = "nodejs";
 
-// GET /api/athletes/[username]/events/[event]/history
+// GET /api/athletes/[profileId]/events/[event]/history
 // Returns all results for a specific athlete and event, paginated
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { username: string; event: string } }
+  { params }: { params: { profileId: string; event: string } }
 ) => {
   const supabase = createSupabaseServer();
   const { searchParams } = new URL(req.url);
@@ -19,11 +19,11 @@ export const GET = async (
   // Decode event name (it may be URL-encoded)
   const eventName = decodeURIComponent(params.event);
 
-  // First, get the athlete ID from username
+  // First, get the athlete ID from profile_id
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
-    .eq("username", params.username)
+    .eq("profile_id", params.profileId)
     .maybeSingle();
 
   if (!profile) {
@@ -71,6 +71,7 @@ export const GET = async (
       proofUrl: r.proof_url,
       isPR,
       status: r.status,
+      grade: r.grade,
     };
   });
 

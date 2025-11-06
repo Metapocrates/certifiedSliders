@@ -4,16 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 type SidebarNavProps = {
-  username: string | null;
+  profileId: string | null;
 };
 
-export default function SidebarNav({ username }: SidebarNavProps) {
+export default function SidebarNav({ profileId }: SidebarNavProps) {
   const pathname = usePathname();
 
   const navItems = [
     { href: "/me", label: "Dashboard", exact: true },
     { href: "/me/edit", label: "Edit Profile Details" },
-    ...(username ? [{ href: `/athletes/${username}`, label: "View Public Page", external: true }] : []),
+    ...(profileId ? [{ href: `/athletes/${profileId}`, label: "View Public Page", external: true }] : []),
     { href: "/me/events", label: "Events To Display" },
   ];
 

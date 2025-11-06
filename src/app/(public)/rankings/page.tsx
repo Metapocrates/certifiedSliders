@@ -1,6 +1,7 @@
 // src/app/(public)/rankings/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Link from "next/link";
+import { formatGrade } from "@/lib/grade";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -9,6 +10,7 @@ type PageProps = {
   searchParams?: {
     event?: string;
     classYear?: string;
+    grade?: string;
     gender?: "M" | "F" | "";
     state?: string;
   };
@@ -25,11 +27,13 @@ type RankRow = {
   meet_date: string | null;
   season: "INDOOR" | "OUTDOOR" | null;
   proof_url: string | null;
+  grade: number | null;
 };
 
 type ProfileLite = {
   id: string;
   username: string | null;
+  profile_id: string;
   full_name: string | null;
   class_year: number | null;
   school_name: string | null;
@@ -83,6 +87,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
 
   const eventFilter = (searchParams?.event || "").trim();
   const classYearFilter = (searchParams?.classYear || "").trim();
+  const gradeFilter = (searchParams?.grade || "").trim();
   const genderFilter = (searchParams?.gender || "").trim() as "M" | "F" | "";
   const stateFilter = (searchParams?.state || "").trim();
 
@@ -92,7 +97,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
   if (classYearFilter || genderFilter || stateFilter) {
     let pq = supabase
       .from("profiles")
-      .select("id, username, full_name, class_year, school_name, school_state, gender");
+      .select("id, username, profile_id, full_name, class_year, school_name, school_state, gender");
 
     if (classYearFilter) pq = pq.eq("class_year", Number(classYearFilter));
     if (genderFilter) pq = pq.eq("gender", genderFilter);
@@ -106,10 +111,11 @@ export default async function RankingsPage({ searchParams }: PageProps) {
   let rq = supabase
     .from("mv_best_event")
     .select(
-      "athlete_id, event, best_seconds_adj, best_mark_text, wind, wind_legal, meet_name, meet_date, proof_url, season"
+      "athlete_id, event, best_seconds_adj, best_mark_text, wind, wind_legal, meet_name, meet_date, proof_url, season, grade"
     );
 
   if (eventFilter) rq = rq.eq("event", eventFilter);
+  if (gradeFilter) rq = rq.eq("grade", Number(gradeFilter));
 
   // You can tune limit as needed
   const { data: rowsRaw } = await rq.order("best_seconds_adj", { ascending: true, nullsFirst: false }).limit(1000);
@@ -126,7 +132,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
   if (uniqueIds.length) {
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, username, full_name, class_year, school_name, school_state, gender")
+      .select("id, username, profile_id, full_name, class_year, school_name, school_state, gender")
       .in("id", uniqueIds)
       .limit(uniqueIds.length);
     for (const p of profs ?? []) profMap.set(p.id, p as ProfileLite);
@@ -138,7 +144,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
       <h1 className="mb-4 text-2xl font-semibold">Rankings</h1>
 
       {/* Filters (GET form, SSR-friendly) */}
-      <form className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-4" method="get">
+      <form className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-5" method="get">
         {/* Event */}
         <label className="flex flex-col text-sm">
           <span className="mb-1 font-medium">Event</span>
@@ -165,6 +171,18 @@ export default async function RankingsPage({ searchParams }: PageProps) {
           </select>
         </label>
 
+        {/* Grade */}
+        <label className="flex flex-col text-sm">
+          <span className="mb-1 font-medium">Grade</span>
+          <select name="grade" defaultValue={gradeFilter} className="rounded-lg border px-3 py-2">
+            <option value="">All</option>
+            <option value="9">Freshman</option>
+            <option value="10">Sophomore</option>
+            <option value="11">Junior</option>
+            <option value="12">Senior</option>
+          </select>
+        </label>
+
         {/* Gender */}
         <label className="flex flex-col text-sm">
           <span className="mb-1 font-medium">Gender</span>
@@ -187,7 +205,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
           </select>
         </label>
 
-        <div className="sm:col-span-4 flex items-center gap-2">
+        <div className="sm:col-span-5 flex items-center gap-2">
           <button className="rounded-md border px-3 py-2 text-sm hover:opacity-90 bg-black text-white" type="submit">
             Apply
           </button>
@@ -209,6 +227,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
               <th className="px-3 py-2">#</th>
               <th className="px-3 py-2">Athlete</th>
               <th className="px-3 py-2">Class</th>
+              <th className="px-3 py-2">Grade</th>
               <th className="px-3 py-2">School / State</th>
               <th className="px-3 py-2">Event</th>
               <th className="px-3 py-2">Mark</th>
@@ -222,7 +241,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
           <tbody>
             {(rows ?? []).length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-gray-600" colSpan={11}>
+                <td className="px-3 py-3 text-gray-600" colSpan={12}>
                   No results found for the selected filters.
                 </td>
               </tr>
@@ -239,7 +258,8 @@ export default async function RankingsPage({ searchParams }: PageProps) {
                 const school = p?.school_name || "—";
                 const state = p?.school_state || "—";
                 const classYear = p?.class_year ?? "—";
-                const profileHref = p?.username ? `/athletes/${p.username}` : undefined;
+                const grade = formatGrade(r.grade);
+                const profileHref = p?.profile_id ? `/athletes/${p.profile_id}` : undefined;
 
                 return (
                   <tr key={`${r.athlete_id}-${r.event}-${i}`} className="border-t">
@@ -254,6 +274,7 @@ export default async function RankingsPage({ searchParams }: PageProps) {
                       )}
                     </td>
                     <td className="px-3 py-2">{classYear}</td>
+                    <td className="px-3 py-2">{grade}</td>
                     <td className="px-3 py-2">
                       {school} {state !== "—" ? `(${state})` : ""}
                     </td>

@@ -33,6 +33,7 @@ type IdentityRow = {
   profiles: {
     full_name: string | null;
     username: string | null;
+    profile_id: string;
     school_name: string | null;
     class_year: number | null;
   } | null;
@@ -105,6 +106,7 @@ export default async function AdminIdentitiesPage() {
       profiles:user_id (
         full_name,
         username,
+        profile_id,
         school_name,
         class_year
       )
@@ -209,9 +211,9 @@ export default async function AdminIdentitiesPage() {
                       <h2 className="text-lg font-semibold text-white">
                         {profile?.full_name || profile?.username || row.user_id}
                       </h2>
-                      {profile?.username ? (
+                      {profile?.profile_id ? (
                         <Link
-                          href={`/athletes/${profile.username}`}
+                          href={`/athletes/${profile.profile_id}`}
                           className="rounded-full bg-white/10 px-2 py-1 text-xs text-white underline-offset-2 hover:underline"
                         >
                           View profile

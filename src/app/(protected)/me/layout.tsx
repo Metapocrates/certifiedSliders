@@ -19,7 +19,7 @@ export default async function MeLayout({ children }: { children: ReactNode }) {
   // Fetch profile for sidebar context
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, full_name, profile_pic_url")
+    .select("id, username, full_name, profile_pic_url, profile_id")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -38,7 +38,7 @@ export default async function MeLayout({ children }: { children: ReactNode }) {
               Manage your profile, events, and public page
             </p>
           </div>
-          <SidebarNav username={profile?.username ?? null} />
+          <SidebarNav profileId={profile?.profile_id ?? null} />
         </div>
       </aside>
       <main className="flex-1 bg-app px-8 py-10">{children}</main>

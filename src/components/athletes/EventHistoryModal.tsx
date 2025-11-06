@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import SafeLink from "@/components/SafeLink";
+import { formatGrade } from "@/lib/grade";
 
 type HistoryResult = {
   id: number;
@@ -16,16 +17,18 @@ type HistoryResult = {
   proofUrl: string | null;
   isPR: boolean;
   status: string;
+  grade: number | null;
 };
 
 type EventHistoryModalProps = {
-  username: string;
+  profileId: string;
+  athleteName: string;
   event: string;
   currentMark: string;
   onOpenChange?: (open: boolean) => void;
 };
 
-export default function EventHistoryModal({ username, event, currentMark, onOpenChange }: EventHistoryModalProps) {
+export default function EventHistoryModal({ profileId, athleteName, event, currentMark, onOpenChange }: EventHistoryModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<HistoryResult[]>([]);
@@ -38,7 +41,7 @@ export default function EventHistoryModal({ username, event, currentMark, onOpen
     setError(null);
 
     try {
-      const res = await fetch(`/api/athletes/${encodeURIComponent(username)}/events/${encodeURIComponent(event)}/history`);
+      const res = await fetch(`/api/athletes/${encodeURIComponent(profileId)}/events/${encodeURIComponent(event)}/history`);
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
@@ -96,7 +99,7 @@ export default function EventHistoryModal({ username, event, currentMark, onOpen
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900">{event}</h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  All results for {username} • Current best: <strong>{currentMark}</strong>
+                  All results for {athleteName} • Current best: <strong>{currentMark}</strong>
                 </p>
               </div>
               <button
@@ -174,6 +177,12 @@ export default function EventHistoryModal({ username, event, currentMark, onOpen
                                 <>
                                   <span className="text-gray-400">•</span>
                                   <span className="text-xs uppercase">{r.season}</span>
+                                </>
+                              )}
+                              {r.grade && (
+                                <>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="text-xs">{formatGrade(r.grade)}</span>
                                 </>
                               )}
                             </div>

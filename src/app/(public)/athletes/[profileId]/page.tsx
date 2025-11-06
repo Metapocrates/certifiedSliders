@@ -1,17 +1,17 @@
-// src/app/(public)/athletes/[username]/page.tsx
+// src/app/(public)/athletes/[profileId]/page.tsx
 import { headers } from "next/headers";
 import Image from "next/image";
 import SafeLink from "@/components/SafeLink";
-import AthleteShareActions from "@/components/athletes/AthleteShareActions";
 import EventCard from "@/components/athletes/EventCard";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getStarTierAccent } from "@/lib/star-theme";
+import { getCurrentGrade, formatGrade } from "@/lib/grade";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
-  params: { username: string };
+  params: { profileId: string };
   searchParams: { claimed?: "ok" | "already" | "not_found" | "fail" };
 };
 
@@ -38,20 +38,20 @@ function Toast({ kind, msg }: { kind: "success" | "error" | "info"; msg: string 
 }
 
 export default async function AthleteProfilePage({ params, searchParams }: PageProps) {
-  const { username } = params;
+  const { profileId } = params;
   const supabase = createSupabaseServer();
 
   // Who's viewing?
   const { data: authData } = await supabase.auth.getUser();
   const viewer = authData?.user ?? null;
 
-  // Profile
+  // Profile - lookup by profile_id
   const { data: profile } = await supabase
     .from("profiles")
     .select(
       "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, gender, claimed_by, star_rating, profile_id"
     )
-    .eq("username", username)
+    .eq("profile_id", profileId)
     .maybeSingle();
 
   if (!profile) {
@@ -78,7 +78,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       const { data } = await supabase
         .from("mv_best_event")
         .select(
-          "event, best_seconds_adj, best_mark_text, wind_legal, wind, meet_name, meet_date, proof_url, season"
+          "event, best_seconds_adj, best_mark_text, wind_legal, wind, meet_name, meet_date, proof_url, season, grade"
         )
         .eq("athlete_id", profile.id)
         .order("best_seconds_adj", { ascending: true, nullsFirst: false })
@@ -97,7 +97,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
 
     const { data: results } = await supabase
       .from("results")
-      .select("id, event, mark, mark_seconds_adj, wind, meet_name, meet_date, proof_url, season, status")
+      .select("id, event, mark, mark_seconds_adj, wind, meet_name, meet_date, proof_url, season, status, grade")
       .eq("athlete_id", profile.id)
       .in("status", statusFilter)
       .eq("visible_on_profile", true)
@@ -118,11 +118,18 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     });
   }
 
-  const historyHref = profile.username ? `/athletes/${profile.username}/history` : undefined;
+  const historyHref = profile.profile_id ? `/athletes/${profile.profile_id}/history` : undefined;
   const teamLabel = profile.school_name
     ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
     : "Unlisted program";
-  const classLabel = profile.class_year ? `Class of ${profile.class_year}` : "Class year TBD";
+
+  // Calculate current grade and format class label
+  const currentGrade = profile.class_year ? getCurrentGrade(profile.class_year) : null;
+  const gradeText = currentGrade ? formatGrade(currentGrade) : null;
+  const classLabel = profile.class_year
+    ? (gradeText ? `${gradeText} • Class of ${profile.class_year}` : `Class of ${profile.class_year}`)
+    : "Class year TBD";
+
   const genderLabel = profile.gender === "M" ? "Boys" : profile.gender === "F" ? "Girls" : "—";
   const starRating = profile.star_rating ?? 0;
   const starLabel = starRating >= 3 && starRating <= 5
@@ -203,9 +210,9 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       .maybeSingle();
     isAdmin = !!adminRow;
   }
-  const claimHref = `/api/profile/claim?username=${encodeURIComponent(
-    profile.username || ""
-  )}&back=${encodeURIComponent(`/athletes/${profile.username}`)}`;
+  const claimHref = `/api/profile/claim?profileId=${encodeURIComponent(
+    profile.profile_id || ""
+  )}&back=${encodeURIComponent(`/athletes/${profile.profile_id}`)}`;
 
   const hostHeaders = headers();
   const proto = hostHeaders.get("x-forwarded-proto") ?? "https";
@@ -214,7 +221,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     hostHeaders.get("host") ??
     "certifiedsliders.com";
   const origin = (process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? `${proto}://${host}`).replace(/\/+$/, "");
-  const profileSlug = profile.username ?? username;
+  const profileSlug = profile.profile_id || profileId;
   const profileUrl = `${origin}/athletes/${profileSlug}`;
   const topHighlight = best && best.length > 0 ? best[0] : null;
   const topHighlightMark = topHighlight
@@ -224,22 +231,6 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       )
     : null;
 
-  const cardUrlObj = new URL(`${origin}/athletes/${profileSlug}/opengraph-image`);
-  if (profile.full_name) cardUrlObj.searchParams.set("name", profile.full_name);
-  else if (profile.username) cardUrlObj.searchParams.set("name", profile.username);
-  if (accent?.tier) cardUrlObj.searchParams.set("tier", String(accent.tier));
-  if (typeof profile.star_rating === "number") {
-    cardUrlObj.searchParams.set("stars", String(profile.star_rating));
-  }
-  if (profile.school_name) cardUrlObj.searchParams.set("team", profile.school_name);
-  if (profile.school_state) cardUrlObj.searchParams.set("state", profile.school_state);
-  if (profile.class_year) cardUrlObj.searchParams.set("classYear", String(profile.class_year));
-  if (topHighlight?.event) cardUrlObj.searchParams.set("event", topHighlight.event);
-  if (topHighlightMark) cardUrlObj.searchParams.set("mark", topHighlightMark);
-  const cardUrl = cardUrlObj.toString();
-  const shareText = starLabel
-    ? `${profile.full_name ?? profile.username ?? "This athlete"} is ${starLabel} on Certified Sliders.`
-    : `${profile.full_name ?? profile.username ?? "This athlete"} is verified on Certified Sliders.`;
   const showInlineStar = !accent && starLabel;
 
   // Toasts from claim flow (?claimed=ok|already|not_found|fail)
@@ -344,14 +335,6 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                 </a>
               ) : null}
             </div>
-            {isOwner ? (
-              <AthleteShareActions
-                profileUrl={profileUrl}
-                cardUrl={cardUrl}
-                shareText={shareText}
-                accent={accent}
-              />
-            ) : null}
             {primaryIdentity ? (
               <div className="space-y-2 rounded-2xl border border-white/20 bg-white/10 p-4 text-xs text-white/80 shadow-lg">
                 <div className="flex items-center justify-between">
@@ -462,12 +445,15 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   meetName={r.meet_name ?? "—"}
                   wind={wind}
                   proofUrl={r.proof_url}
-                  username={username}
+                  profileId={profile.profile_id}
+                  athleteName={profile.full_name || profile.username || "Athlete"}
                   status={r.status}
                   isOwner={isOwner}
                   resultId={r.id}
                   isAuthenticated={!!viewer}
-                  athleteName={profile.full_name || profile.username || username}
+                  grade={r.grade}
+                  classYear={profile.class_year}
+                  starRating={profile.star_rating}
                 />
               );
             })}
@@ -520,12 +506,15 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                       meetName={r.meet_name ?? "—"}
                       wind={wind}
                       proofUrl={r.proof_url}
-                      username={username}
+                      profileId={profile.profile_id}
+                      athleteName={profile.full_name || profile.username || "Athlete"}
                       status={r.status}
                       isOwner={isOwner}
                       resultId={r.id}
                       isAuthenticated={!!viewer}
-                      athleteName={profile.full_name || profile.username || username}
+                      grade={r.grade}
+                      classYear={profile.class_year}
+                      starRating={profile.star_rating}
                     />
                   );
                 })}

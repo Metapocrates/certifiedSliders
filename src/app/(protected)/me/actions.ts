@@ -94,6 +94,13 @@ export async function updateProfileAction(formData: FormData) {
         throw new Error("Select a state to pair with the school.");
     }
 
+    // Fetch profile_id for revalidation
+    const { data: profileData } = await admin
+        .from("profiles")
+        .select("profile_id")
+        .eq("id", user.id)
+        .maybeSingle();
+
     const { error } = await admin
         .from("profiles")
         .update({ username, full_name, school_name, school_state, bio, gender, class_year })
@@ -102,7 +109,9 @@ export async function updateProfileAction(formData: FormData) {
     if (error) throw error;
 
     revalidatePath("/me");
-    revalidatePath(`/athletes/${username ?? ""}`);
+    if (profileData?.profile_id) {
+        revalidatePath(`/athletes/${profileData.profile_id}`);
+    }
 
     // ← show confirmation by reloading with a flag
     redirect("/me?updated=1");

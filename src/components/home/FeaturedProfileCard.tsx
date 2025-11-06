@@ -17,6 +17,7 @@ export default async function FeaturedProfileCard() {
   type Profile = {
     id: string;
     username: string | null;
+    profile_id: string;
     display_name: string | null;
     school_name: string | null;
     school_state: string | null;
@@ -29,7 +30,7 @@ export default async function FeaturedProfileCard() {
   if (feat?.profile_id) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, display_name, school_name, school_state, star_rating, profile_pic_url")
+      .select("id, username, profile_id, display_name, school_name, school_state, star_rating, profile_pic_url")
       .eq("id", feat.profile_id)
       .maybeSingle();
     profile = data ?? null;
@@ -39,7 +40,7 @@ export default async function FeaturedProfileCard() {
   if (!profile) {
     const { data } = await supabase
       .from("profiles")
-      .select("id, username, display_name, school_name, school_state, star_rating, profile_pic_url")
+      .select("id, username, profile_id, display_name, school_name, school_state, star_rating, profile_pic_url")
       .order("star_rating", { ascending: false, nullsFirst: false })
       .order("updated_at", { ascending: false })
       .limit(1)
@@ -66,7 +67,7 @@ export default async function FeaturedProfileCard() {
     : starRating > 0
       ? `${starRating}★`
       : "Unrated";
-  const href = profile.username ? `/athletes/${profile.username}` : undefined;
+  const href = profile.profile_id ? `/athletes/${profile.profile_id}` : undefined;
   const borderClass = accent?.borderClass ?? "border-app";
   const cardShadowClass = accent?.cardShadowClass ?? "";
   const ribbonBgClass = accent?.ribbonBgClass ?? "bg-[#F5C518]";

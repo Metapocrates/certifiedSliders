@@ -15,7 +15,7 @@ function formatDate(d?: string) {
 export default async function NewsGrid() {
   const items = await getMergedNews(8);
   if (!items.length) {
-    return <div className="text-sm text-neutral-500">Couldn’t load the news feed right now.</div>;
+    return <div className="text-sm text-neutral-500">Couldn't load the news feed right now.</div>;
   }
 
   return (

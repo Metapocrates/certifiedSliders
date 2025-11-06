@@ -64,7 +64,7 @@ export default async function AdminClassYearOverridePage() {
               required
             />
             <p className="mt-1 text-xs text-gray-500">
-              Enter the user's UUID or their CS-XXXXX profile ID
+              Enter the user&apos;s UUID or their CS-XXXXX profile ID
             </p>
           </div>
 

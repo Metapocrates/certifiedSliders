@@ -23,7 +23,7 @@ export default async function NewsMergedGrid() {
 
   if (!items.length) {
     return (
-      <div className="text-sm subtle">Couldn’t load the news feed right now.</div>
+      <div className="text-sm subtle">Couldn't load the news feed right now.</div>
     );
   }
 

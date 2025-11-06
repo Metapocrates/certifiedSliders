@@ -121,7 +121,7 @@ export default async function AdminReportsPage() {
               </h3>
               <p className="text-sm text-gray-600">
                 <SafeLink
-                  href={`/athletes/${profile.username}`}
+                  href={`/athletes/${profile.profile_id}`}
                   className="font-medium text-app hover:underline"
                 >
                   {profile.full_name || profile.username}

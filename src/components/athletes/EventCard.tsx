@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import SafeLink from "@/components/SafeLink";
+import ShareButtons from "@/components/ShareButtons";
 import EventHistoryModal from "./EventHistoryModal";
 import ReportResultModal from "./ReportResultModal";
+import { formatGrade } from "@/lib/grade";
 
 type EventCardProps = {
   event: string;
@@ -13,12 +15,15 @@ type EventCardProps = {
   meetName: string;
   wind: string;
   proofUrl: string | null;
-  username: string;
+  profileId: string;
+  athleteName: string;
   status?: string | null;
   isOwner?: boolean;
   resultId?: number;
   isAuthenticated?: boolean;
-  athleteName?: string;
+  grade?: number | null;
+  classYear?: number | null;
+  starRating?: number | null;
 };
 
 export default function EventCard({
@@ -29,12 +34,15 @@ export default function EventCard({
   meetName,
   wind,
   proofUrl,
-  username,
+  profileId,
+  athleteName,
   status,
   isOwner = false,
   resultId,
   isAuthenticated = false,
-  athleteName,
+  grade,
+  classYear,
+  starRating,
 }: EventCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -73,6 +81,13 @@ export default function EventCard({
         <span>{season ?? "Season TBD"}</span>
         <span>{meetDate}</span>
       </div>
+      {(grade || classYear) && (
+        <div className="mt-2 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+          {grade && <span>{formatGrade(grade)}</span>}
+          {grade && classYear && <span>•</span>}
+          {classYear && <span>Class of {classYear}</span>}
+        </div>
+      )}
       <h3 className="mt-3 text-xl font-bold text-gray-900 dark:text-gray-100">{event}</h3>
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Best mark</p>
       <p className="text-2xl font-semibold text-app">{mark}</p>
@@ -93,7 +108,8 @@ export default function EventCard({
         )}
         <div className="flex items-center gap-3">
           <EventHistoryModal
-            username={username}
+            profileId={profileId}
+            athleteName={athleteName}
             event={event}
             currentMark={mark}
             onOpenChange={setIsModalOpen}
@@ -102,12 +118,25 @@ export default function EventCard({
             <ReportResultModal
               resultId={resultId}
               eventName={event}
-              athleteName={athleteName || username}
+              athleteName={athleteName}
               isAuthenticated={isAuthenticated}
             />
           )}
         </div>
       </div>
+
+      {/* Share buttons - only visible to owner */}
+      {isOwner && status && ['verified', 'approved'].includes(status) && (
+        <div className="mt-6 border-t border-app/30 pt-4">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Share this result</p>
+          <ShareButtons
+            url={`/athletes/${profileId}`}
+            title={`I just ran ${mark} in the ${event}${meetName ? ` at ${meetName}` : ''}!`}
+            description={starRating && starRating >= 3 ? `${"⭐".repeat(starRating)} performance` : undefined}
+            hashtags={["CertifiedSliders", "TrackAndField", event.replace(/\s+/g, "")]}
+          />
+        </div>
+      )}
     </div>
   );
 }

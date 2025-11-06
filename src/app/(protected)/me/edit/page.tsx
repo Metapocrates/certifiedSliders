@@ -26,7 +26,7 @@ export default async function EditProfilePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, class_year, school_name, school_state, profile_pic_url, bio, gender"
+      "id, username, full_name, class_year, class_year_locked_at, school_name, school_state, profile_pic_url, bio, gender"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -41,6 +41,7 @@ export default async function EditProfilePage() {
     username: profile?.username ?? "",
     full_name: profile?.full_name ?? "",
     class_year: profile?.class_year ? String(profile.class_year) : "",
+    class_year_locked_at: profile?.class_year_locked_at ?? null,
     school_name: profile?.school_name ?? "",
     school_state: profile?.school_state ?? "",
     profile_pic_url: profile?.profile_pic_url ?? "",

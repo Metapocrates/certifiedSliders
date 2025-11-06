@@ -1,12 +1,13 @@
-// src/app/(public)/athletes/[username]/history/page.tsx
+// src/app/(public)/athletes/[profileId]/history/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SafeLink from "@/components/SafeLink";
+import { formatGrade } from "@/lib/grade";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
-  params: { username: string };
+  params: { profileId: string };
   searchParams?: {
     sort?: "date_desc" | "date_asc" | "event_asc" | "season_then_date";
   };
@@ -30,7 +31,7 @@ function fmtDate(d?: string | null) {
 }
 
 export default async function AthleteHistoryPage({ params, searchParams }: PageProps) {
-  const { username } = params;
+  const { profileId } = params;
   const supabase = createSupabaseServer();
 
   // Load profile (id + basics for header)
@@ -39,7 +40,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
     .select(
       "id, full_name, username, school_name, school_state, class_year, gender"
     )
-    .eq("username", username)
+    .eq("profile_id", profileId)
     .maybeSingle();
 
   if (!profile) {
@@ -55,7 +56,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
   const { data: results } = await supabase
     .from("results")
     .select(
-      "event, mark, mark_seconds_adj, wind, season, meet_name, meet_date, proof_url, status"
+      "event, mark, mark_seconds_adj, wind, season, meet_name, meet_date, proof_url, status, grade"
     )
     .eq("athlete_id", profile.id)
     .eq("status", "verified")
@@ -137,6 +138,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
               <th className="px-3 py-2">Event</th>
               <th className="px-3 py-2">Mark</th>
               <th className="px-3 py-2">Wind</th>
+              <th className="px-3 py-2">Grade</th>
               <th className="px-3 py-2">Season</th>
               <th className="px-3 py-2">Meet</th>
               <th className="px-3 py-2">Date</th>
@@ -146,7 +148,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-gray-600" colSpan={7}>
+                <td className="px-3 py-3 text-gray-600" colSpan={8}>
                   No verified results yet.
                 </td>
               </tr>
@@ -155,6 +157,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
                 const mark = fmtTime(r.mark_seconds_adj, r.mark);
                 const wind =
                   r.wind != null ? `${Number(r.wind).toFixed(1)} m/s` : "—";
+                const grade = formatGrade(r.grade);
                 const season = r.season ?? "—";
                 const meet = r.meet_name ?? "—";
                 const date = fmtDate(r.meet_date);
@@ -164,6 +167,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
                     <td className="px-3 py-2">{r.event || "—"}</td>
                     <td className="px-3 py-2 font-medium">{mark}</td>
                     <td className="px-3 py-2">{wind}</td>
+                    <td className="px-3 py-2">{grade}</td>
                     <td className="px-3 py-2">{season}</td>
                     <td className="px-3 py-2">{meet}</td>
                     <td className="px-3 py-2">{date}</td>

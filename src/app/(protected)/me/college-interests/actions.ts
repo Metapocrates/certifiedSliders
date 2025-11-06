@@ -16,12 +16,12 @@ async function revalidateProfilePaths(supabase: ReturnType<typeof createSupabase
   if (!user) return;
   const { data: profile } = await supabase
     .from("profiles")
-    .select("username")
+    .select("profile_id")
     .eq("id", user.id)
     .maybeSingle();
   revalidatePath("/me");
-  if (profile?.username) {
-    revalidatePath(`/athletes/${profile.username}`);
+  if (profile?.profile_id) {
+    revalidatePath(`/athletes/${profile.profile_id}`);
   }
 }
 
