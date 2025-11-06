@@ -146,7 +146,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
 
   const { data: linkedIdentitiesData } = await supabase
     .from("external_identities")
-    .select("profile_url, external_id, is_primary, verified")
+    .select("profile_url, external_id, external_numeric_id, is_primary, verified")
     .eq("user_id", profile.id)
     .eq("provider", "athleticnet")
     .eq("verified", true)
@@ -156,6 +156,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const verifiedIdentities = (linkedIdentitiesData ?? []).map((row) => ({
     profileUrl: row.profile_url as string,
     externalId: row.external_id as string,
+    numericId: row.external_numeric_id as string | null,
     isPrimary: row.is_primary as boolean,
   }));
 
@@ -322,11 +323,6 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                     View detailed history
                   </SafeLink>
                 ) : null}
-                {(isOwner || isAdmin) && profile.profile_id ? (
-                  <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1 font-mono font-semibold text-white/90">
-                    ID: {profile.profile_id}
-                  </span>
-                ) : null}
               </div>
             </div>
           </div>
@@ -365,11 +361,17 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   </span>
                 </div>
                 <SafeLink
-                  href={primaryIdentity.profileUrl}
+                  href={
+                    primaryIdentity.numericId
+                      ? `https://www.athletic.net/athlete/${primaryIdentity.numericId}/track-and-field/`
+                      : primaryIdentity.profileUrl
+                  }
                   target="_blank"
                   className="inline-flex h-9 items-center justify-center rounded-full border border-white/40 bg-white/10 px-4 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/20"
                 >
-                  View on Athletic.net
+                  {primaryIdentity.numericId
+                    ? `https://www.athletic.net/athlete/${primaryIdentity.numericId}/track-and-field/`
+                    : "View on Athletic.net"}
                 </SafeLink>
                 {secondaryIdentities.length ? (
                   <details className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">

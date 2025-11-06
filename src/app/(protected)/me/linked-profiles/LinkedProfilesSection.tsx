@@ -346,7 +346,7 @@ export default function LinkedProfilesSection({ identities }: { identities: Link
                   className="text-app font-medium underline"
                 >
                   {item.verified && item.numericId
-                    ? `View on Athletic.net`
+                    ? `https://www.athletic.net/athlete/${item.numericId}/track-and-field/`
                     : item.profileUrl}
                 </a>
                 {item.isPrimary ? (
