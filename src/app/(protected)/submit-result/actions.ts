@@ -14,9 +14,25 @@ const ConfirmInputSchema = z.object({
     season: z.enum(["indoor", "outdoor"]),
     meetName: z.string().min(1),
     meetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    wasEdited: z.boolean().optional(),
+    originalData: z.any().optional(),
+    confidence: z.number().min(0).max(1).nullable().optional(),
 });
 
 export type ConfirmInput = z.infer<typeof ConfirmInputSchema>;
+
+// Helper to compute hash of source data
+function computeSourceHash(data: any): string {
+    const str = JSON.stringify(data, Object.keys(data).sort());
+    // Simple hash implementation
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash.toString(36);
+}
 
 export type ConfirmActionResult =
     | { ok: true }
@@ -82,6 +98,13 @@ export async function confirmSubmitAction(
         };
     }
 
+    // ✅ Determine status based on whether data was edited
+    const status = v.wasEdited ? "manual_review" : "pending";
+
+    // ✅ Prepare source payload and hash if original data exists
+    const sourcePayload = v.originalData ? v.originalData : null;
+    const sourceHash = sourcePayload ? computeSourceHash(sourcePayload) : null;
+
     // ✅ Insert
     const { error } = await supabase
         .from("results")
@@ -95,9 +118,12 @@ export async function confirmSubmitAction(
             season: v.season.toUpperCase(),
             meet_name: v.meetName,
             meet_date: v.meetDate,
-            status: "pending",
+            status,
             submitted_by: user.id,
             proof_url: v.proofUrl,
+            source_payload: sourcePayload,
+            source_hash: sourceHash,
+            confidence: v.confidence ?? null,
         })
         .select("id")
         .single();

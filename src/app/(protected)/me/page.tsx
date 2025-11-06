@@ -20,9 +20,9 @@ type Row = {
   season: string | null;
   meet_name: string | null;
   meet_date: string | null;
-  status: "pending" | "verified" | "rejected";
+  status: "pending" | "verified" | "rejected" | "manual_review" | "approved" | "invalid";
   proof_url: string | null;
-  reject_reason?: string | null;
+  rejection_reason?: string | null;
 };
 
 function fmtTime(sec: number | null | undefined, text?: string | null) {
@@ -59,7 +59,7 @@ export default async function MePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, profile_pic_url, school_name, school_state, class_year"
+      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -74,16 +74,16 @@ export default async function MePage() {
   const { data: resultsData } = await supabase
     .from("results")
     .select(
-      "id, event, mark, mark_seconds, season, meet_name, meet_date, status, proof_url, reject_reason"
+      "id, event, mark, mark_seconds, season, meet_name, meet_date, status, proof_url, rejection_reason"
     )
     .eq("athlete_id", user.id)
     .order("meet_date", { ascending: false, nullsFirst: true })
     .order("id", { ascending: false });
 
   const rows: Row[] = resultsData ?? [];
-  const pending = rows.filter(r => r.status === "pending");
-  const verified = rows.filter(r => r.status === "verified");
-  const rejected = rows.filter(r => r.status === "rejected");
+  const pending = rows.filter(r => r.status === "pending" || r.status === "manual_review");
+  const verified = rows.filter(r => r.status === "verified" || r.status === "approved");
+  const rejected = rows.filter(r => r.status === "rejected" || r.status === "invalid");
 
   const collegeInterests: CollegeInterest[] =
     (collegeInterestsData ?? []).map((row) => ({
@@ -187,9 +187,16 @@ type IdentityRow = {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-app">
-            {profile?.full_name || user.email || "Athlete"}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-app">
+              {profile?.full_name || user.email || "Athlete"}
+            </h2>
+            {profile?.profile_id && (
+              <span className="rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-mono text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+                {profile.profile_id}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-muted">
             {profile?.school_name
               ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
@@ -307,9 +314,9 @@ function ResultsTable({
               </td>
               {showRejectReason ? (
                 <td className="px-3 py-2">
-                  {r.reject_reason ? (
+                  {r.rejection_reason ? (
                     <span className="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] text-red-800">
-                      {r.reject_reason}
+                      {r.rejection_reason}
                     </span>
                   ) : (
                     "—"

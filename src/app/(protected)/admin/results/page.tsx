@@ -65,7 +65,8 @@ export default async function AdminResultsPage() {
         full_name,
         username,
         school_name,
-        class_year
+        class_year,
+        profile_id
       )
     `)
     .eq("status", "pending")
@@ -101,6 +102,7 @@ export default async function AdminResultsPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Athlete</th>
+                <th className="px-3 py-2 text-left font-medium">Athlete ID</th>
                 <th className="px-3 py-2 text-left font-medium">Event</th>
                 <th className="px-3 py-2 text-left font-medium">Mark</th>
                 <th className="px-3 py-2 text-left font-medium">Timing</th>
@@ -115,21 +117,31 @@ export default async function AdminResultsPage() {
             <tbody>
               {pending.map((r: any) => {
                 const p = (r as any).profiles as
-                  | { id: string; full_name: string | null; username: string | null; school_name: string | null; class_year: number | null }
+                  | { id: string; full_name: string | null; username: string | null; school_name: string | null; class_year: number | null; profile_id: string | null }
                   | null;
 
                 return (
                   <tr key={r.id} className="border-t">
                     <td className="px-3 py-2">
                       <div className="flex flex-col">
-                        <span className="font-medium">
-                          {p?.full_name || p?.username || r.athlete_id}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {p?.full_name || p?.username || r.athlete_id}
+                          </span>
+                          {p?.profile_id && (
+                            <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-mono text-gray-700">
+                              {p.profile_id}
+                            </span>
+                          )}
+                        </div>
                         <span className="text-xs text-gray-500">
                           {p?.school_name ? `${p.school_name}` : ""}{" "}
                           {p?.class_year ? `• ${p.class_year}` : ""}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="font-mono text-xs text-gray-400">{r.athlete_id || "NULL"}</span>
                     </td>
                     <td className="px-3 py-2">{r.event ?? "—"}</td>
                     <td className="px-3 py-2">{r.mark ?? r.mark_seconds ?? "—"}</td>

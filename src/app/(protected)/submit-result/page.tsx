@@ -34,6 +34,8 @@ export default function SubmitResultURLPage() {
 
   const [source, setSource] = useState<"athleticnet" | "milesplit" | "other">("athleticnet");
   const [editable, setEditable] = useState(false);
+  const [showEditWarning, setShowEditWarning] = useState(false);
+  const [parsed, setParsed] = useState(false);
 
   // Editable preview fields
   const [event, setEvent] = useState("");
@@ -45,6 +47,9 @@ export default function SubmitResultURLPage() {
   const [meetName, setMeetName] = useState("");
   const [meetDate, setMeetDate] = useState("");
   const [confidence, setConfidence] = useState<number | undefined>(undefined);
+
+  // Track original parsed values to detect edits
+  const [originalData, setOriginalData] = useState<ParsedProof | null>(null);
 
   async function handleParse(e: React.FormEvent) {
     e.preventDefault();
@@ -70,7 +75,9 @@ export default function SubmitResultURLPage() {
 
       const p = data.normalized ?? data.parsed ?? null;
       if (data.ok && p) {
-        setEditable(true);
+        // Keep fields READ-ONLY by default after successful parse
+        setEditable(false);
+        setParsed(true);
         setEvent(p.event ?? "");
         setMarkText(p.markText ?? "");
         setMarkSeconds(p.markSeconds ?? null);
@@ -79,9 +86,12 @@ export default function SubmitResultURLPage() {
         setMeetName(p.meetName ?? "");
         setMeetDate(p.meetDate ?? "");
         setConfidence(p.confidence);
+        // Store original data for comparison
+        setOriginalData(p);
       } else {
         // Make fields editable so user can fill manually
         setEditable(true);
+        setParsed(true);
         setErr(
           data.error ||
           "Parsed successfully, but no structured fields were returned. Please fill in the details below."
@@ -97,6 +107,7 @@ export default function SubmitResultURLPage() {
           setMeetDate("");
           setConfidence(undefined);
         }
+        setOriginalData(null);
       }
     } catch (e: any) {
       setErr(e?.message || "Unexpected error parsing URL.");
@@ -104,6 +115,20 @@ export default function SubmitResultURLPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // Check if user edited the parsed data
+  function wasDataEdited(): boolean {
+    if (!originalData) return true; // No original data = manually filled
+    return (
+      event !== (originalData.event ?? "") ||
+      markText !== (originalData.markText ?? "") ||
+      markSeconds !== originalData.markSeconds ||
+      timing !== originalData.timing ||
+      wind !== originalData.wind ||
+      meetName !== (originalData.meetName ?? "") ||
+      meetDate !== (originalData.meetDate ?? "")
+    );
   }
 
   async function handleConfirm() {
@@ -131,7 +156,8 @@ export default function SubmitResultURLPage() {
       }
     }
 
-    const payload: ConfirmInput = {
+    const wasEdited = wasDataEdited();
+    const payload: ConfirmInput & { wasEdited?: boolean; originalData?: ParsedProof | null } = {
       source,
       proofUrl: url,
       event,
@@ -142,6 +168,9 @@ export default function SubmitResultURLPage() {
       season,
       meetName,
       meetDate,
+      wasEdited,
+      originalData,
+      confidence,
     };
     const res = await confirmSubmitAction(payload);
     if (res?.ok) {
@@ -211,6 +240,38 @@ export default function SubmitResultURLPage() {
         </div>
       )}
 
+      {/* Edit Warning Modal */}
+      {showEditWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-w-md rounded-xl border bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Edit this result?
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Editing parsed fields will trigger <strong>manual review</strong> by an admin before your result is approved.
+              The original Athletic.net data will be preserved for comparison.
+            </p>
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={() => setShowEditWarning(false)}
+                className="rounded-lg border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setEditable(true);
+                  setShowEditWarning(false);
+                }}
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+              >
+                I understand, let me edit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border p-4 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Preview</h2>
@@ -220,14 +281,19 @@ export default function SubmitResultURLPage() {
                 Confidence: {(confidence * 100).toFixed(0)}%
               </span>
             )}
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={editable}
-                onChange={(e) => setEditable(e.target.checked)}
-              />
-              Edit fields
-            </label>
+            {parsed && !editable && (
+              <button
+                onClick={() => setShowEditWarning(true)}
+                className="rounded-lg border border-amber-600 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100"
+              >
+                Edit result?
+              </button>
+            )}
+            {editable && originalData && (
+              <span className="text-xs text-amber-600 font-medium">
+                ⚠ Manual review required
+              </span>
+            )}
           </div>
         </div>
 
@@ -349,12 +415,16 @@ export default function SubmitResultURLPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <button className="btn" onClick={handleConfirm}>
             Confirm & Submit
           </button>
           <span className="text-xs text-gray-500">
-            Your result will be marked <strong>pending</strong> for admin verification.
+            {editable && originalData ? (
+              <>Result will be marked <strong className="text-amber-600">manual review</strong> (edited data)</>
+            ) : (
+              <>Result will be marked <strong>pending</strong> for admin verification</>
+            )}
           </span>
         </div>
       </div>

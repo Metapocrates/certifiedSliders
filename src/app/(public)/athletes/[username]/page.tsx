@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import SafeLink from "@/components/SafeLink";
 import AthleteShareActions from "@/components/athletes/AthleteShareActions";
+import EventCard from "@/components/athletes/EventCard";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getStarTierAccent } from "@/lib/star-theme";
 
@@ -48,7 +49,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, gender, claimed_by, star_rating"
+      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, gender, claimed_by, star_rating, profile_id"
     )
     .eq("username", username)
     .maybeSingle();
@@ -62,28 +63,43 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     );
   }
 
+  // Check ownership early for query modifications
+  const { data: authData2 } = await supabase.auth.getUser();
+  const viewer2 = authData2?.user ?? null;
+  const isOwnerEarly = !!viewer2 && (viewer2.id === profile.id || viewer2.id === profile.claimed_by);
+
   // Best marks (mv or fallback)
+  // Skip materialized view for owners to show pending results
   let best: Array<any> | null = null;
-  try {
-    const { data } = await supabase
-      .from("mv_best_event")
-      .select(
-        "event, best_seconds_adj, best_mark_text, wind_legal, wind, meet_name, meet_date, proof_url, season"
-      )
-      .eq("athlete_id", profile.id)
-      .order("best_seconds_adj", { ascending: true, nullsFirst: false })
-      .limit(100);
-    best = data ?? null;
-  } catch {
-    best = null;
+
+  if (!isOwnerEarly) {
+    // Use materialized view for non-owners (faster)
+    try {
+      const { data } = await supabase
+        .from("mv_best_event")
+        .select(
+          "event, best_seconds_adj, best_mark_text, wind_legal, wind, meet_name, meet_date, proof_url, season"
+        )
+        .eq("athlete_id", profile.id)
+        .order("best_seconds_adj", { ascending: true, nullsFirst: false })
+        .limit(100);
+      best = data ?? null;
+    } catch {
+      best = null;
+    }
   }
 
   if (!best) {
+    // For owners, include pending and manual_review results
+    const statusFilter = isOwnerEarly
+      ? ['verified', 'approved', 'pending', 'manual_review']
+      : ['verified', 'approved'];
+
     const { data: results } = await supabase
       .from("results")
-      .select("event, mark, mark_seconds_adj, wind, meet_name, meet_date, proof_url, season")
+      .select("id, event, mark, mark_seconds_adj, wind, meet_name, meet_date, proof_url, season, status")
       .eq("athlete_id", profile.id)
-      .eq("status", "verified")
+      .in("status", statusFilter)
       .eq("visible_on_profile", true)
       .limit(1000);
 
@@ -175,6 +191,17 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   // Ownership + CTAs
   const isOwner = !!viewer && (viewer.id === profile.id || viewer.id === profile.claimed_by);
   const showClaim = !!viewer && !isOwner && profile.claimed_by == null;
+
+  // Check if viewer is admin
+  let isAdmin = false;
+  if (viewer) {
+    const { data: adminRow } = await supabase
+      .from("admins")
+      .select("user_id")
+      .eq("user_id", viewer.id)
+      .maybeSingle();
+    isAdmin = !!adminRow;
+  }
   const claimHref = `/api/profile/claim?username=${encodeURIComponent(
     profile.username || ""
   )}&back=${encodeURIComponent(`/athletes/${profile.username}`)}`;
@@ -294,6 +321,11 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   >
                     View detailed history
                   </SafeLink>
+                ) : null}
+                {(isOwner || isAdmin) && profile.profile_id ? (
+                  <span className="rounded-full border border-white/30 bg-white/10 px-3 py-1 font-mono font-semibold text-white/90">
+                    ID: {profile.profile_id}
+                  </span>
                 ) : null}
               </div>
             </div>
@@ -421,35 +453,22 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                     ? "NWI / IL"
                     : "—";
               return (
-                <div
+                <EventCard
                   key={`${r.event}-${i}`}
-                  className="group relative overflow-hidden rounded-3xl border border-app bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted">
-                    <span>{r.season ?? "Season TBD"}</span>
-                    <span>{meetDate}</span>
-                  </div>
-                  <h3 className="mt-3 text-xl font-semibold text-app">{r.event}</h3>
-                  <p className="mt-1 text-sm text-muted">Best mark</p>
-                  <p className="text-2xl font-semibold text-app">{mark}</p>
-                  <div className="mt-4 space-y-1 text-sm text-muted">
-                    <p>
-                      <span className="font-medium text-app">Meet:</span> {r.meet_name ?? "—"}
-                    </p>
-                    <p>
-                      <span className="font-medium text-app">Wind:</span> {wind}
-                    </p>
-                  </div>
-                  {r.proof_url ? (
-                    <SafeLink
-                      href={r.proof_url}
-                      target="_blank"
-                      className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-scarlet transition hover:text-scarlet/80"
-                    >
-                      View proof →
-                    </SafeLink>
-                  ) : null}
-                </div>
+                  event={r.event}
+                  mark={mark}
+                  season={r.season ?? "Season TBD"}
+                  meetDate={meetDate}
+                  meetName={r.meet_name ?? "—"}
+                  wind={wind}
+                  proofUrl={r.proof_url}
+                  username={username}
+                  status={r.status}
+                  isOwner={isOwner}
+                  resultId={r.id}
+                  isAuthenticated={!!viewer}
+                  athleteName={profile.full_name || profile.username || username}
+                />
               );
             })}
           </div>
@@ -492,35 +511,22 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                         ? "NWI / IL"
                         : "—";
                   return (
-                    <div
+                    <EventCard
                       key={`${r.event}-${i}`}
-                      className="group relative overflow-hidden rounded-3xl border border-app bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                    >
-                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-muted">
-                        <span>{r.season ?? "Season TBD"}</span>
-                        <span>{meetDate}</span>
-                      </div>
-                      <h3 className="mt-3 text-xl font-semibold text-app">{r.event}</h3>
-                      <p className="mt-1 text-sm text-muted">Best mark</p>
-                      <p className="text-2xl font-semibold text-app">{mark}</p>
-                      <div className="mt-4 space-y-1 text-sm text-muted">
-                        <p>
-                          <span className="font-medium text-app">Meet:</span> {r.meet_name ?? "—"}
-                        </p>
-                        <p>
-                          <span className="font-medium text-app">Wind:</span> {wind}
-                        </p>
-                      </div>
-                      {r.proof_url ? (
-                        <SafeLink
-                          href={r.proof_url}
-                          target="_blank"
-                          className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-scarlet transition hover:text-scarlet/80"
-                        >
-                          View proof →
-                        </SafeLink>
-                      ) : null}
-                    </div>
+                      event={r.event}
+                      mark={mark}
+                      season={r.season ?? "Season TBD"}
+                      meetDate={meetDate}
+                      meetName={r.meet_name ?? "—"}
+                      wind={wind}
+                      proofUrl={r.proof_url}
+                      username={username}
+                      status={r.status}
+                      isOwner={isOwner}
+                      resultId={r.id}
+                      isAuthenticated={!!viewer}
+                      athleteName={profile.full_name || profile.username || username}
+                    />
                   );
                 })}
               </div>

@@ -1,0 +1,145 @@
+-- Phase 2: Multi-result History + Manual Review Flow
+-- Enhances results table for tracking status, PRs, and source data
+
+-- Create status enum if it doesn't exist
+DO $$ BEGIN
+  CREATE TYPE public.result_status AS ENUM ('pending', 'approved', 'manual_review', 'invalid', 'verified');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+-- Add new columns to results table if they don't exist
+ALTER TABLE public.results
+  ADD COLUMN IF NOT EXISTS status public.result_status DEFAULT 'pending',
+  ADD COLUMN IF NOT EXISTS is_pr boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS source_payload jsonb,
+  ADD COLUMN IF NOT EXISTS source_hash text,
+  ADD COLUMN IF NOT EXISTS is_wind_legal boolean;
+
+-- Migrate existing data: if status column was text, convert to enum
+-- This handles the case where status was already being used as text
+DO $$ BEGIN
+  -- Update existing 'verified' text values to 'verified' enum if column type is being changed
+  UPDATE public.results
+  SET status = 'verified'::public.result_status
+  WHERE status::text = 'verified' AND is_pr IS NULL;
+EXCEPTION
+  WHEN OTHERS THEN null;
+END $$;
+
+-- Compute is_wind_legal for sprint/jump events
+-- Wind is legal if: NULL (field events), or <= 2.0 m/s for sprints/jumps
+UPDATE public.results
+SET is_wind_legal = CASE
+  WHEN wind IS NULL THEN true  -- Field events don't have wind
+  WHEN wind <= 2.0 THEN true
+  ELSE false
+END
+WHERE is_wind_legal IS NULL;
+
+-- Create index for event history queries (athlete_id, event, date desc)
+CREATE INDEX IF NOT EXISTS results_history_idx
+  ON public.results(athlete_id, event, meet_date DESC NULLS LAST);
+
+-- Create index for status-based queries (admin review queue)
+CREATE INDEX IF NOT EXISTS results_status_idx
+  ON public.results(status, created_at DESC)
+  WHERE status = 'manual_review' OR status = 'pending';
+
+-- Function to recompute PRs for an athlete's event
+-- This will be called after insert/update
+CREATE OR REPLACE FUNCTION public.recompute_prs_for_event(
+  p_athlete_id uuid,
+  p_event text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Reset all PRs for this athlete/event
+  UPDATE public.results
+  SET is_pr = false
+  WHERE athlete_id = p_athlete_id
+    AND event = p_event
+    AND status IN ('verified', 'approved');
+
+  -- Mark the best result as PR
+  -- For track events, lower is better (except throws/jumps which may need different logic)
+  UPDATE public.results
+  SET is_pr = true
+  WHERE id = (
+    SELECT id
+    FROM public.results
+    WHERE athlete_id = p_athlete_id
+      AND event = p_event
+      AND status IN ('verified', 'approved')
+      AND is_wind_legal = true  -- Only consider wind-legal marks for PRs
+    ORDER BY mark_seconds ASC NULLS LAST, meet_date DESC
+    LIMIT 1
+  );
+END;
+$$;
+
+-- Trigger to auto-update PRs when results change
+CREATE OR REPLACE FUNCTION public.update_pr_on_result_change()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Recompute PRs for the affected athlete/event
+  IF TG_OP = 'INSERT' OR TG_OP = 'UPDATE' THEN
+    PERFORM public.recompute_prs_for_event(NEW.athlete_id, NEW.event);
+  END IF;
+
+  -- Also recompute for old event if event changed
+  IF TG_OP = 'UPDATE' AND OLD.event != NEW.event THEN
+    PERFORM public.recompute_prs_for_event(OLD.athlete_id, OLD.event);
+  END IF;
+
+  -- Recompute if deleted
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.recompute_prs_for_event(OLD.athlete_id, OLD.event);
+    RETURN OLD;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Create trigger
+DROP TRIGGER IF EXISTS update_pr_trigger ON public.results;
+CREATE TRIGGER update_pr_trigger
+  AFTER INSERT OR UPDATE OR DELETE ON public.results
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_pr_on_result_change();
+
+-- Initial PR computation for existing data
+DO $$
+DECLARE
+  athlete_event RECORD;
+BEGIN
+  FOR athlete_event IN
+    SELECT DISTINCT athlete_id, event
+    FROM public.results
+    WHERE status IN ('verified', 'approved')
+  LOOP
+    PERFORM public.recompute_prs_for_event(athlete_event.athlete_id, athlete_event.event);
+  END LOOP;
+END $$;
+
+COMMENT ON COLUMN public.results.status IS
+'Status of the result: pending (awaiting approval), approved (auto-approved), manual_review (edited by user), invalid (rejected/superseded), verified (legacy approved)';
+
+COMMENT ON COLUMN public.results.is_pr IS
+'True if this is the personal record for this athlete in this event (computed automatically)';
+
+COMMENT ON COLUMN public.results.source_payload IS
+'Original data from Athletic.net or other source for diff/audit purposes';
+
+COMMENT ON COLUMN public.results.source_hash IS
+'Hash of source data to detect modifications';
+
+COMMENT ON FUNCTION public.recompute_prs_for_event IS
+'Recomputes which result is the PR for a given athlete and event combination';
