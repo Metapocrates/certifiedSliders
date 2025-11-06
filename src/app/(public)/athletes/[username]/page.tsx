@@ -369,9 +369,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   target="_blank"
                   className="inline-flex h-9 items-center justify-center rounded-full border border-white/40 bg-white/10 px-4 text-xs font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/20"
                 >
-                  {primaryIdentity.numericId
-                    ? `https://www.athletic.net/athlete/${primaryIdentity.numericId}/track-and-field/`
-                    : "View on Athletic.net"}
+                  View on Athletic.net
                 </SafeLink>
                 {secondaryIdentities.length ? (
                   <details className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
