@@ -1,10 +1,51 @@
 // src/app/(public)/rankings/page.tsx
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { formatGrade } from "@/lib/grade";
+import { shouldIndex, getCanonicalUrl, formatRankingsMetaTitle, formatRankingsMetaDescription } from "@/lib/seo/utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export async function generateMetadata({ searchParams }: { searchParams?: any }): Promise<Metadata> {
+  const params = searchParams || {};
+  const { event, classYear, gender } = params;
+
+  const currentYear = new Date().getFullYear();
+  const year = classYear || String(currentYear + 1);
+
+  const shouldBeIndexed = shouldIndex(params);
+  const baseUrl = "https://www.certifiedsliders.com/rankings";
+  const preserveParams: Record<string, string> = {};
+
+  if (event) preserveParams.event = event;
+  if (classYear) preserveParams.classYear = classYear;
+
+  const canonicalUrl = getCanonicalUrl(baseUrl, Object.keys(preserveParams).length > 0 ? preserveParams : undefined);
+
+  const title = formatRankingsMetaTitle(year, event, gender);
+  const description = formatRankingsMetaDescription(year, event, gender);
+
+  return {
+    title,
+    description,
+    alternates: { canonical: canonicalUrl },
+    robots: { index: shouldBeIndexed, follow: true },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "Certified Sliders",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
 
 type PageProps = {
   searchParams?: {

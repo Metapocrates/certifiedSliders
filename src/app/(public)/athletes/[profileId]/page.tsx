@@ -1,14 +1,79 @@
 // src/app/(public)/athletes/[profileId]/page.tsx
 import { headers } from "next/headers";
 import Image from "next/image";
+import type { Metadata } from "next";
 import SafeLink from "@/components/SafeLink";
 import EventCard from "@/components/athletes/EventCard";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getStarTierAccent } from "@/lib/star-theme";
 import { getCurrentGrade, formatGrade } from "@/lib/grade";
+import { formatAthleteMetaTitle, formatAthleteMetaDescription } from "@/lib/seo/utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export async function generateMetadata({ params }: { params: { profileId: string } }): Promise<Metadata> {
+  const supabase = createSupabaseServer();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, class_year, school_name, school_state, star_rating, gender, profile_pic_url, updated_at")
+    .eq("profile_id", params.profileId)
+    .maybeSingle();
+
+  if (!profile) {
+    return {
+      title: "Athlete Not Found | Certified Sliders",
+      description: "This athlete profile could not be found.",
+      robots: { index: false, follow: true },
+    };
+  }
+
+  // Get primary event (best mark)
+  const { data: bestMarks } = await supabase
+    .from("mv_best_event")
+    .select("event")
+    .eq("athlete_id", profile.id)
+    .order("best_seconds_adj", { ascending: true })
+    .limit(1);
+
+  const primaryEvent = bestMarks?.[0]?.event || null;
+  const name = profile.full_name || profile.username || params.profileId;
+  const url = `https://www.certifiedsliders.com/athletes/${params.profileId}`;
+
+  const title = formatAthleteMetaTitle(name, profile.class_year, primaryEvent);
+  const description = formatAthleteMetaDescription(
+    name,
+    profile.class_year,
+    profile.school_name,
+    profile.school_state,
+    primaryEvent,
+    profile.star_rating
+  );
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Certified Sliders",
+      type: "profile",
+      images: profile.profile_pic_url
+        ? [{ url: profile.profile_pic_url, width: 400, height: 400 }]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: profile.profile_pic_url ? [profile.profile_pic_url] : undefined,
+    },
+  };
+}
 
 type PageProps = {
   params: { profileId: string };
