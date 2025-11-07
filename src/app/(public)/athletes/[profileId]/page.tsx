@@ -10,6 +10,10 @@ import { getCurrentGrade, formatGrade } from "@/lib/grade";
 import { formatAthleteMetaTitle, formatAthleteMetaDescription } from "@/lib/seo/utils";
 import AthleteJsonLd from "@/components/seo/AthleteJsonLd";
 import FlagButton from "@/components/FlagButton";
+import AcademicInfoEditor from "@/components/profile/AcademicInfoEditor";
+import VideoClipManager from "@/components/profile/VideoClipManager";
+import BioVisibilitySelector from "@/components/profile/BioVisibilitySelector";
+import ContactInfoManager from "@/components/profile/ContactInfoManager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -116,7 +120,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, gender, claimed_by, star_rating, profile_id"
+      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, bio_visibility, email, phone, share_contact_info, gender, claimed_by, star_rating, profile_id"
     )
     .eq("profile_id", profileId)
     .maybeSingle();
@@ -505,89 +509,122 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       </section>
 
       {profile.bio ? (
-        <section className="mx-auto max-w-4xl rounded-3xl border border-app bg-card px-6 py-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-app">Bio</h2>
-          <p className="mt-3 whitespace-pre-wrap text-sm text-muted leading-relaxed">{profile.bio}</p>
+        <section className="mx-auto max-w-4xl rounded-3xl border border-app bg-card px-6 py-6 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-app">Bio</h2>
+            {isOwner && profile.bio_visibility && (
+              <BioVisibilitySelector
+                athleteId={profile.id}
+                currentVisibility={profile.bio_visibility as "private" | "coaches" | "public"}
+              />
+            )}
+          </div>
+          <p className="whitespace-pre-wrap text-sm text-muted leading-relaxed">{profile.bio}</p>
         </section>
       ) : null}
 
       {/* Academic Info */}
-      {showAcademicInfo && academicInfo && (academicInfo.gpa || academicInfo.sat_score || academicInfo.act_score) && (
+      {(showAcademicInfo && academicInfo && (academicInfo.gpa || academicInfo.sat_score || academicInfo.act_score)) || isOwner ? (
         <section className="mx-auto max-w-4xl rounded-3xl border border-app bg-card px-6 py-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-app">Academic Information</h2>
             {isOwner && (
-              <span className="text-xs text-muted-foreground">
-                {academicInfo.share_with_coaches ? "Visible to coaches" : "Private"}
-              </span>
+              <AcademicInfoEditor
+                athleteId={profile.id}
+                initialData={academicInfo || undefined}
+              />
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {academicInfo.gpa && (
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">GPA</div>
-                <div className="text-2xl font-bold text-app">{academicInfo.gpa.toFixed(2)}</div>
-              </div>
-            )}
-            {academicInfo.sat_score && (
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">SAT</div>
-                <div className="text-2xl font-bold text-app">{academicInfo.sat_score}</div>
-              </div>
-            )}
-            {academicInfo.act_score && (
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">ACT</div>
-                <div className="text-2xl font-bold text-app">{academicInfo.act_score}</div>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Video Clips */}
-      {clips.length > 0 && (
-        <section className="space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Video Highlights</p>
-            <h2 className="text-2xl font-semibold text-app">Competition Videos</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {clips.map((clip: any) => (
-              <div key={clip.id} className="rounded-3xl border border-app bg-card shadow-sm overflow-hidden">
-                {clip.youtube_id && (
-                  <div className="aspect-video bg-muted relative">
-                    <img
-                      src={`https://img.youtube.com/vi/${clip.youtube_id}/mqdefault.jpg`}
-                      alt={clip.title || "Video thumbnail"}
-                      className="w-full h-full object-cover"
-                    />
+          {academicInfo && (academicInfo.gpa || academicInfo.sat_score || academicInfo.act_score) ? (
+            <>
+              {isOwner && (
+                <div className="text-xs text-muted-foreground">
+                  {academicInfo.share_with_coaches ? "Visible to coaches" : "Private"}
+                </div>
+              )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {academicInfo.gpa && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">GPA</div>
+                    <div className="text-2xl font-bold text-app">{academicInfo.gpa.toFixed(2)}</div>
                   </div>
                 )}
-                <div className="p-4 space-y-2">
-                  {clip.title && (
-                    <h3 className="font-semibold text-app">{clip.title}</h3>
-                  )}
-                  {clip.event_code && (
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {clip.event_code}
+                {academicInfo.sat_score && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">SAT</div>
+                    <div className="text-2xl font-bold text-app">{academicInfo.sat_score}</div>
+                  </div>
+                )}
+                {academicInfo.act_score && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">ACT</div>
+                    <div className="text-2xl font-bold text-app">{academicInfo.act_score}</div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : isOwner ? (
+            <div className="text-sm text-muted-foreground">No academic info added yet</div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {/* Video Clips */}
+      {(clips.length > 0 || isOwner) && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Video Highlights</p>
+              <h2 className="text-2xl font-semibold text-app">Competition Videos</h2>
+            </div>
+            {isOwner && (
+              <VideoClipManager
+                athleteId={profile.id}
+                initialClips={clips}
+                maxClips={5}
+              />
+            )}
+          </div>
+          {clips.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {clips.map((clip: any) => (
+                <div key={clip.id} className="rounded-3xl border border-app bg-card shadow-sm overflow-hidden">
+                  {clip.youtube_id && (
+                    <div className="aspect-video bg-muted relative">
+                      <img
+                        src={`https://img.youtube.com/vi/${clip.youtube_id}/mqdefault.jpg`}
+                        alt={clip.title || "Video thumbnail"}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   )}
-                  <div className="flex items-center justify-between pt-2">
-                    <a
-                      href={clip.youtube_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-semibold text-scarlet hover:underline"
-                    >
-                      Watch on YouTube →
-                    </a>
-                    {viewer && <FlagButton contentType="video" contentId={clip.id} />}
+                  <div className="p-4 space-y-2">
+                    {clip.title && (
+                      <h3 className="font-semibold text-app">{clip.title}</h3>
+                    )}
+                    {clip.event_code && (
+                      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        {clip.event_code}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-2">
+                      <a
+                        href={clip.youtube_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-scarlet hover:underline"
+                      >
+                        Watch on YouTube →
+                      </a>
+                      {viewer && <FlagButton contentType="video" contentId={clip.id} />}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : isOwner ? (
+            <div className="text-sm text-muted-foreground">No video clips added yet</div>
+          ) : null}
         </section>
       )}
 
@@ -759,6 +796,29 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
           </p>
         )}
       </section>
+
+      {/* Contact Info Management - Owner Only */}
+      {isOwner && (
+        <section className="mx-auto max-w-4xl space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Contact Information</p>
+            <h2 className="text-2xl font-semibold text-app">Manage Contact Sharing</h2>
+            <p className="text-sm text-muted">
+              Control what contact information you share with coaches from programs you&apos;re interested in.
+            </p>
+          </div>
+          <div className="rounded-3xl border border-app bg-card px-6 py-6 shadow-sm">
+            <ContactInfoManager
+              athleteId={profile.id}
+              initialData={{
+                email: profile.email,
+                phone: profile.phone,
+                share_contact_info: profile.share_contact_info ?? false,
+              }}
+            />
+          </div>
+        </section>
+      )}
     </div>
   );
 }
