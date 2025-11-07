@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import StarInline from "@/components/StarInline";
 import ImageWithFallback from "@/components/ImageWithFallback";
+import FlagButton from "@/components/FlagButton";
 
 export default async function CoachAthleteDetailPage({
   params,
@@ -91,6 +92,17 @@ export default async function CoachAthleteDetailPage({
 
   const athleteResults = results || [];
 
+  // Get video clips (non-archived, non-flagged)
+  const { data: videoClips } = await supabase
+    .from("athlete_video_clips")
+    .select("*")
+    .eq("athlete_id", profile.id)
+    .eq("is_archived", false)
+    .is("flagged_at", null)
+    .order("display_order", { ascending: true });
+
+  const clips = videoClips || [];
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       {/* Back Button */}
@@ -165,38 +177,36 @@ export default async function CoachAthleteDetailPage({
         </div>
 
         {/* Bio */}
-        {athlete.bio && (
+        {athlete.bio && (athlete.bio_visibility === 'public' || athlete.bio_visibility === 'coaches') && (
           <div className="pt-4 border-t">
-            <h3 className="text-sm font-medium mb-2">Bio</h3>
-            <p className="text-sm text-muted-foreground">{athlete.bio}</p>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium">Bio</h3>
+              <FlagButton contentType="bio" contentId={params.profileId} />
+            </div>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{athlete.bio}</p>
           </div>
         )}
       </div>
 
       {/* Contact Info */}
-      {athlete.share_contact && (
+      {athlete.share_contact && (athlete.email || athlete.phone) && (
         <div className="rounded-lg border border-border bg-card p-6 space-y-3">
           <h2 className="text-xl font-semibold">Contact Information</h2>
           <div className="space-y-2 text-sm">
-            {athlete.share_email && (
+            {athlete.email && (
               <div>
                 <span className="font-medium">Email:</span>{" "}
-                <span className="text-muted-foreground">
-                  Contact available in full version
-                </span>
+                <a href={`mailto:${athlete.email}`} className="text-blue-600 hover:underline">
+                  {athlete.email}
+                </a>
               </div>
             )}
-            {athlete.share_phone && (
+            {athlete.phone && (
               <div>
                 <span className="font-medium">Phone:</span>{" "}
-                <span className="text-muted-foreground">
-                  Contact available in full version
-                </span>
-              </div>
-            )}
-            {!athlete.share_email && !athlete.share_phone && (
-              <div className="text-muted-foreground">
-                Athlete has not shared contact information.
+                <a href={`tel:${athlete.phone}`} className="text-blue-600 hover:underline">
+                  {athlete.phone}
+                </a>
               </div>
             )}
           </div>
@@ -208,6 +218,81 @@ export default async function CoachAthleteDetailPage({
         <div className="rounded-lg border border-border bg-card p-6">
           <h3 className="text-sm font-medium mb-2">Note from Athlete</h3>
           <p className="text-sm text-muted-foreground">{athlete.interest_note}</p>
+        </div>
+      )}
+
+      {/* Academic Info */}
+      {athlete.academic_shared && (athlete.gpa || athlete.sat_score || athlete.act_score) && (
+        <div className="rounded-lg border border-border bg-card p-6 space-y-3">
+          <h2 className="text-xl font-semibold">Academic Information</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {athlete.gpa && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">GPA</div>
+                <div className="text-2xl font-bold">{athlete.gpa.toFixed(2)}</div>
+              </div>
+            )}
+            {athlete.sat_score && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">SAT</div>
+                <div className="text-2xl font-bold">{athlete.sat_score}</div>
+              </div>
+            )}
+            {athlete.act_score && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">ACT</div>
+                <div className="text-2xl font-bold">{athlete.act_score}</div>
+              </div>
+            )}
+          </div>
+          {!athlete.gpa && !athlete.sat_score && !athlete.act_score && (
+            <div className="text-sm text-muted-foreground">
+              Athlete has not provided academic information.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Video Clips */}
+      {clips.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Video Highlights</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {clips.map((clip: any) => (
+              <div key={clip.id} className="rounded-lg border border-border bg-card p-4 space-y-3">
+                {clip.youtube_id && (
+                  <div className="aspect-video rounded overflow-hidden bg-muted">
+                    <img
+                      src={`https://img.youtube.com/vi/${clip.youtube_id}/mqdefault.jpg`}
+                      alt={clip.title || "Video thumbnail"}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  {clip.title && (
+                    <h3 className="font-medium text-sm mb-1">{clip.title}</h3>
+                  )}
+                  {clip.event_code && (
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Event: {clip.event_code}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <a
+                      href={clip.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+                    >
+                      Watch on YouTube →
+                    </a>
+                    <FlagButton contentType="video" contentId={clip.id} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
