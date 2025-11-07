@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SettingsForm from "./SettingsForm";
 import AliasesManager from "./AliasesManager";
@@ -80,6 +81,35 @@ export default async function SettingsPage() {
       </div>
 
       <SettingsForm initial={initial} />
+
+      <div className="mt-8">
+        <Link
+          href="/settings/share-with-coaches"
+          className="block rounded-xl border border-border bg-card p-6 shadow-sm hover:border-app transition-colors"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-app mb-1">Share with Coaches</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage academic info and contact details that coaches can view
+              </p>
+            </div>
+            <svg
+              className="w-5 h-5 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </div>
+        </Link>
+      </div>
 
       <div className="mt-12 border-t pt-8">
         <h2 className="text-xl font-semibold mb-2">Aliases & Nicknames</h2>
