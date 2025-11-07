@@ -1,4 +1,4 @@
-// src/app/(protected)/settings/share-with-coaches/page.tsx
+// src/app/(protected)/me/share-with-coaches/page.tsx
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createSupabaseServer } from "@/lib/supabase/compat";
@@ -19,7 +19,7 @@ export default async function ShareWithCoachesPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?next=/settings/share-with-coaches");
+    redirect("/login?next=/me/share-with-coaches");
   }
 
   // Fetch profile with contact info
@@ -37,10 +37,10 @@ export default async function ShareWithCoachesPage() {
     .maybeSingle();
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold mb-2">Share with Coaches</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold text-app">Share with Coaches</h1>
+        <p className="mt-2 text-sm text-muted">
           Manage what information you share with college coaches. This information
           will never be publicly visible, but can be accessed by coaches when viewing
           your profile in the coach portal.
@@ -49,10 +49,10 @@ export default async function ShareWithCoachesPage() {
 
       <div className="space-y-8">
         {/* Academic Information Section */}
-        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <section className="rounded-xl border border-app bg-card p-6 shadow-sm">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-app mb-1">Academic Information</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted">
               Add your GPA and standardized test scores. Check the box to share with coaches.
             </p>
           </div>
@@ -68,10 +68,10 @@ export default async function ShareWithCoachesPage() {
         </section>
 
         {/* Contact Information Section */}
-        <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <section className="rounded-xl border border-app bg-card p-6 shadow-sm">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-app mb-1">Contact Information</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted">
               Add your email and phone number. Check the box to share with coaches from programs you&apos;re interested in.
             </p>
           </div>
@@ -86,8 +86,8 @@ export default async function ShareWithCoachesPage() {
         </section>
 
         {/* Privacy Notice */}
-        <div className="rounded-lg bg-muted/30 border border-border p-4">
-          <p className="text-xs text-muted-foreground">
+        <div className="rounded-lg bg-muted/30 border border-app p-4">
+          <p className="text-xs text-muted">
             <strong>Privacy Notice:</strong> Your academic and contact information will never be
             publicly visible on your profile page. Only coaches viewing your profile in the coach
             portal will be able to see this information, and only if you&apos;ve opted to share it by
