@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // Get form data
@@ -32,6 +32,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Redirect to portal
-  return NextResponse.redirect(new URL("/coach/portal", request.url));
+  // Return success - client will handle redirect
+  return NextResponse.json({ success: true });
 }

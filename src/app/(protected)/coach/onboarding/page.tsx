@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import ProgramSelector from "@/components/coach/ProgramSelector";
 
 export default async function CoachOnboardingPage() {
   const supabase = createSupabaseServer();
@@ -41,33 +42,7 @@ export default async function CoachOnboardingPage() {
 
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Select Your Program</h2>
-          <div className="space-y-2">
-            {programs && programs.length > 0 ? (
-              programs.map((program) => (
-                <form key={program.id} action="/api/coach/join-program" method="POST">
-                  <input type="hidden" name="program_id" value={program.id} />
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-accent"
-                  >
-                    <div className="font-semibold">{program.name}</div>
-                    {program.division && (
-                      <div className="text-sm text-muted-foreground">{program.division}</div>
-                    )}
-                    {program.location_city && program.location_state && (
-                      <div className="text-sm text-muted-foreground">
-                        {program.location_city}, {program.location_state}
-                      </div>
-                    )}
-                  </button>
-                </form>
-              ))
-            ) : (
-              <div className="rounded-lg border border-border bg-muted p-8 text-center text-muted-foreground">
-                No programs available. Please contact an administrator.
-              </div>
-            )}
-          </div>
+          <ProgramSelector programs={programs || []} />
         </div>
 
         <div className="text-sm text-muted-foreground">
