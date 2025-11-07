@@ -9,6 +9,7 @@ import { getStarTierAccent } from "@/lib/star-theme";
 import { getCurrentGrade, formatGrade } from "@/lib/grade";
 import { formatAthleteMetaTitle, formatAthleteMetaDescription } from "@/lib/seo/utils";
 import AthleteJsonLd from "@/components/seo/AthleteJsonLd";
+import FlagButton from "@/components/FlagButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -276,6 +277,49 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       .maybeSingle();
     isAdmin = !!adminRow;
   }
+
+  // Get academic info (only show if owner or if athlete has shared with coaches and viewer is a coach)
+  const { data: academicInfo } = await supabase
+    .from("athlete_academic_info")
+    .select("gpa, sat_score, act_score, share_with_coaches")
+    .eq("athlete_id", profile.id)
+    .maybeSingle();
+
+  // Check if viewer is a coach with access to this athlete
+  let isCoachWithAccess = false;
+  if (viewer && !isOwner) {
+    const { data: coachAccess } = await supabase
+      .from("program_memberships")
+      .select("program_id")
+      .eq("user_id", viewer.id);
+
+    if (coachAccess && coachAccess.length > 0) {
+      const programIds = coachAccess.map((m) => m.program_id);
+      const { data: interest } = await supabase
+        .from("athlete_college_interests")
+        .select("program_id")
+        .eq("athlete_id", profile.id)
+        .in("program_id", programIds)
+        .maybeSingle();
+
+      isCoachWithAccess = !!interest;
+    }
+  }
+
+  // Show academic info if: owner, or (coach with access and athlete has shared)
+  const showAcademicInfo = isOwner || (isCoachWithAccess && academicInfo?.share_with_coaches);
+
+  // Get video clips (non-archived, non-flagged)
+  const { data: videoClips } = await supabase
+    .from("athlete_video_clips")
+    .select("*")
+    .eq("athlete_id", profile.id)
+    .eq("is_archived", false)
+    .is("flagged_at", null)
+    .order("display_order", { ascending: true });
+
+  const clips = videoClips || [];
+
   const claimHref = `/api/profile/claim?profileId=${encodeURIComponent(
     profile.profile_id || ""
   )}&back=${encodeURIComponent(`/athletes/${profile.profile_id}`)}`;
@@ -466,6 +510,86 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
           <p className="mt-3 whitespace-pre-wrap text-sm text-muted leading-relaxed">{profile.bio}</p>
         </section>
       ) : null}
+
+      {/* Academic Info */}
+      {showAcademicInfo && academicInfo && (academicInfo.gpa || academicInfo.sat_score || academicInfo.act_score) && (
+        <section className="mx-auto max-w-4xl rounded-3xl border border-app bg-card px-6 py-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-app">Academic Information</h2>
+            {isOwner && (
+              <span className="text-xs text-muted-foreground">
+                {academicInfo.share_with_coaches ? "Visible to coaches" : "Private"}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {academicInfo.gpa && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">GPA</div>
+                <div className="text-2xl font-bold text-app">{academicInfo.gpa.toFixed(2)}</div>
+              </div>
+            )}
+            {academicInfo.sat_score && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">SAT</div>
+                <div className="text-2xl font-bold text-app">{academicInfo.sat_score}</div>
+              </div>
+            )}
+            {academicInfo.act_score && (
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">ACT</div>
+                <div className="text-2xl font-bold text-app">{academicInfo.act_score}</div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Video Clips */}
+      {clips.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Video Highlights</p>
+            <h2 className="text-2xl font-semibold text-app">Competition Videos</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {clips.map((clip: any) => (
+              <div key={clip.id} className="rounded-3xl border border-app bg-card shadow-sm overflow-hidden">
+                {clip.youtube_id && (
+                  <div className="aspect-video bg-muted relative">
+                    <img
+                      src={`https://img.youtube.com/vi/${clip.youtube_id}/mqdefault.jpg`}
+                      alt={clip.title || "Video thumbnail"}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="p-4 space-y-2">
+                  {clip.title && (
+                    <h3 className="font-semibold text-app">{clip.title}</h3>
+                  )}
+                  {clip.event_code && (
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      {clip.event_code}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-2">
+                    <a
+                      href={clip.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-semibold text-scarlet hover:underline"
+                    >
+                      Watch on YouTube →
+                    </a>
+                    {viewer && <FlagButton contentType="video" contentId={clip.id} />}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {(!best || best.length === 0) ? (
         <section className="space-y-5">
