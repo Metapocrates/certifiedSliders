@@ -56,12 +56,6 @@ export default async function Header() {
             <Link href="/rankings" className={NAV_LINK_CLASSES}>
               Rankings
             </Link>
-            <Link href="/guides" className={NAV_LINK_CLASSES}>
-              Guides
-            </Link>
-            <Link href="/faq" className={NAV_LINK_CLASSES}>
-              FAQ
-            </Link>
 
             {admin && (
               <>
