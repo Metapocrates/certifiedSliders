@@ -13,6 +13,7 @@ export default function SidebarNav({ profileId }: SidebarNavProps) {
   const navItems = [
     { href: "/me", label: "Dashboard", exact: true },
     { href: "/me/edit", label: "Edit Profile Details" },
+    { href: "/me/share-with-coaches", label: "Share with Coaches" },
     ...(profileId ? [{ href: `/athletes/${profileId}`, label: "View Public Page", external: true }] : []),
     { href: "/me/events", label: "Events To Display" },
   ];

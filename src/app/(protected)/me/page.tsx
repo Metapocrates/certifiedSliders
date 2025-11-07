@@ -224,36 +224,6 @@ type IdentityRow = {
 
       <CollegeInterestsSection interests={collegeInterests} />
 
-      {/* Share with Coaches Section */}
-      <section className="mb-8">
-        <Link
-          href="/me/share-with-coaches"
-          className="block rounded-xl border border-app bg-card p-6 shadow-sm hover:bg-muted/30 transition-colors"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-app mb-1">Share with Coaches</h2>
-              <p className="text-sm text-muted">
-                Manage academic info and contact details that coaches can view
-              </p>
-            </div>
-            <svg
-              className="w-5 h-5 text-muted"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </div>
-        </Link>
-      </section>
-
       {/* Pending */}
       <Section title={`Pending (${pending.length})`}>
         <ResultsTable rows={pending} emptyText="No pending results." />
