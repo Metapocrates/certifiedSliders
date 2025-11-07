@@ -10,10 +10,8 @@ import { getCurrentGrade, formatGrade } from "@/lib/grade";
 import { formatAthleteMetaTitle, formatAthleteMetaDescription } from "@/lib/seo/utils";
 import AthleteJsonLd from "@/components/seo/AthleteJsonLd";
 import FlagButton from "@/components/FlagButton";
-import AcademicInfoEditor from "@/components/profile/AcademicInfoEditor";
 import VideoClipManager from "@/components/profile/VideoClipManager";
 import BioVisibilitySelector from "@/components/profile/BioVisibilitySelector";
-import ContactInfoManager from "@/components/profile/ContactInfoManager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -120,7 +118,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, bio_visibility, email, phone, share_contact_info, gender, claimed_by, star_rating, profile_id"
+      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, bio_visibility, gender, claimed_by, star_rating, profile_id"
     )
     .eq("profile_id", profileId)
     .maybeSingle();
@@ -281,37 +279,6 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       .maybeSingle();
     isAdmin = !!adminRow;
   }
-
-  // Get academic info (only show if owner or if athlete has shared with coaches and viewer is a coach)
-  const { data: academicInfo } = await supabase
-    .from("athlete_academic_info")
-    .select("gpa, sat_score, act_score, share_with_coaches")
-    .eq("athlete_id", profile.id)
-    .maybeSingle();
-
-  // Check if viewer is a coach with access to this athlete
-  let isCoachWithAccess = false;
-  if (viewer && !isOwner) {
-    const { data: coachAccess } = await supabase
-      .from("program_memberships")
-      .select("program_id")
-      .eq("user_id", viewer.id);
-
-    if (coachAccess && coachAccess.length > 0) {
-      const programIds = coachAccess.map((m) => m.program_id);
-      const { data: interest } = await supabase
-        .from("athlete_college_interests")
-        .select("program_id")
-        .eq("athlete_id", profile.id)
-        .in("program_id", programIds)
-        .maybeSingle();
-
-      isCoachWithAccess = !!interest;
-    }
-  }
-
-  // Show academic info if: owner, or (coach with access and athlete has shared)
-  const showAcademicInfo = isOwner || (isCoachWithAccess && academicInfo?.share_with_coaches);
 
   // Get video clips (non-archived, non-flagged)
   const { data: videoClips } = await supabase
@@ -520,52 +487,6 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
             )}
           </div>
           <p className="whitespace-pre-wrap text-sm text-muted leading-relaxed">{profile.bio}</p>
-        </section>
-      ) : null}
-
-      {/* Academic Info */}
-      {(showAcademicInfo && academicInfo && (academicInfo.gpa || academicInfo.sat_score || academicInfo.act_score)) || isOwner ? (
-        <section className="mx-auto max-w-4xl rounded-3xl border border-app bg-card px-6 py-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-app">Academic Information</h2>
-            {isOwner && (
-              <AcademicInfoEditor
-                athleteId={profile.id}
-                initialData={academicInfo || undefined}
-              />
-            )}
-          </div>
-          {academicInfo && (academicInfo.gpa || academicInfo.sat_score || academicInfo.act_score) ? (
-            <>
-              {isOwner && (
-                <div className="text-xs text-muted-foreground">
-                  {academicInfo.share_with_coaches ? "Visible to coaches" : "Private"}
-                </div>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {academicInfo.gpa && (
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">GPA</div>
-                    <div className="text-2xl font-bold text-app">{academicInfo.gpa.toFixed(2)}</div>
-                  </div>
-                )}
-                {academicInfo.sat_score && (
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">SAT</div>
-                    <div className="text-2xl font-bold text-app">{academicInfo.sat_score}</div>
-                  </div>
-                )}
-                {academicInfo.act_score && (
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">ACT</div>
-                    <div className="text-2xl font-bold text-app">{academicInfo.act_score}</div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : isOwner ? (
-            <div className="text-sm text-muted-foreground">No academic info added yet</div>
-          ) : null}
         </section>
       ) : null}
 
@@ -796,29 +717,6 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
           </p>
         )}
       </section>
-
-      {/* Contact Info Management - Owner Only */}
-      {isOwner && (
-        <section className="mx-auto max-w-4xl space-y-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-muted">Contact Information</p>
-            <h2 className="text-2xl font-semibold text-app">Manage Contact Sharing</h2>
-            <p className="text-sm text-muted">
-              Control what contact information you share with coaches from programs you&apos;re interested in.
-            </p>
-          </div>
-          <div className="rounded-3xl border border-app bg-card px-6 py-6 shadow-sm">
-            <ContactInfoManager
-              athleteId={profile.id}
-              initialData={{
-                email: profile.email,
-                phone: profile.phone,
-                share_contact_info: profile.share_contact_info ?? false,
-              }}
-            />
-          </div>
-        </section>
-      )}
     </div>
   );
 }
