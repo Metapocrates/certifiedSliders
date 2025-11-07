@@ -11,22 +11,6 @@ export default async function CoachLayout({ children }: { children: React.ReactN
     redirect("/login?next=/coach/portal");
   }
 
-  // Check if user has any program memberships
-  const { data: memberships, error } = await supabase
-    .from("program_memberships")
-    .select("id, program_id")
-    .eq("user_id", user.id)
-    .limit(1);
-
-  if (error) {
-    console.error("Error checking program memberships:", error);
-    redirect("/");
-  }
-
-  // If no program memberships, redirect to onboarding
-  if (!memberships || memberships.length === 0) {
-    redirect("/coach/onboarding");
-  }
-
+  // Note: Membership check moved to portal layout to avoid redirect loop with onboarding
   return <>{children}</>;
 }
