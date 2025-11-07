@@ -8,6 +8,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getStarTierAccent } from "@/lib/star-theme";
 import { getCurrentGrade, formatGrade } from "@/lib/grade";
 import { formatAthleteMetaTitle, formatAthleteMetaDescription } from "@/lib/seo/utils";
+import AthleteJsonLd from "@/components/seo/AthleteJsonLd";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -317,6 +318,19 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
 
   return (
     <div className="space-y-12 px-4 pb-16 pt-10 sm:px-6 lg:px-8">
+      <AthleteJsonLd
+        name={profile.full_name || profile.username || profileId}
+        profileId={profileId}
+        classYear={profile.class_year}
+        school={profile.school_name}
+        schoolState={profile.school_state}
+        gender={profile.gender}
+        bio={profile.bio}
+        profilePicUrl={profile.profile_pic_url}
+        starRating={profile.star_rating}
+        primaryEvent={topHighlight?.event}
+        primaryEventMark={topHighlightMark}
+      />
       {toast ? <Toast kind={toast.kind} msg={toast.msg} /> : null}
 
       <section

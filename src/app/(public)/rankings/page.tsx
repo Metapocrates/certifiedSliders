@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { formatGrade } from "@/lib/grade";
 import { shouldIndex, getCanonicalUrl, formatRankingsMetaTitle, formatRankingsMetaDescription } from "@/lib/seo/utils";
+import RankingsJsonLd from "@/components/seo/RankingsJsonLd";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -180,8 +181,25 @@ export default async function RankingsPage({ searchParams }: PageProps) {
   }
 
   // Step 5: render
+  const athletesForJsonLd = rows.slice(0, 50).map((row) => {
+    const prof = profMap.get(row.athlete_id);
+    return {
+      name: prof?.full_name || prof?.username || "Athlete",
+      profileId: prof?.profile_id || "",
+      mark: fmtTime(row.best_seconds_adj, row.best_mark_text),
+      classYear: prof?.class_year,
+      school: prof?.school_name,
+    };
+  });
+
   return (
     <div className="container py-8">
+      <RankingsJsonLd
+        event={eventFilter || "Track & Field"}
+        year={classYearFilter}
+        gender={genderFilter || null}
+        athletes={athletesForJsonLd}
+      />
       <h1 className="mb-4 text-2xl font-semibold">Rankings</h1>
 
       {/* Filters (GET form, SSR-friendly) */}
