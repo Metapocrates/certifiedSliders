@@ -2,6 +2,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import SiteHeader from "@/components/SiteHeader";
+import Footer from "@/components/Footer";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Providers from "@/components/Providers";
 import AuthListener from "@/components/AuthListener";
@@ -65,12 +66,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-app text-app">
+      <body className="min-h-screen bg-app text-app flex flex-col">
         <Providers>
           <AuthListener />
           <SiteHeader />
           <div className="border-b-4 border-accent" />
-          <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
+          <main className="flex-1 mx-auto max-w-6xl px-4 py-10 w-full">{children}</main>
+          <Footer />
         </Providers>
       </body>
     </html>
