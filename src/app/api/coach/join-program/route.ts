@@ -32,6 +32,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Return success - client will handle redirect
-  return NextResponse.json({ success: true });
+  // Compute initial verification score (auto-check email domain)
+  const { data: verification, error: verifyError } = await supabase.rpc(
+    "rpc_update_coach_verification",
+    {
+      _user_id: user.id,
+      _program_id: programId,
+    }
+  );
+
+  if (verifyError) {
+    console.error("Error computing verification score:", verifyError);
+    // Don't fail the join, just log the error
+  }
+
+  // Return success with verification info - client will handle redirect
+  return NextResponse.json({
+    success: true,
+    verification: verification?.[0] || null
+  });
 }

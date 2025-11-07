@@ -45,6 +45,18 @@ export default async function CoachPortalPage({
     redirect("/coach/portal");
   }
 
+  // Get verification status for active program
+  const { data: verificationData } = await supabase.rpc(
+    "rpc_get_coach_verification_status",
+    {
+      _user_id: user.id,
+      _program_id: activeMembership.program_id,
+    }
+  );
+
+  const verification = verificationData?.[0] || null;
+  const tier = verification?.tier ?? 0;
+
   // Parse filters
   const classYear = searchParams?.classYear ? parseInt(searchParams.classYear, 10) : undefined;
   const event = searchParams?.event || undefined;
@@ -82,8 +94,38 @@ export default async function CoachPortalPage({
 
   const activeProgram = programs.find((p) => p.id === activeMembership.program_id);
 
+  // Tier info for display
+  const TIER_INFO = {
+    0: { name: "Limited Access", color: "text-gray-600", bgColor: "bg-gray-100" },
+    1: { name: "Verified Coach", color: "text-blue-600", bgColor: "bg-blue-100" },
+    2: { name: "Coordinator", color: "text-purple-600", bgColor: "bg-purple-100" },
+  } as const;
+
+  const tierInfo = TIER_INFO[tier as keyof typeof TIER_INFO] || TIER_INFO[0];
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
+      {/* Verification Prompt for Tier 0 */}
+      {tier === 0 && (
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 text-2xl">⚠️</div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-yellow-900">Limited Access</h3>
+              <p className="text-sm text-yellow-800 mt-1">
+                Your account has limited access. Verify your affiliation to unlock full features including athlete contact information.
+              </p>
+              <a
+                href="/coach/verify"
+                className="inline-block mt-3 rounded-md bg-yellow-900 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-800"
+              >
+                Verify My Account
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold">Coach Portal</h1>
@@ -118,7 +160,17 @@ export default async function CoachPortalPage({
       {/* Active Program Display */}
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="text-sm font-medium text-muted-foreground">Viewing</div>
-        <div className="text-lg font-semibold">{activeProgram?.name}</div>
+        <div className="flex items-center gap-3">
+          <div className="text-lg font-semibold">{activeProgram?.name}</div>
+          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${tierInfo.color} ${tierInfo.bgColor}`}>
+            {tierInfo.name}
+          </span>
+        </div>
+        {verification && (
+          <div className="mt-2 text-sm text-muted-foreground">
+            Verification Score: {verification.score}/100
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -138,20 +190,34 @@ export default async function CoachPortalPage({
           {athletesList.length} athlete{athletesList.length !== 1 ? "s" : ""} found
         </div>
         <div className="flex gap-2">
-          <form action="/api/coach/export-csv" method="POST">
-            <input type="hidden" name="program_id" value={activeMembership.program_id} />
-            <input type="hidden" name="class_year" value={classYear || ""} />
-            <input type="hidden" name="event" value={event || ""} />
-            <input type="hidden" name="state" value={state || ""} />
-            <input type="hidden" name="verified" value={verified ? "true" : "false"} />
-            <input type="hidden" name="search" value={search || ""} />
-            <button
-              type="submit"
-              className="rounded-md px-4 py-2 bg-black text-app text-sm"
-            >
-              Export CSV
-            </button>
-          </form>
+          {tier === 0 ? (
+            <div className="relative group">
+              <button
+                disabled
+                className="rounded-md px-4 py-2 bg-gray-300 text-gray-500 text-sm cursor-not-allowed"
+              >
+                Export CSV
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-64 rounded-md bg-gray-900 text-white text-xs p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                CSV export requires verification. Please verify your account to unlock this feature.
+              </div>
+            </div>
+          ) : (
+            <form action="/api/coach/export-csv" method="POST">
+              <input type="hidden" name="program_id" value={activeMembership.program_id} />
+              <input type="hidden" name="class_year" value={classYear || ""} />
+              <input type="hidden" name="event" value={event || ""} />
+              <input type="hidden" name="state" value={state || ""} />
+              <input type="hidden" name="verified" value={verified ? "true" : "false"} />
+              <input type="hidden" name="search" value={search || ""} />
+              <button
+                type="submit"
+                className="rounded-md px-4 py-2 bg-black text-app text-sm"
+              >
+                Export CSV
+              </button>
+            </form>
+          )}
         </div>
       </div>
 
