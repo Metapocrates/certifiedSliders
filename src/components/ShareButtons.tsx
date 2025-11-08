@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type ShareButtonsProps = {
   url: string;
@@ -12,6 +12,12 @@ type ShareButtonsProps = {
 export default function ShareButtons({ url, title, description, hashtags = [] }: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
   const [shareError, setShareError] = useState(false);
+  const [hasNativeShare, setHasNativeShare] = useState(false);
+
+  useEffect(() => {
+    // Check if Web Share API is available (client-side only)
+    setHasNativeShare(typeof navigator !== 'undefined' && !!navigator.share);
+  }, []);
 
   const fullUrl = url.startsWith("http") ? url : `${process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || "https://certifiedsliders.vercel.app"}${url}`;
   const hashtagString = hashtags.length > 0 ? hashtags.map((h) => `#${h}`).join(" ") : "";
@@ -49,9 +55,6 @@ export default function ShareButtons({ url, title, description, hashtags = [] }:
       setTimeout(() => setShareError(false), 3000);
     }
   };
-
-  // Check if Web Share API is available
-  const hasNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
 
   return (
     <div className="space-y-3">
