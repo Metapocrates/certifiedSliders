@@ -131,7 +131,7 @@ export default function EventCard({
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Share this result</p>
           <ShareButtons
             url={`/athletes/${profileId}`}
-            title={`I just ran ${mark} in the ${event}${meetName ? ` at ${meetName}` : ''}!`}
+            title={`I just posted ${mark} in the ${event}${meetName ? ` at ${meetName}` : ''}!`}
             description={starRating && starRating >= 3 ? `${"⭐".repeat(starRating)} performance` : undefined}
             hashtags={["CertifiedSliders", "TrackAndField", event.replace(/\s+/g, "")]}
           />
