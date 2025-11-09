@@ -4,6 +4,7 @@ import BlogList from "@/components/home/BlogList";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SafeLink from "@/components/SafeLink";
 import Image from "next/image";
+import ActivityFeed from "@/components/ActivityFeed";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -177,6 +178,18 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {user && (
+        <section className="mx-auto max-w-6xl space-y-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+              Your Activity Feed
+            </p>
+            <h2 className="text-2xl font-semibold text-app">Latest from athletes you follow</h2>
+          </div>
+          <ActivityFeed />
+        </section>
+      )}
 
       <section className="mx-auto grid max-w-6xl gap-4 md:grid-cols-3">
         {spotlightCards.map((card) => (

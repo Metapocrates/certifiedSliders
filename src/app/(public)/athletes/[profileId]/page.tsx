@@ -13,6 +13,7 @@ import FlagButton from "@/components/FlagButton";
 import VideoClipManager from "@/components/profile/VideoClipManager";
 import BioVisibilitySelector from "@/components/profile/BioVisibilitySelector";
 import SocialMediaLinks from "@/components/profile/SocialMediaLinks";
+import FollowButton from "@/components/profile/FollowButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -449,6 +450,11 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                 </a>
               ) : null}
             </div>
+            <FollowButton
+              athleteId={profile.id}
+              athleteName={profile.full_name || profile.username || profileId}
+              currentUserId={viewer?.id}
+            />
             {primaryIdentity ? (
               <div className="space-y-2 rounded-2xl border border-white/20 bg-white/10 p-4 text-xs text-white/80 shadow-lg">
                 <div className="flex items-center justify-between">
