@@ -8,7 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 const nav = [
   { href: '/me', label: 'My Profile' },
   { href: '/submit-result', label: 'Submit Result' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/me/edit', label: 'Edit Profile' },
 ];
 
 export default function SideNav() {

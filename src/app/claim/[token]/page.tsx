@@ -28,19 +28,19 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
         if (res.ok && data?.ok) {
           setState({ status: "success" });
           setTimeout(() => {
-            window.location.href = "/settings?claimed=1";
+            window.location.href = "/me/edit?claimed=1";
           }, 1500);
         } else {
           setState({
             status: "error",
-            message: data?.error ?? "We couldn't verify that link. Generate a fresh link from Settings and try again.",
+            message: data?.error ?? "We couldn't verify that link. Generate a fresh link from Edit Profile and try again.",
           });
         }
       } catch (err: any) {
         if (cancelled) return;
         setState({
           status: "error",
-          message: err?.message ?? "Unexpected error. Generate a fresh link from Settings and try again.",
+          message: err?.message ?? "Unexpected error. Generate a fresh link from Edit Profile and try again.",
         });
       }
     }
@@ -56,7 +56,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
       <div>
         <h1 className="text-3xl font-semibold text-app">Verifying Athletic.net link…</h1>
         <p className="mt-2 text-sm text-muted">
-          Keep this tab open. We’ll redirect you back to your Certified Sliders settings once verification completes.
+          Keep this tab open. We'll redirect you back to your profile editor once verification completes.
         </p>
       </div>
 
@@ -68,7 +68,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
         )}
         {state.status === "success" && (
           <p className="text-sm font-semibold text-green-600">
-            Verified! Redirecting you back to your settings…
+            Verified! Redirecting you back to your profile editor…
           </p>
         )}
         {state.status === "error" && (
@@ -93,7 +93,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
             Verify now
           </button>
           <p className="text-xs text-muted">
-            If you see an error, go back to Certified Sliders &gt; Settings &gt; Athletic.net profiles and generate a new claim link.
+            If you see an error, go back to Certified Sliders &gt; Edit Profile &gt; Athletic.net profiles and generate a new claim link.
           </p>
         </form>
       </div>

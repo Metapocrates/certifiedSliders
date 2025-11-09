@@ -407,7 +407,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   />
                 ) : isOwner ? (
                   <a
-                    href="/settings#social-media"
+                    href="/me/edit#social-media"
                     className="inline-flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white transition"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,7 +435,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
             <div className="flex flex-wrap gap-2">
               {isOwner ? (
                 <a
-                  href="/settings"
+                  href="/me/edit"
                   className="inline-flex h-11 items-center justify-center rounded-full border border-white/30 px-5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:border-white hover:bg-white/10"
                 >
                   Edit profile

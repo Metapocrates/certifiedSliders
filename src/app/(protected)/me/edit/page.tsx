@@ -5,6 +5,7 @@ import Image from "next/image";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import SettingsForm from "../../settings/SettingsForm";
 import AliasesManager from "../../settings/AliasesManager";
+import SocialMediaEditor from "@/components/profile/SocialMediaEditor";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,7 +27,7 @@ export default async function EditProfilePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, class_year, class_year_locked_at, school_name, school_state, profile_pic_url, bio, gender"
+      "id, username, full_name, class_year, class_year_locked_at, school_name, school_state, profile_pic_url, bio, gender, instagram_url, twitter_url, tiktok_url, youtube_url"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -82,6 +83,17 @@ export default async function EditProfilePage() {
       </div>
 
       <SettingsForm initial={initial} />
+
+      <div id="social-media" className="mt-12 border-t border-app pt-8">
+        <SocialMediaEditor
+          initialData={{
+            instagram_url: profile?.instagram_url ?? null,
+            twitter_url: profile?.twitter_url ?? null,
+            tiktok_url: profile?.tiktok_url ?? null,
+            youtube_url: profile?.youtube_url ?? null,
+          }}
+        />
+      </div>
 
       <div className="mt-12 border-t border-app pt-8">
         <h2 className="text-xl font-semibold text-app mb-2">Aliases & Nicknames</h2>
