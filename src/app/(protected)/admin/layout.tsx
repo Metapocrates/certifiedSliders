@@ -32,6 +32,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: "/admin/featured", label: "Featured Profiles" },
     { href: "/admin/profiles", label: "Profile Management" },
     { href: "/admin/videos", label: "Video Moderation" },
+    { href: "/admin/admins", label: "Admin Management" },
     { href: "/admin/blog", label: "Blog" },
   ];
 
