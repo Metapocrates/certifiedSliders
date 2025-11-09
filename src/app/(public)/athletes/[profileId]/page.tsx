@@ -12,6 +12,7 @@ import AthleteJsonLd from "@/components/seo/AthleteJsonLd";
 import FlagButton from "@/components/FlagButton";
 import VideoClipManager from "@/components/profile/VideoClipManager";
 import BioVisibilitySelector from "@/components/profile/BioVisibilitySelector";
+import SocialMediaLinks from "@/components/profile/SocialMediaLinks";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -118,7 +119,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, bio_visibility, gender, claimed_by, star_rating, profile_id"
+      "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, bio_visibility, gender, claimed_by, star_rating, profile_id, instagram_url, twitter_url, tiktok_url, youtube_url"
     )
     .eq("profile_id", profileId)
     .maybeSingle();
@@ -396,6 +397,13 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                     </>
                   ) : null}
                 </div>
+                <SocialMediaLinks
+                  instagramUrl={profile.instagram_url}
+                  twitterUrl={profile.twitter_url}
+                  tiktokUrl={profile.tiktok_url}
+                  youtubeUrl={profile.youtube_url}
+                  size="md"
+                />
                 <div className="flex flex-wrap gap-2 text-xs text-white/70">
                   <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
                   {best?.length ?? 0} verified events
