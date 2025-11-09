@@ -11,7 +11,7 @@ const ProfileSchema = z.object({
         .min(3, "Username must be at least 3 characters")
         .max(32, "Username too long")
         .regex(/^[a-z0-9-_]+$/i, "Letters, numbers, dashes and underscores only"),
-    full_name: z.string().trim().min(1, "Full name is required").max(100),
+    // full_name is now readonly - synced from Athletic.net, not user-editable
     class_year: z.string().trim().regex(/^\d{4}$/, "Enter a 4-digit year like 2028"),
     school_name: z.string().trim().max(120).optional().or(z.literal("")),
     school_state: z.string().trim().max(10).optional().or(z.literal("")),
@@ -38,7 +38,7 @@ export async function updateProfileAction(
 
     const raw = {
         username: (formData.get("username") as string | null) ?? "",
-        full_name: (formData.get("full_name") as string | null) ?? "",
+        // full_name is intentionally excluded - it's readonly and synced from Athletic.net
         class_year: (formData.get("class_year") as string | null) ?? "",
         school_name: (formData.get("school_name") as string | null) ?? "",
         school_state: (formData.get("school_state") as string | null) ?? "",
@@ -92,13 +92,14 @@ export async function updateProfileAction(
     }
 
     // ✅ RLS-safe UPSERT (includes id and scopes update to own row)
+    // Note: full_name is NOT updated here - it's locked and synced from Athletic.net
     const { error } = await supabase
         .from("profiles")
         .upsert(
             {
                 id: user.id, // satisfies with_check(id = auth.uid())
                 username: values.username,
-                full_name: values.full_name,
+                // full_name excluded - readonly field
                 class_year: Number(values.class_year),
                 school_name: schoolName,
                 school_state: schoolState,

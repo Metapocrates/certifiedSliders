@@ -241,6 +241,16 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
   const primaryIdentity = verifiedIdentities.find((row) => row.isPrimary) ?? verifiedIdentities[0];
   const secondaryIdentities = verifiedIdentities.filter((row) => row !== primaryIdentity);
 
+  // Fetch public aliases/nicknames
+  const { data: aliasesData } = await supabase
+    .from("athlete_aliases")
+    .select("alias")
+    .eq("athlete_id", profile.id)
+    .eq("is_public", true)
+    .order("created_at", { ascending: true });
+
+  const publicAliases = (aliasesData ?? []).map((row) => row.alias);
+
   // Fetch event preferences for organizing featured vs other events
   const { data: eventPreferences } = await supabase
     .from("athlete_event_preferences")
@@ -377,6 +387,11 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                   <h1 className="text-3xl font-semibold leading-tight sm:text-4xl">
                     {profile.full_name ?? profile.username}
                   </h1>
+                  {publicAliases.length > 0 && (
+                    <p className="text-sm text-white/70 italic">
+                      Also known as: {publicAliases.join(", ")}
+                    </p>
+                  )}
                   {accentBadgeLabel ? (
                     <span
                       className={`inline-flex items-center gap-2 rounded-full border px-4 py-1 text-[10px] font-semibold uppercase tracking-[0.4em] ${accent?.badgeContainerClass ?? "bg-white/20 border-white/40"} ${accent?.badgeTextClass ?? "text-white"}`}
