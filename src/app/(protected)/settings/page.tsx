@@ -82,7 +82,7 @@ export default async function SettingsPage() {
 
       <SettingsForm initial={initial} />
 
-      <div className="mt-12 border-t pt-8">
+      <div id="social-media" className="mt-12 border-t pt-8">
         <SocialMediaEditor
           initialData={{
             instagram_url: profile?.instagram_url ?? null,

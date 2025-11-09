@@ -397,13 +397,25 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
                     </>
                   ) : null}
                 </div>
-                <SocialMediaLinks
-                  instagramUrl={profile.instagram_url}
-                  twitterUrl={profile.twitter_url}
-                  tiktokUrl={profile.tiktok_url}
-                  youtubeUrl={profile.youtube_url}
-                  size="md"
-                />
+                {profile.instagram_url || profile.twitter_url || profile.tiktok_url || profile.youtube_url ? (
+                  <SocialMediaLinks
+                    instagramUrl={profile.instagram_url}
+                    twitterUrl={profile.twitter_url}
+                    tiktokUrl={profile.tiktok_url}
+                    youtubeUrl={profile.youtube_url}
+                    size="md"
+                  />
+                ) : isOwner ? (
+                  <a
+                    href="/settings#social-media"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-white/80 hover:text-white transition"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add social media links
+                  </a>
+                ) : null}
                 <div className="flex flex-wrap gap-2 text-xs text-white/70">
                   <span className="rounded-full bg-white/15 px-3 py-1 font-semibold">
                   {best?.length ?? 0} verified events
