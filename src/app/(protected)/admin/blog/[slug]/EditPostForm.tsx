@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updatePost, deletePost } from "./actions";
+import ImageUploader from "@/components/blog/ImageUploader";
+import ImageGallery from "@/components/blog/ImageGallery";
 
 type Post = {
   slug: string;
@@ -22,6 +24,8 @@ export default function EditPostForm({ initial }: { initial: Post }) {
   const [msg, setMsg] = useState<string>("");
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDelete] = useTransition();
+  const [coverImageUrl, setCoverImageUrl] = useState(initial.cover_image_url ?? "");
+  const [showGallery, setShowGallery] = useState(false);
   const defaultAuthorMode = initial.author_override ? "team" : "self";
 
   async function doDelete() {
@@ -86,16 +90,22 @@ export default function EditPostForm({ initial }: { initial: Post }) {
         <span className="text-xs text-muted">Shown on lists. Max 300 chars.</span>
       </label>
 
-      <label className="grid gap-1">
-        <span className="text-sm font-medium">Cover image URL</span>
-        <input
-          name="cover_image_url"
-          defaultValue={initial.cover_image_url ?? ""}
-          className="input"
-          type="url"
-          placeholder="https://..."
+      <div className="space-y-2">
+        <ImageUploader
+          label="Cover Image (optional)"
+          currentImageUrl={coverImageUrl}
+          onImageUploaded={setCoverImageUrl}
+          helperText="Recommended: 1200x630px for social sharing"
         />
-      </label>
+        <input type="hidden" name="cover_image_url" value={coverImageUrl} />
+        <button
+          type="button"
+          onClick={() => setShowGallery(true)}
+          className="text-sm font-semibold text-scarlet hover:underline"
+        >
+          Or choose from gallery
+        </button>
+      </div>
 
       <label className="grid gap-1">
         <span className="text-sm font-medium">Tags (comma separated)</span>
@@ -171,6 +181,16 @@ export default function EditPostForm({ initial }: { initial: Post }) {
       </div>
 
       {msg && <div className="text-sm mt-1">{msg}</div>}
+
+      {showGallery && (
+        <ImageGallery
+          onSelectImage={(url) => {
+            setCoverImageUrl(url);
+            setShowGallery(false);
+          }}
+          onClose={() => setShowGallery(false)}
+        />
+      )}
     </form>
   );
 }
