@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, DragEvent } from 'react';
+import { useState, useRef, type DragEvent } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 

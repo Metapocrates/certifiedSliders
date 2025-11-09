@@ -50,22 +50,25 @@ export async function GET(req: NextRequest) {
     // For now, we'll just show results
 
     // Transform results into activity items
-    const activities = (results || []).map(result => ({
-      id: result.id,
-      type: 'result' as const,
-      athleteId: result.athlete_id,
-      athleteName: result.profiles.full_name || result.profiles.username,
-      athleteProfileId: result.profiles.profile_id,
-      athleteProfilePic: result.profiles.profile_pic_url,
-      timestamp: result.created_at,
-      data: {
-        event: result.event,
-        mark: result.mark,
-        meetName: result.meet_name,
-        meetDate: result.meet_date,
-        season: result.season,
-      },
-    }));
+    const activities = (results || []).map(result => {
+      const profile = Array.isArray(result.profiles) ? result.profiles[0] : result.profiles;
+      return {
+        id: result.id,
+        type: 'result' as const,
+        athleteId: result.athlete_id,
+        athleteName: profile?.full_name || profile?.username || 'Unknown',
+        athleteProfileId: profile?.profile_id || null,
+        athleteProfilePic: profile?.profile_pic_url || null,
+        timestamp: result.created_at,
+        data: {
+          event: result.event,
+          mark: result.mark,
+          meetName: result.meet_name,
+          meetDate: result.meet_date,
+          season: result.season,
+        },
+      };
+    });
 
     // Sort by timestamp
     activities.sort((a, b) =>

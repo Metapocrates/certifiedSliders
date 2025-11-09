@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseAdmin } from '@/lib/supabase/admin';
-import { supabaseServer } from '@/lib/supabase/server';
-
-export const runtime = 'edge';
+import { createSupabaseServer } from '@/lib/supabase/compat';
 
 /**
  * POST /api/admin/videos/moderate
@@ -10,15 +8,23 @@ export const runtime = 'edge';
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = supabaseServer();
+    const supabase = createSupabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // TODO: Add admin role check
-    // For now, assume authenticated users in /admin routes are admins
+    // Check admin status
+    const { data: adminRecord } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!adminRecord) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const body = await req.json();
     const { id, status } = body;

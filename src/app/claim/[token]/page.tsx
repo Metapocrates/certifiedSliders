@@ -56,7 +56,7 @@ export default function ClaimPage({ params }: { params: { token: string } }) {
       <div>
         <h1 className="text-3xl font-semibold text-app">Verifying Athletic.net link…</h1>
         <p className="mt-2 text-sm text-muted">
-          Keep this tab open. We'll redirect you back to your profile editor once verification completes.
+          Keep this tab open. We&apos;ll redirect you back to your profile editor once verification completes.
         </p>
       </div>
 

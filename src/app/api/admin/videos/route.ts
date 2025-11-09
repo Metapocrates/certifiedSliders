@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase/server';
-
-export const runtime = 'edge';
+import { createSupabaseServer } from '@/lib/supabase/compat';
 
 /**
  * GET /api/admin/videos
@@ -9,15 +7,23 @@ export const runtime = 'edge';
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = supabaseServer();
+    const supabase = createSupabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // TODO: Add admin role check
-    // For now, assume authenticated users in /admin routes are admins
+    // Check admin status
+    const { data: adminRecord } = await supabase
+      .from('admins')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!adminRecord) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status');
