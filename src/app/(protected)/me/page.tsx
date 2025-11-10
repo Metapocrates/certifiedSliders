@@ -8,6 +8,7 @@ import CollegeInterestsSection from "./college-interests/CollegeInterestsSection
 import type { CollegeInterest } from "./college-interests/CollegeInterestsSection";
 import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
+import MyVideos from "@/components/videos/MyVideos";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -223,6 +224,8 @@ type IdentityRow = {
       <LinkedProfilesSection identities={linkedIdentities} />
 
       <CollegeInterestsSection interests={collegeInterests} />
+
+      <MyVideos />
 
       {/* Pending */}
       <Section title={`Pending (${pending.length})`}>

@@ -6,7 +6,6 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import SettingsForm from "../../settings/SettingsForm";
 import AliasesManager from "../../settings/AliasesManager";
 import SocialMediaEditor from "@/components/profile/SocialMediaEditor";
-import VideoUploader from "@/components/videos/VideoUploader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -94,14 +93,6 @@ export default async function EditProfilePage() {
             youtube_url: profile?.youtube_url ?? null,
           }}
         />
-      </div>
-
-      <div id="videos" className="mt-12 border-t border-app pt-8">
-        <h2 className="text-xl font-semibold text-app mb-2">Highlight Videos</h2>
-        <p className="text-sm text-muted mb-6">
-          Upload your best performances to showcase on your profile. Videos are reviewed before being published.
-        </p>
-        <VideoUploader />
       </div>
 
       <div className="mt-12 border-t border-app pt-8">
