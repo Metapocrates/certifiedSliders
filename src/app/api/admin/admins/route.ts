@@ -42,10 +42,6 @@ export async function GET(req: NextRequest) {
           full_name,
           email,
           username
-        ),
-        granter:granted_by (
-          full_name,
-          email
         )
       `)
       .order('granted_at', { ascending: false });
