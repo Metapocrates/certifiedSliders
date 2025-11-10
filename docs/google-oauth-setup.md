@@ -54,6 +54,8 @@ https://sczxkekhouglmvjoukdb.supabase.co/auth/v1/callback
   - `certifiedsliders.com`
   - `supabase.co`
 
+**Note**: Privacy Policy and Terms of Service pages are now available at the URLs above.
+
 #### Scopes
 
 Add these scopes:
