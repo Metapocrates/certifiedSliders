@@ -16,7 +16,6 @@ export default function SignInPage() {
   // password mode
   const [emailPw, setEmailPw] = useState("");
   const [password, setPassword] = useState("");
-  const [isSignup, setIsSignup] = useState(false);
   const [pendingPw, setPendingPw] = useState(false);
   const [pendingGoogle, setPendingGoogle] = useState(false);
 
@@ -63,32 +62,16 @@ export default function SignInPage() {
     setErr(null);
     setPendingPw(true);
     try {
-      if (isSignup) {
-        const { data, error } = await supabaseBrowser.auth.signUp({
-          email: emailPw,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/me` },
-        });
-        if (error) throw error;
+      // Sign in only (signup redirects to /register)
+      const { error } = await supabaseBrowser.auth.signInWithPassword({
+        email: emailPw,
+        password,
+      });
 
-        // If confirmations ON: no session until email confirmed
-        if (!data.session) {
-          alert("Check your email to confirm your account, then sign in.");
-          return;
-        }
-        router.push("/me");
-        router.refresh();
-      } else {
-        const { error } = await supabaseBrowser.auth.signInWithPassword({
-          email: emailPw,
-          password,
-        });
-
-        if (error) throw error;
-        await fetch("/auth/callback", { method: "POST" });
-        router.push("/me");
-        router.refresh();
-      }
+      if (error) throw error;
+      await fetch("/auth/callback", { method: "POST" });
+      router.push("/me");
+      router.refresh();
     } catch (e: any) {
       setErr(e?.message ?? "Sign-in failed.");
     } finally {
@@ -172,17 +155,13 @@ export default function SignInPage() {
           {/* Sign in / Sign up */}
           <form onSubmit={onSubmitPassword} className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-medium">
-                {isSignup ? "Create account" : "Sign in"}
-              </h2>
-              <label className="text-sm flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={isSignup}
-                  onChange={(e) => setIsSignup(e.target.checked)}
-                />
-                New here?
-              </label>
+              <h2 className="text-lg font-medium">Sign in</h2>
+              <a
+                href="/register"
+                className="text-sm text-scarlet hover:underline font-semibold"
+              >
+                New here? Create account →
+              </a>
             </div>
 
             <div>
@@ -203,7 +182,7 @@ export default function SignInPage() {
               <input
                 type="password"
                 required
-                autoComplete={isSignup ? "new-password" : "current-password"}
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full border rounded-md px-3 py-2"
@@ -215,7 +194,7 @@ export default function SignInPage() {
               disabled={pendingPw}
               className="rounded-md px-4 py-2 bg-black text-app w-full"
             >
-              {pendingPw ? "Working…" : isSignup ? "Create account" : "Sign in"}
+              {pendingPw ? "Working…" : "Sign in"}
             </button>
 
             <div className="text-right">

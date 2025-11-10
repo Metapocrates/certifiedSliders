@@ -51,15 +51,10 @@ export default function LoginPage() {
     try {
       const supabase = supabaseBrowser();
 
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMsg("Signed up. You are now logged in.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        setMsg("Signed in.");
-      }
+      // Sign in only (signup redirects to /register)
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      setMsg("Signed in.");
 
       // Refresh session indicator
       const { data } = await supabase.auth.getUser();
@@ -234,7 +229,12 @@ export default function LoginPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMode("signup")}
+                    onClick={() => {
+                      // Redirect to registration page with user type selection
+                      const nextParam = new URLSearchParams(window.location.search).get("next");
+                      const url = nextParam ? `/register?next=${encodeURIComponent(nextParam)}` : '/register';
+                      router.push(url);
+                    }}
                     className={`flex-1 rounded-full px-4 py-1.5 transition ${mode === "signup"
                       ? "bg-card text-app shadow-sm"
                       : "text-muted"
@@ -263,7 +263,7 @@ export default function LoginPage() {
                   <label className="block text-sm font-medium text-app">Password</label>
                   <input
                     type="password"
-                    autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full rounded-2xl border border-app bg-card px-4 py-3 text-app shadow-sm outline-none focus:border-scarlet focus:ring-2 focus:ring-scarlet/40"
@@ -278,7 +278,7 @@ export default function LoginPage() {
                   className="btn h-12 w-full rounded-full text-base font-semibold disabled:opacity-60"
                   disabled={busy}
                 >
-                  {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
+                  {busy ? "Working…" : "Sign in"}
                 </button>
 
                 <div className="flex items-center justify-between text-sm text-muted">
