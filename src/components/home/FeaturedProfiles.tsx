@@ -19,25 +19,62 @@ type ProfileCard = {
 };
 
 export default async function FeaturedProfiles({
-    limit = 6,
+    limit = 10,
 }: {
     limit?: number;
 }) {
     const supabase = createSupabaseServer();
 
-    // Pick standout athletes: 3★+ with avatar, recent first, then highest stars.
-    const { data } = await supabase
+    // Step 1: Get manually featured athletes (featured=true, 3-5 stars)
+    const { data: manuallyFeatured } = await supabase
         .from("profiles")
         .select(
             "id, username, full_name, star_rating, class_year, school_name, school_state, profile_pic_url"
         )
+        .eq("featured", true)
         .not("profile_pic_url", "is", null)
         .gte("star_rating", 3)
-        .order("updated_at", { ascending: false, nullsFirst: false })
-        .order("star_rating", { ascending: false, nullsFirst: false })
-        .limit(limit);
+        .lte("star_rating", 5)
+        .order("star_rating", { ascending: false, nullsFirst: false });
 
-    const rows: ProfileCard[] = (data ?? []) as ProfileCard[];
+    const manualCount = manuallyFeatured?.length ?? 0;
+    const remainingSlots = Math.max(0, limit - manualCount);
+
+    let rows: ProfileCard[] = [...(manuallyFeatured ?? [])];
+
+    // Step 2: If we need more, get random athletes from 3-5 star pool
+    if (remainingSlots > 0) {
+        const manualIds = (manuallyFeatured ?? []).map((p) => p.id);
+
+        // Get a pool of candidates and shuffle client-side (simpler than RPC)
+        const { data: candidatePool } = await supabase
+            .from("profiles")
+            .select(
+                "id, username, full_name, star_rating, class_year, school_name, school_state, profile_pic_url"
+            )
+            .or("featured.is.null,featured.eq.false")
+            .not("profile_pic_url", "is", null)
+            .gte("star_rating", 3)
+            .lte("star_rating", 5)
+            .limit(50); // Get a pool to randomize from
+
+        if (candidatePool && candidatePool.length > 0) {
+            // Filter out manually featured IDs
+            const filtered = candidatePool.filter(p => !manualIds.includes(p.id));
+
+            // Shuffle array using Fisher-Yates algorithm
+            const shuffled = [...filtered];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            // Take only what we need
+            rows.push(...shuffled.slice(0, remainingSlots));
+        }
+    }
+
+    rows = rows as ProfileCard[];
 
     if (!rows.length) {
         return (
