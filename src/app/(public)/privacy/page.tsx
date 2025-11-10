@@ -9,7 +9,7 @@ export default function PrivacyPage() {
   return (
     <main className="container mx-auto px-4 py-12 max-w-4xl">
       <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
-      <p className="text-sm text-muted mb-8">Last updated: [Date]</p>
+      <p className="text-sm text-muted mb-8">Last updated: November 10, 2024</p>
       <p className="text-lg mb-8">
         At Certified Sliders (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;) we respect your privacy and are committed to protecting your personal information. This Privacy Policy describes how we collect, use, share, store and protect your personal information when you use our Service.
       </p>
@@ -83,7 +83,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-3">7. Children and Athletes</h2>
           <p>
-            If you are a parent or guardian of an athlete under [age threshold] (as applicable by jurisdiction), you must provide consent for the athlete&apos;s account. We do not knowingly collect personal data from children under [age] without parental consent. If you believe we have collected data from a child without consent, contact us for deletion.
+            If you are a parent or guardian of an athlete under 13 (as applicable by jurisdiction), you must provide consent for the athlete&apos;s account. We do not knowingly collect personal data from children under 13 without parental consent. If you believe we have collected data from a child without consent, contact us for deletion.
           </p>
         </section>
 
@@ -112,10 +112,9 @@ export default function PrivacyPage() {
           <h2 className="text-2xl font-semibold mb-3">11. Contact Us</h2>
           <p className="mb-2">If you have questions, requests or concerns regarding this Privacy Policy or your data, please contact us at:</p>
           <div className="pl-4">
-            <p>[Your Company Name]</p>
-            <p>[Address]</p>
-            <p>[Email address]</p>
-            <p>[Phone number] (optional)</p>
+            <p>Metapocrates Corporation</p>
+            <p>2450 Park Road, Emerald Hills, CA</p>
+            <p>Email: <a href="mailto:support@certifiedsliders.com" className="text-scarlet hover:underline">support@certifiedsliders.com</a></p>
           </div>
         </section>
       </div>

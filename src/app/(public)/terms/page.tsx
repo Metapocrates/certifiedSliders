@@ -9,14 +9,14 @@ export default function TermsPage() {
   return (
     <main className="container mx-auto px-4 py-12 max-w-4xl">
       <h1 className="text-4xl font-bold mb-2">Terms of Service</h1>
-      <p className="text-sm text-muted mb-8">Last updated: [Date]</p>
+      <p className="text-sm text-muted mb-8">Last updated: November 10, 2024</p>
       <p className="text-lg mb-8">Please read carefully.</p>
 
       <div className="prose prose-slate max-w-none space-y-6">
         <section>
           <h2 className="text-2xl font-semibold mb-3">1. Introduction</h2>
           <p>
-            Welcome to Certified Sliders (the &ldquo;Service&rdquo;), operated by [Your Company Name], a [State of Incorporation] corporation (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By accessing or using the Service (including the website, mobile apps, or other interfaces) you (&ldquo;you&rdquo;, &ldquo;your&rdquo;, &ldquo;User&rdquo;) agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, do not use the Service.
+            Welcome to Certified Sliders (the &ldquo;Service&rdquo;), operated by Metapocrates Corporation, a Delaware corporation (&ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By accessing or using the Service (including the website, mobile apps, or other interfaces) you (&ldquo;you&rdquo;, &ldquo;your&rdquo;, &ldquo;User&rdquo;) agree to be bound by these Terms of Service (&ldquo;Terms&rdquo;). If you do not agree, do not use the Service.
           </p>
         </section>
 
@@ -110,8 +110,8 @@ export default function TermsPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-3">11. Governing Law and Dispute Resolution</h2>
           <ul className="list-disc pl-6 space-y-1">
-            <li>These Terms shall be governed by the laws of [State/Country], without regard to its conflict of laws rules.</li>
-            <li>Any dispute arising under or relating to these Terms will be resolved by binding arbitration in [City/State], or small-claims court if applicable.</li>
+            <li>These Terms shall be governed by the laws of California, without regard to its conflict of laws rules.</li>
+            <li>Any dispute arising under or relating to these Terms will be resolved by binding arbitration in Redwood City, CA, or small-claims court if applicable.</li>
             <li>If any provision of these Terms is found invalid or unenforceable, that provision shall be enforced to the maximum extent permitted and the remaining provisions shall remain in full force.</li>
           </ul>
         </section>
