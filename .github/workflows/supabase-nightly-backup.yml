@@ -10,39 +10,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install pg_dump
+      - name: Install tools (pg_dump + DNS utils)
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-client dnsutils
 
       - name: Make timestamp
         id: ts
         run: echo "stamp=$(date -u +'%Y-%m-%dT%H-%M-%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Dump database (force IPv4)
+      - name: Dump database (prefer IPv4, with fallback)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -eu
 
-          # Extract hostname from DSN
-          HOST="$(printf '%s\n' "$SUPABASE_DB_URL" | sed -E 's|.*@([^:/?]+).*|\1|')"
-
-          # Resolve first IPv4 for host
-          IPV4="$(getent ahostsv4 "$HOST" | awk 'NR==1{print $1}')"
-          if [ -z "$IPV4" ]; then
-            echo "Failed to resolve IPv4 for $HOST"
+          # 0) Basic sanity
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "Missing SUPABASE_DB_URL secret"
             exit 1
           fi
-          echo "Resolved $HOST to $IPV4 (IPv4)"
 
-          # Append hostaddr so libpq uses IPv4 directly
-          # Note: DSN already has ?sslmode=require; append with &
-          PG_DSN="${SUPABASE_DB_URL}&hostaddr=${IPV4}&connect_timeout=10"
+          # 1) Extract hostname from DSN
+          HOST="$(printf '%s\n' "$SUPABASE_DB_URL" | sed -E 's|.*@([^:/?]+).*|\1|')"
+          if [ -z "$HOST" ]; then
+            echo "Could not parse host from DSN"
+            exit 1
+          fi
+          echo "Target host: $HOST"
+
+          # 2) Try to resolve an IPv4 using dig
+          IPV4="$(dig +short A "$HOST" | head -n1 || true)"
+
+          # 3) Fallback: getent ahostsv4
+          if [ -z "$IPV4" ]; then
+            echo "dig returned no A record, trying getent..."
+            IPV4="$(getent ahostsv4 "$HOST" | awk 'NR==1{print $1}' || true)"
+          fi
+
+          # 4) Build connection string
+          if [ -n "$IPV4" ]; then
+            echo "Resolved IPv4: $IPV4"
+            PG_DSN="${SUPABASE_DB_URL}&hostaddr=${IPV4}&connect_timeout=10"
+          else
+            echo "WARNING: Could not resolve IPv4; proceeding without hostaddr (letting libpq choose)."
+            PG_DSN="${SUPABASE_DB_URL}&connect_timeout=10"
+          fi
 
           mkdir -p backup
-          pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 \
-            -f "backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
+          OUT="backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
+          echo "Starting pg_dump to $OUT ..."
+          pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 -f "$OUT"
+          echo "pg_dump completed."
 
       - name: Upload artifact (7-day retention)
         uses: actions/upload-artifact@v4
