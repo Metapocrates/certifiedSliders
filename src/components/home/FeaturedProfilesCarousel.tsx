@@ -166,7 +166,7 @@ export default async function FeaturedProfilesCarousel() {
                 <div className="-mx-4 overflow-x-auto px-4 py-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400" style={{ scrollSnapType: 'x mandatory', scrollPaddingLeft: '1rem' }}>
                     <ul className="flex gap-5" style={{ scrollSnapAlign: 'start' }}>
                     {cards.map((c) => {
-                        const href = c.username ? `/athletes/${c.username}` : undefined;
+                        const href = `/athletes/${c.id}`;
                         const subtitleParts = [
                             c.school_name
                                 ? `${c.school_name}${c.school_state ? `, ${c.school_state}` : ""}`

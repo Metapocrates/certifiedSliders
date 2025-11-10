@@ -87,7 +87,7 @@ export default async function FeaturedProfiles({
         return (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {rows.map((p) => {
-                const href = p.username ? `/athletes/${p.username}` : undefined;
+                const href = `/athletes/${p.id}`;
                 const accent = getStarTierAccent(p.star_rating ?? null);
                 const hasAccent = Boolean(accent);
                 const starRating = p.star_rating ?? 0;
