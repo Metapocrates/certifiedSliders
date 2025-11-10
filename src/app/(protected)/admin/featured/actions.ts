@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createSupabaseServer } from '@/lib/supabase/compat';
 import { getSessionUser } from '@/lib/auth';
 
@@ -29,7 +30,7 @@ export async function setFeaturedAction(formData: FormData) {
         return { ok: false, error: 'Admin required' };
     }
 
-    // Update profile; DB constraint enforces 3–5★ requirement
+    // Update profile featured status
     const { error } = await supabase
         .from('profiles')
         .update({ featured })
@@ -38,6 +39,10 @@ export async function setFeaturedAction(formData: FormData) {
     if (error) {
         return { ok: false, error: error.message };
     }
+
+    // Revalidate both the admin page and homepage
+    revalidatePath('/admin/featured');
+    revalidatePath('/');
 
     return { ok: true };
 }

@@ -1,7 +1,7 @@
 // src/app/(protected)/admin/featured/page.tsx
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
-import { setFeaturedAction } from "./actions";
+import FeaturedForm from "./FeaturedForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -60,14 +60,13 @@ export default async function FeaturedAdminPage() {
     );
   }
 
-  // 3–5★ candidates only (DB policy should also enforce)
+  // All athletes available to feature (homepage will filter to 3-5 stars for display)
   const { data: candidates, error } = await supabase
     .from("profiles")
     .select("id, username, full_name, star_rating, featured")
-    .gte("star_rating", 3)
-    .order("star_rating", { ascending: false })
+    .order("star_rating", { ascending: false, nullsFirst: false })
     .order("username", { ascending: true })
-    .limit(200);
+    .limit(500);
 
   return (
     <div className="container py-8 space-y-6">
@@ -81,10 +80,14 @@ export default async function FeaturedAdminPage() {
         </Link>
       </div>
 
-      <p className="text-sm text-gray-600">
-        Only athletes with <strong>3–5★</strong> can be marked as Featured. The database
-        enforces this rule.
-      </p>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <p className="font-medium mb-1">How featuring works:</p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>You can mark <strong>any athlete</strong> as featured here</li>
+          <li>The homepage carousel will show: manually featured athletes + random selection from 3-5 stars</li>
+          <li>Only 3-5 star athletes appear on the homepage (even if lower-rated athletes are marked featured)</li>
+        </ul>
+      </div>
 
       {error ? (
         <div className="rounded-lg border px-3 py-2 text-sm text-red-700 bg-red-50">
@@ -92,35 +95,7 @@ export default async function FeaturedAdminPage() {
         </div>
       ) : null}
 
-      <form action={setFeaturedAction} className="rounded-lg border p-4 space-y-3 bg-white">
-        <div>
-          <label className="block text-sm font-medium mb-1">Athlete</label>
-          <select name="athleteId" className="w-full rounded-md border px-3 py-2 text-sm" required>
-            <option value="">— Select athlete —</option>
-            {(candidates as Candidate[] | null)?.map((p) => (
-              <option key={p.id} value={p.id}>
-                {(p.username || "no-username")} • {(p.full_name || "No name")} • {(p.star_rating ?? 0)}★ • currently:{" "}
-                {p.featured ? "Featured" : "Not featured"}
-              </option>
-            )) || null}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Featured status</label>
-          <select name="featured" className="w-full rounded-md border px-3 py-2 text-sm" defaultValue="false">
-            <option value="false">Not featured</option>
-            <option value="true">Featured</option>
-          </select>
-        </div>
-
-        <button
-          className="rounded-md bg-black text-white px-3 py-2 text-sm hover:opacity-90"
-          type="submit"
-        >
-          Save
-        </button>
-      </form>
+      <FeaturedForm candidates={(candidates as Candidate[] | null) ?? []} />
 
       <div className="rounded-lg border">
         <div className="flex items-center justify-between border-b px-4 py-3">
@@ -150,7 +125,7 @@ async function FeaturedList() {
     .from("profiles")
     .select("id, username, full_name, star_rating")
     .eq("featured", true)
-    .order("star_rating", { ascending: false })
+    .order("star_rating", { ascending: false, nullsFirst: false })
     .order("username", { ascending: true })
     .limit(100);
 
