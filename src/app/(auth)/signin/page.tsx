@@ -17,7 +17,6 @@ export default function SignInPage() {
   const [emailPw, setEmailPw] = useState("");
   const [password, setPassword] = useState("");
   const [pendingPw, setPendingPw] = useState(false);
-  const [pendingGoogle, setPendingGoogle] = useState(false);
 
   // magic link mode
   const [emailMagic, setEmailMagic] = useState("");
@@ -37,24 +36,8 @@ export default function SignInPage() {
   }
 
   async function onGoogleSignIn() {
-    setErr(null);
-    setPendingGoogle(true);
-    try {
-      const origin =
-        process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
-      const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${origin}/auth/callback?next=/me`,
-        },
-      });
-      if (error) throw error;
-      if (data?.url) window.location.assign(data.url);
-    } catch (e: any) {
-      setErr(e?.message ?? "Couldn’t start Google sign-in.");
-    } finally {
-      setPendingGoogle(false);
-    }
+    // Redirect to registration page for user type selection
+    router.push('/register');
   }
 
   async function onSubmitPassword(e: React.FormEvent) {
@@ -122,11 +105,13 @@ export default function SignInPage() {
         <button
           type="button"
           onClick={onGoogleSignIn}
-          disabled={pendingGoogle}
-          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm transition hover:bg-gray-50"
         >
-          {pendingGoogle ? "Redirecting…" : "Continue with Google"}
+          Sign up with Google
         </button>
+        <p className="text-xs text-center text-gray-500 -mt-2">
+          New users: Select your account type on the next page
+        </p>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <span className="h-px flex-1 bg-gray-300" aria-hidden="true" />
           <span>or</span>

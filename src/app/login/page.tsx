@@ -12,10 +12,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string>("");
-  const [oauthErr, setOauthErr] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [who, setWho] = useState<{ id: string; email: string | null } | null>(null);
-  const [pendingGoogle, setPendingGoogle] = useState(false);
 
   async function syncServerSession(sb: ReturnType<typeof supabaseBrowser>) {
     try {
@@ -45,7 +43,6 @@ export default function LoginPage() {
     e.preventDefault();
     if (busy) return; // guard against double-fire
     setMsg("");
-    setOauthErr("");
     setBusy(true);
 
     try {
@@ -76,27 +73,10 @@ export default function LoginPage() {
 
   async function handleGoogle(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
-    if (pendingGoogle || busy) return;
-    setOauthErr("");
-    setMsg("");
-    setPendingGoogle(true);
-    try {
-      const supabase = supabaseBrowser();
-      const origin =
-        process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${origin}/auth/callback?next=/me`,
-        },
-      });
-      if (error) throw error;
-      if (data?.url) window.location.assign(data.url);
-    } catch (err: any) {
-      setOauthErr(err?.message || "Could not start Google sign-in.");
-    } finally {
-      setPendingGoogle(false);
-    }
+    // Redirect to registration page for user type selection
+    const nextParam = new URLSearchParams(window.location.search).get("next");
+    const url = nextParam ? `/register?next=${encodeURIComponent(nextParam)}` : '/register';
+    router.push(url);
   }
 
   async function handleSignOut() {
@@ -193,17 +173,17 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleGoogle}
-                disabled={pendingGoogle || busy}
+                disabled={busy}
                 className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-app bg-card text-sm font-semibold text-app transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
                   <span className="text-sm font-bold text-[#4285F4]">G</span>
                 </span>
-                {pendingGoogle ? "Redirecting…" : "Continue with Google"}
+                Sign up with Google
               </button>
-              {oauthErr ? (
-                <p className="text-sm text-scarlet">{oauthErr}</p>
-              ) : null}
+              <p className="text-xs text-center text-muted -mt-2">
+                New users: Select your account type on the next page
+              </p>
 
               <div className="relative">
                 <span className="block h-px w-full bg-muted" />
