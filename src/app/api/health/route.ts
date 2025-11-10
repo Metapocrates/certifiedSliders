@@ -4,6 +4,7 @@ export const revalidate = 0;
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getEnvironment, SITE_URL, IS_PROD, IS_STAGING, IS_LOCAL } from "@/lib/env";
 
 
 export async function GET() {
@@ -20,5 +21,16 @@ export async function GET() {
             .limit(1);
         if (e) error = e.message; else dbOk = true;
     }
-    return NextResponse.json({ envOk, dbOk, error }, { status: envOk ? 200 : 500 });
+
+    return NextResponse.json({
+        envOk,
+        dbOk,
+        error,
+        environment: getEnvironment(),
+        siteUrl: SITE_URL || 'not set',
+        isProd: IS_PROD,
+        isStaging: IS_STAGING,
+        isLocal: IS_LOCAL,
+        supabaseUrl: url ? url.substring(0, 30) + '...' : 'not set',
+    }, { status: envOk ? 200 : 500 });
 }
