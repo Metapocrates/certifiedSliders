@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createSupabaseServer } from '@/lib/supabase/compat';
 import { getSessionUser } from '@/lib/auth';
 
-export async function setFeaturedAction(formData: FormData) {
+export async function setFeaturedAction(prevState: any, formData: FormData) {
     const athleteId = String(formData.get('athleteId') || '');
     const featured = formData.get('featured') === 'true';
 

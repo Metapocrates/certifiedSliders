@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useFormState, useFormStatus } from "react-dom";
 import { setFeaturedAction } from "./actions";
 
 type Candidate = {
@@ -12,51 +11,31 @@ type Candidate = {
   featured: boolean | null;
 };
 
-export default function FeaturedForm({ candidates }: { candidates: Candidate[] }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setMessage(null);
-
-    const formData = new FormData(e.currentTarget);
-    const athleteId = formData.get("athleteId") as string;
-    const featured = formData.get("featured") as string;
-
-    if (!athleteId) {
-      setMessage({ type: "error", text: "Please select an athlete" });
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await setFeaturedAction(formData);
-
-      if (result.ok) {
-        setMessage({
-          type: "success",
-          text: `Successfully ${featured === "true" ? "featured" : "unfeatured"} athlete`
-        });
-        // Reset form
-        e.currentTarget.reset();
-        // Refresh to show updated list
-        router.refresh();
-      } else {
-        setMessage({ type: "error", text: result.error || "Failed to update" });
-      }
-    });
-  }
+function SubmitButton() {
+  const { pending } = useFormStatus();
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-lg border p-4 space-y-3 bg-white">
+    <button
+      className="rounded-md bg-black text-white px-3 py-2 text-sm hover:opacity-90 disabled:opacity-50"
+      type="submit"
+      disabled={pending}
+    >
+      {pending ? "Saving..." : "Save"}
+    </button>
+  );
+}
+
+export default function FeaturedForm({ candidates }: { candidates: Candidate[] }) {
+  const [state, formAction] = useFormState(setFeaturedAction, { ok: false });
+
+  return (
+    <form action={formAction} className="rounded-lg border p-4 space-y-3 bg-white">
       <div>
         <label className="block text-sm font-medium mb-1">Athlete</label>
         <select
           name="athleteId"
           className="w-full rounded-md border px-3 py-2 text-sm"
           required
-          disabled={isPending}
         >
           <option value="">— Select athlete —</option>
           {candidates.map((p) => (
@@ -74,32 +53,25 @@ export default function FeaturedForm({ candidates }: { candidates: Candidate[] }
           name="featured"
           className="w-full rounded-md border px-3 py-2 text-sm"
           defaultValue="false"
-          disabled={isPending}
         >
           <option value="false">Not featured</option>
           <option value="true">Featured</option>
         </select>
       </div>
 
-      {message && (
-        <div
-          className={`rounded-lg border px-3 py-2 text-sm ${
-            message.type === "success"
-              ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-              : "text-red-700 bg-red-50 border-red-200"
-          }`}
-        >
-          {message.text}
+      {state.ok && (
+        <div className="rounded-lg border border-emerald-200 px-3 py-2 text-sm text-emerald-700 bg-emerald-50">
+          Successfully updated!
         </div>
       )}
 
-      <button
-        className="rounded-md bg-black text-white px-3 py-2 text-sm hover:opacity-90 disabled:opacity-50"
-        type="submit"
-        disabled={isPending}
-      >
-        {isPending ? "Saving..." : "Save"}
-      </button>
+      {state.error && (
+        <div className="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 bg-red-50">
+          {state.error}
+        </div>
+      )}
+
+      <SubmitButton />
     </form>
   );
 }
