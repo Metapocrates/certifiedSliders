@@ -55,11 +55,28 @@ export default function SubmitResultURLPage() {
   // ToS gate
   const [tosAccepted, setTosAccepted] = useState<boolean | null>(null); // null = loading
   const [showTosModal, setShowTosModal] = useState(false);
+  const [canSubmit, setCanSubmit] = useState<boolean | null>(null); // null = checking
 
-  // Check ToS acceptance on mount
+  // Check user type and ToS acceptance on mount
   useEffect(() => {
     (async () => {
       try {
+        // Check if user type allows result submission (athletes and parents only)
+        const userTypeRes = await fetch("/api/profile/can-submit-results");
+        if (userTypeRes.ok) {
+          const userTypeData = await userTypeRes.json();
+          setCanSubmit(userTypeData.canSubmit);
+          if (!userTypeData.canSubmit) {
+            setErr("Only athletes and parents can submit results. If you believe this is an error, please contact support.");
+            return; // Don't check ToS if user can't submit
+          }
+        } else {
+          setCanSubmit(false);
+          setErr("Unable to verify your account type. Please try again later.");
+          return;
+        }
+
+        // Check ToS acceptance
         const res = await fetch("/api/tos/accept?action_type=submit_result");
         if (res.ok) {
           const data = await res.json();
@@ -72,9 +89,10 @@ export default function SubmitResultURLPage() {
           setShowTosModal(true);
         }
       } catch (error) {
-        console.error("Failed to check ToS acceptance:", error);
+        console.error("Failed to check permissions:", error);
         setTosAccepted(false);
-        setShowTosModal(true);
+        setCanSubmit(false);
+        setErr("Unable to verify your permissions. Please try again later.");
       }
     })();
   }, []);
@@ -241,8 +259,9 @@ export default function SubmitResultURLPage() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             required
+            disabled={canSubmit === false}
           />
-          <button type="submit" className="btn" disabled={loading}>
+          <button type="submit" className="btn" disabled={loading || canSubmit === false}>
             {loading ? "Parsing…" : "Parse"}
           </button>
         </div>
@@ -259,6 +278,7 @@ export default function SubmitResultURLPage() {
             placeholder="<!doctype html>…"
             value={html}
             onChange={(e) => setHtml(e.target.value)}
+            disabled={canSubmit === false}
           />
         </details>
       </form>
@@ -457,7 +477,7 @@ export default function SubmitResultURLPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-          <button className="btn" onClick={handleConfirm}>
+          <button className="btn" onClick={handleConfirm} disabled={canSubmit === false}>
             Confirm & Submit
           </button>
           <span className="text-xs text-gray-500">

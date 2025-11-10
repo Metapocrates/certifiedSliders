@@ -25,6 +25,12 @@ export default async function CoachPortalPage({
     redirect("/login?next=/coach/portal");
   }
 
+  // Check user type - only NCAA coaches can access coach portal
+  const { data: canAccess } = await supabase.rpc("can_access_coach_portal");
+  if (!canAccess) {
+    redirect("/me"); // Redirect to dashboard with error message
+  }
+
   // Get user's program memberships
   const { data: memberships } = await supabase
     .from("program_memberships")

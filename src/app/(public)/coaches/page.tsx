@@ -15,10 +15,10 @@ export default function CoachesLanding() {
         </p>
         <div className="mt-6">
           <a
-            href="/login?next=/coach/portal"
+            href="/register?type=ncaa_coach"
             className="inline-flex rounded-xl px-5 py-3 bg-scarlet text-white font-semibold hover:bg-scarlet/90 transition"
           >
-            Verify & Join
+            Get Started
           </a>
         </div>
       </section>
@@ -106,13 +106,13 @@ export default function CoachesLanding() {
 
       <section className="mt-16 text-center">
         <a
-          href="/login?next=/coach/portal"
+          href="/register?type=ncaa_coach"
           className="inline-flex rounded-xl px-5 py-3 bg-scarlet text-white font-semibold hover:bg-scarlet/90 transition"
         >
           Get Started
         </a>
         <p className="text-sm text-muted mt-4">
-          Already have an account? <a href="/login" className="text-scarlet hover:underline">Sign in</a>
+          Already have an account? <a href="/login?next=/coach/portal" className="text-scarlet hover:underline">Sign in</a>
         </p>
       </section>
     </main>
