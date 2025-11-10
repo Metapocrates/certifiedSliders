@@ -2,7 +2,7 @@ name: Supabase Nightly Backup
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # 09:00 UTC nightly (1am PT / 2am PDT)
+    - cron: "0 9 * * *"   # 09:00 UTC (1am PT / 2am PDT)
   workflow_dispatch:
 
 jobs:
@@ -10,52 +10,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install tools (pg_dump + DNS utils)
+      - name: Install pg_dump
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client dnsutils
+          sudo apt-get install -y postgresql-client
 
       - name: Make timestamp
         id: ts
         run: echo "stamp=$(date -u +'%Y-%m-%dT%H-%M-%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Dump database (prefer IPv4, with fallback)
+      - name: Dump database (force IPv4; robust DSN)
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # e.g. postgresql://postgres:ENCODED_PW@db.<ref>.supabase.co:5432/postgres
+          SUPABASE_DB_IPV4: ${{ secrets.SUPABASE_DB_IPV4 }} # e.g. 3.151.29.56
         run: |
           set -eu
 
-          # 0) Basic sanity
-          if [ -z "${SUPABASE_DB_URL:-}" ]; then
-            echo "Missing SUPABASE_DB_URL secret"
+          if [ -z "${SUPABASE_DB_URL:-}" ] || [ -z "${SUPABASE_DB_IPV4:-}" ]; then
+            echo "Missing SUPABASE_DB_URL or SUPABASE_DB_IPV4 secrets"
             exit 1
           fi
 
-          # 1) Extract hostname from DSN
-          HOST="$(printf '%s\n' "$SUPABASE_DB_URL" | sed -E 's|.*@([^:/?]+).*|\1|')"
-          if [ -z "$HOST" ]; then
-            echo "Could not parse host from DSN"
-            exit 1
-          fi
-          echo "Target host: $HOST"
-
-          # 2) Try to resolve an IPv4 using dig
-          IPV4="$(dig +short A "$HOST" | head -n1 || true)"
-
-          # 3) Fallback: getent ahostsv4
-          if [ -z "$IPV4" ]; then
-            echo "dig returned no A record, trying getent..."
-            IPV4="$(getent ahostsv4 "$HOST" | awk 'NR==1{print $1}' || true)"
-          fi
-
-          # 4) Build connection string
-          if [ -n "$IPV4" ]; then
-            echo "Resolved IPv4: $IPV4"
-            PG_DSN="${SUPABASE_DB_URL}&hostaddr=${IPV4}&connect_timeout=10"
+          # Decide whether to append with ? or &
+          if [[ "$SUPABASE_DB_URL" == *"?"* ]]; then
+            SEP="&"
           else
-            echo "WARNING: Could not resolve IPv4; proceeding without hostaddr (letting libpq choose)."
-            PG_DSN="${SUPABASE_DB_URL}&connect_timeout=10"
+            SEP="?"
           fi
+
+          EXTRA="hostaddr=${SUPABASE_DB_IPV4}&connect_timeout=10"
+          # Ensure sslmode is present (required)
+          if [[ "$SUPABASE_DB_URL" != *"sslmode="* ]]; then
+            EXTRA="${EXTRA}&sslmode=require"
+          fi
+
+          PG_DSN="${SUPABASE_DB_URL}${SEP}${EXTRA}"
 
           mkdir -p backup
           OUT="backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
