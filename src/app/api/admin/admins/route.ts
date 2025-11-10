@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
         granted_by,
         profiles:user_id (
           full_name,
-          email,
           username
         )
       `)
@@ -51,7 +50,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ admins: admins || [] });
+    // Fetch emails from auth.users for each admin
+    const adminsWithEmails = await Promise.all(
+      (admins || []).map(async (admin) => {
+        const { data: { user: authUser } } = await adminSupabase.auth.admin.getUserById(admin.user_id);
+        return {
+          ...admin,
+          profiles: admin.profiles ? {
+            ...admin.profiles,
+            email: authUser?.email || null,
+          } : null,
+        };
+      })
+    );
+
+    return NextResponse.json({ admins: adminsWithEmails });
   } catch (error) {
     console.error('Admin listing failed:', error);
     return NextResponse.json(
@@ -95,20 +108,29 @@ export async function POST(req: NextRequest) {
     // Use admin client to find user by email
     const adminSupabase = createSupabaseAdmin();
 
-    // First, find the user by email in profiles table
-    const { data: profile, error: profileError } = await adminSupabase
-      .from('profiles')
-      .select('id, email, full_name')
-      .eq('email', email.toLowerCase().trim())
-      .maybeSingle();
+    // Find the user by email in auth.users
+    const { data: { users }, error: listError } = await adminSupabase.auth.admin.listUsers();
 
-    if (profileError) {
-      console.error('Error finding user:', profileError);
+    if (listError) {
+      console.error('Error listing users:', listError);
       return NextResponse.json({ error: 'Error finding user' }, { status: 500 });
     }
 
-    if (!profile) {
+    const authUser = users?.find(u => u.email?.toLowerCase() === email.toLowerCase().trim());
+
+    if (!authUser) {
       return NextResponse.json({ error: 'User not found with that email' }, { status: 404 });
+    }
+
+    // Get profile info
+    const { data: profile } = await adminSupabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('id', authUser.id)
+      .maybeSingle();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
     }
 
     // Check if already admin
@@ -140,7 +162,7 @@ export async function POST(req: NextRequest) {
       ok: true,
       admin: {
         user_id: profile.id,
-        email: profile.email,
+        email: authUser.email,
         full_name: profile.full_name,
       },
     });
