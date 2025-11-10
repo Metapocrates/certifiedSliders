@@ -250,7 +250,7 @@ export default function VideoUploader({ onUploadComplete }: VideoUploaderProps) 
       <div>
         <h3 className="text-lg font-semibold text-app">Upload Highlight Video</h3>
         <p className="mt-1 text-sm text-muted">
-          Share your best performances. Videos are reviewed before being published.
+          Share your best performances. All videos are reviewed and will be published at the sole discretion of Certified Sliders, subject to quality and content standards.
         </p>
       </div>
 
