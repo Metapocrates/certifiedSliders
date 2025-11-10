@@ -113,15 +113,12 @@ export default function RegisterPage() {
       const supabase = supabaseBrowser();
       const origin = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
 
-      // Store selected type in localStorage to retrieve after OAuth callback
-      localStorage.setItem("pending_user_type", selectedType);
-
       const redirectPath = selectedType === "ncaa_coach" ? "/coach/onboarding" : "/me";
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/auth/callback?next=${redirectPath}`,
+          redirectTo: `${origin}/auth/callback?next=${redirectPath}&pending_type=${selectedType}`,
         },
       });
 

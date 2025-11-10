@@ -293,7 +293,7 @@ export default function AdminRatingsPage() {
           {isPending ? "Saving…" : star === 0 ? "Remove Rating" : `Assign ${star}★`}
         </button>
         {maxEligible < 3 && username && star > 0 ? (
-          <p className="text-xs text-amber-700 mt-1">Selected athlete isn't eligible for a star rating yet.</p>
+          <p className="text-xs text-amber-700 mt-1">Selected athlete isn&apos;t eligible for a star rating yet.</p>
         ) : null}
       </form>
 

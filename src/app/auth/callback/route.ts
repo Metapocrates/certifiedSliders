@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
     const next = url.searchParams.get("next") ?? "/me";
+    const pendingType = url.searchParams.get("pending_type");
 
     if (!code) {
         // No code provided — drop back to sign-in with an error hint
@@ -18,10 +19,23 @@ export async function GET(req: Request) {
     }
 
     const supabase = createSupabaseServer();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
         const redirect = new URL(`/signin?error=${encodeURIComponent(error.message)}`, url.origin);
         return NextResponse.redirect(redirect);
+    }
+
+    // If this is a new Google OAuth user from registration (pending_type provided)
+    // set their user type via RPC
+    if (pendingType && sessionData?.user) {
+        try {
+            await supabase.rpc("rpc_set_user_type", {
+                _user_type: pendingType,
+            });
+        } catch (typeErr) {
+            console.error("Failed to set user type in callback:", typeErr);
+            // Don't fail the auth flow, just log it
+        }
     }
 
     // Successful exchange; send the user along to their destination.
