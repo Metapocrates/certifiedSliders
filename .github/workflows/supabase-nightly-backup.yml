@@ -8,20 +8,41 @@ on:
 jobs:
   backup:
     runs-on: ubuntu-latest
+
     steps:
       - name: Install pg_dump
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
 
       - name: Make timestamp
         id: ts
         run: echo "stamp=$(date -u +'%Y-%m-%dT%H-%M-%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Dump database
+      - name: Dump database (force IPv4)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          set -eu
+
+          # Extract hostname from DSN
+          HOST="$(printf '%s\n' "$SUPABASE_DB_URL" | sed -E 's|.*@([^:/?]+).*|\1|')"
+
+          # Resolve first IPv4 for host
+          IPV4="$(getent ahostsv4 "$HOST" | awk 'NR==1{print $1}')"
+          if [ -z "$IPV4" ]; then
+            echo "Failed to resolve IPv4 for $HOST"
+            exit 1
+          fi
+          echo "Resolved $HOST to $IPV4 (IPv4)"
+
+          # Append hostaddr so libpq uses IPv4 directly
+          # Note: DSN already has ?sslmode=require; append with &
+          PG_DSN="${SUPABASE_DB_URL}&hostaddr=${IPV4}&connect_timeout=10"
+
           mkdir -p backup
-          pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-privileges -Z9 -f "backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
+          pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 \
+            -f "backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
 
       - name: Upload artifact (7-day retention)
         uses: actions/upload-artifact@v4
