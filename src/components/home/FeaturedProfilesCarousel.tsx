@@ -33,79 +33,80 @@ export default async function FeaturedProfilesCarousel() {
     const supabase = createSupabaseServer();
 
     // Strategy:
-    // 1) If a curated list exists in `featured_profiles`, use it (joins to profiles).
-    // 2) Otherwise, fall back to top star-rated profiles as a sensible default.
-    // Both paths shape into Card[].
+    // 1) Get manually featured athletes (featured=true, 3-5 stars)
+    // 2) Randomly select from 3-5 star pool to fill remaining slots (up to 10 total)
 
     let cards: Card[] = [];
+    const limit = 10;
 
-    // --- (1) curated list
-    try {
-        const { data: curated } = await supabase
-            .from("featured_profiles")
-            .select(
-                `
-        profile_id,
-        sort_order,
-        profiles:profile_id (
-          id, username, full_name, class_year, school_name, school_state, profile_pic_url, star_rating
+    // --- (1) Get manually featured athletes
+    const { data: manuallyFeatured } = await supabase
+        .from("profiles")
+        .select(
+            "id, username, full_name, star_rating, class_year, school_name, school_state, profile_pic_url"
         )
-      `
+        .eq("featured", true)
+        .not("profile_pic_url", "is", null)
+        .gte("star_rating", 3)
+        .lte("star_rating", 5)
+        .order("star_rating", { ascending: false, nullsFirst: false });
+
+    const manualCount = manuallyFeatured?.length ?? 0;
+    const remainingSlots = Math.max(0, limit - manualCount);
+
+    cards = [...(manuallyFeatured ?? [])].map((p: any) => ({
+        id: p.id,
+        username: p.username,
+        full_name: p.full_name,
+        class_year: p.class_year,
+        school_name: p.school_name,
+        school_state: p.school_state,
+        profile_pic_url: p.profile_pic_url,
+        star_rating: p.star_rating,
+        blurb: "",
+    }));
+
+    // --- (2) If we need more, get random athletes from 3-5 star pool
+    if (remainingSlots > 0) {
+        const manualIds = (manuallyFeatured ?? []).map((p) => p.id);
+
+        // Get a pool of candidates and shuffle client-side
+        const { data: candidatePool } = await supabase
+            .from("profiles")
+            .select(
+                "id, username, full_name, star_rating, class_year, school_name, school_state, profile_pic_url"
             )
-            .order("sort_order", { ascending: true })
-            .limit(20);
+            .or("featured.is.null,featured.eq.false")
+            .not("profile_pic_url", "is", null)
+            .gte("star_rating", 3)
+            .lte("star_rating", 5)
+            .limit(50); // Get a pool to randomize from
 
-        if (curated && curated.length > 0) {
-            cards = curated
-                .map((row: any) => {
-                    const p = row.profiles;
-                    return p
-                        ? {
-                            id: p.id,
-                            username: p.username,
-                            full_name: p.full_name,
-                            class_year: p.class_year,
-                            school_name: p.school_name,
-                            school_state: p.school_state,
-                            profile_pic_url: p.profile_pic_url,
-                            star_rating: p.star_rating,
-                            blurb: "",
-                        }
-                        : null;
-                })
-                .filter(Boolean) as Card[];
-        }
-    } catch {
-        // ignore; fall through to fallback
-    }
+        if (candidatePool && candidatePool.length > 0) {
+            // Filter out manually featured IDs
+            const filtered = candidatePool.filter((p) => !manualIds.includes(p.id));
 
-    // --- (2) fallback to top star-rated profiles
-    if (cards.length === 0) {
-        try {
-            const { data: top } = await supabase
-                .from("profiles")
-                .select(
-                    "id, username, full_name, class_year, school_name, school_state, profile_pic_url, star_rating"
-                )
-                .not("username", "is", null)
-                .order("star_rating", { ascending: false })
-                .order("class_year", { ascending: true })
-                .limit(20);
+            // Shuffle array using Fisher-Yates algorithm
+            const shuffled = [...filtered];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
 
-            cards =
-                (top ?? []).map((p: any) => ({
-                    id: p.id,
-                    username: p.username,
-                    full_name: p.full_name,
-                    class_year: p.class_year,
-                    school_name: p.school_name,
-                    school_state: p.school_state,
-                    profile_pic_url: p.profile_pic_url,
-                    star_rating: p.star_rating,
-                    blurb: "",
-                })) ?? [];
-        } catch {
-            // no-op
+            // Take only what we need and map to Card format
+            const randomCards = shuffled.slice(0, remainingSlots).map((p: any) => ({
+                id: p.id,
+                username: p.username,
+                full_name: p.full_name,
+                class_year: p.class_year,
+                school_name: p.school_name,
+                school_state: p.school_state,
+                profile_pic_url: p.profile_pic_url,
+                star_rating: p.star_rating,
+                blurb: "",
+            }));
+
+            cards.push(...randomCards);
         }
     }
 
