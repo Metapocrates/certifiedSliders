@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 type Gender = "M" | "F" | "U";
-type Star = 3 | 4 | 5;
+type Star = 0 | 3 | 4 | 5;
 type Grade = 9 | 10 | 11 | 12;
 
 type StandardsGradeRow = { event: string; gender: Gender };
@@ -155,7 +155,7 @@ export async function setStarRatingAction(formData: FormData) {
     const grade = Number(gradeStr) as Grade;
     const classYear = Number(classYearStr);
 
-    if (![3, 4, 5].includes(newRating)) return { ok: false as const, error: "Rating must be 3, 4, or 5." };
+    if (![0, 3, 4, 5].includes(newRating)) return { ok: false as const, error: "Rating must be 0 (remove), 3, 4, or 5." };
     if (![9, 10, 11, 12].includes(grade)) return { ok: false as const, error: "Bad grade." };
 
     const { data: profile, error: profErr } = await supabase
@@ -165,28 +165,31 @@ export async function setStarRatingAction(formData: FormData) {
         .single();
     if (profErr) return { ok: false as const, error: `Athlete not found: ${profErr.message}` };
 
-    const { data: eligibleRows, error: eligErr } = await supabase.rpc("eligible_athletes_by_grade", {
-        p_event: event,
-        p_grade: grade,
-        p_class_year: classYear,
-        p_gender: gender,
-    });
-    if (eligErr) return { ok: false as const, error: `Eligibility check failed: ${eligErr.message}` };
+    // Only check eligibility if assigning a star rating (not removing)
+    if (newRating > 0) {
+        const { data: eligibleRows, error: eligErr } = await supabase.rpc("eligible_athletes_by_grade", {
+            p_event: event,
+            p_grade: grade,
+            p_class_year: classYear,
+            p_gender: gender,
+        });
+        if (eligErr) return { ok: false as const, error: `Eligibility check failed: ${eligErr.message}` };
 
-    const rows = (eligibleRows ?? []) as EligibleRPCRow[];
-    const row = rows.find((r) => r.athlete_id === profile.id);
-    const eligibleStar = row?.eligible_star ?? 0;
+        const rows = (eligibleRows ?? []) as EligibleRPCRow[];
+        const row = rows.find((r) => r.athlete_id === profile.id);
+        const eligibleStar = row?.eligible_star ?? 0;
 
-    if (eligibleStar < newRating) {
-        return {
-            ok: false as const,
-            error: `This athlete is only eligible up to ${eligibleStar || 0}★ for the selected grade/event.`,
-        };
+        if (eligibleStar < newRating) {
+            return {
+                ok: false as const,
+                error: `This athlete is only eligible up to ${eligibleStar || 0}★ for the selected grade/event.`,
+            };
+        }
     }
 
     const { data: updated, error: updErr } = await supabase
         .from("profiles")
-        .update({ star_rating: newRating })
+        .update({ star_rating: newRating === 0 ? null : newRating })
         .eq("id", profile.id)
         .select("id, username, star_rating")
         .single();
@@ -196,7 +199,7 @@ export async function setStarRatingAction(formData: FormData) {
     const baseHistory = {
         athlete_id: profile.id,
         old_rating: profile.star_rating ?? null,
-        new_rating: newRating,
+        new_rating: newRating === 0 ? null : newRating,
         updated_by: auth.user.id,
     } as Record<string, unknown>;
 

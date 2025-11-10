@@ -10,7 +10,7 @@ import {
 } from "./actions";
 
 type Gender = "M" | "F" | "U";
-type Star = 3 | 4 | 5;
+type Star = 0 | 3 | 4 | 5;
 type Grade = 9 | 10 | 11 | 12;
 
 const GRADE_LABEL: Record<Grade, string> = {
@@ -115,7 +115,7 @@ export default function AdminRatingsPage() {
   // Derived selection
   const selectedEligible = eligible.find((e) => e.username === username);
   const maxEligible = selectedEligible?.eligibleStar ?? 0;
-  const saveDisabled = isPending || !username || maxEligible < 3;
+  const saveDisabled = isPending || !username || (star > 0 && maxEligible < 3);
 
   // Handlers (typed to avoid TS7006)
   const onEventChange = (e: ChangeEvent<HTMLSelectElement>) => setEvent(e.target.value);
@@ -227,6 +227,9 @@ export default function AdminRatingsPage() {
           <div>
             <label className="mb-1 block text-sm">Star</label>
             <select className="w-full rounded-md border px-3 py-2" value={star} onChange={onStarChange} required>
+              <option value={0}>
+                No rating (remove)
+              </option>
               <option value={3} disabled={maxEligible < 3}>
                 3★
               </option>
@@ -287,10 +290,10 @@ export default function AdminRatingsPage() {
           disabled={saveDisabled}
           className={`rounded-xl px-4 py-2 border shadow-sm ${saveDisabled ? "opacity-40 pointer-events-none" : "hover:opacity-90"}`}
         >
-          {isPending ? "Saving…" : `Assign ${star}★`}
+          {isPending ? "Saving…" : star === 0 ? "Remove Rating" : `Assign ${star}★`}
         </button>
-        {maxEligible < 3 && username ? (
-          <p className="text-xs text-amber-700 mt-1">Selected athlete isn’t eligible for a star rating yet.</p>
+        {maxEligible < 3 && username && star > 0 ? (
+          <p className="text-xs text-amber-700 mt-1">Selected athlete isn't eligible for a star rating yet.</p>
         ) : null}
       </form>
 
