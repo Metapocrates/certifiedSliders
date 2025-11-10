@@ -60,13 +60,23 @@ export default async function FeaturedAdminPage() {
     );
   }
 
-  // All athletes available to feature (homepage will filter to 3-5 stars for display)
-  const { data: candidates, error } = await supabase
+  // Query 3-5 star athletes separately from others
+  const { data: primaryCandidates } = await supabase
     .from("profiles")
     .select("id, username, full_name, star_rating, featured")
+    .gte("star_rating", 3)
+    .lte("star_rating", 5)
+    .order("star_rating", { ascending: false })
+    .order("username", { ascending: true })
+    .limit(300);
+
+  const { data: otherCandidates, error } = await supabase
+    .from("profiles")
+    .select("id, username, full_name, star_rating, featured")
+    .or("star_rating.lt.3,star_rating.is.null")
     .order("star_rating", { ascending: false, nullsFirst: false })
     .order("username", { ascending: true })
-    .limit(500);
+    .limit(300);
 
   return (
     <div className="container py-8 space-y-6">
@@ -83,9 +93,9 @@ export default async function FeaturedAdminPage() {
       <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <p className="font-medium mb-1">How featuring works:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li>You can mark <strong>any athlete</strong> as featured here</li>
-          <li>The homepage carousel will show: manually featured athletes + random selection from 3-5 stars</li>
-          <li>Only 3-5 star athletes appear on the homepage (even if lower-rated athletes are marked featured)</li>
+          <li><strong>Primary:</strong> 3-5 star athletes - these will appear on homepage carousel</li>
+          <li><strong>Optional:</strong> Other athletes - can be featured but won't show on homepage</li>
+          <li>Homepage shows: manually featured 3-5★ athletes + random 3-5★ athletes (10 total)</li>
         </ul>
       </div>
 
@@ -95,7 +105,10 @@ export default async function FeaturedAdminPage() {
         </div>
       ) : null}
 
-      <FeaturedForm candidates={(candidates as Candidate[] | null) ?? []} />
+      <FeaturedForm
+        primaryCandidates={(primaryCandidates as Candidate[] | null) ?? []}
+        otherCandidates={(otherCandidates as Candidate[] | null) ?? []}
+      />
 
       <div className="rounded-lg border">
         <div className="flex items-center justify-between border-b px-4 py-3">
