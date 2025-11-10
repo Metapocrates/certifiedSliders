@@ -10,6 +10,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Check rate limit (10 exports per hour)
+  const { data: canExport } = await supabase.rpc("rpc_can_export_csv");
+  if (!canExport) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. You can export up to 10 CSVs per hour. Please try again later." },
+      { status: 429 }
+    );
+  }
+
   // Get form data
   const formData = await request.formData();
   const programId = formData.get("program_id") as string;
@@ -52,6 +61,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
   }
 
+  // Get CSV export limit based on program entitlements
+  const { data: exportLimit } = await supabase.rpc("get_csv_export_limit", {
+    _program_id: programId,
+  });
+
+  // Apply row limit (default 10 for free tier)
+  const limit = exportLimit || 10;
+  const limitedAthletes = (athletes || []).slice(0, limit);
+
   // Log export to audit_log
   await supabase.from("audit_log").insert({
     actor_user_id: user.id,
@@ -66,7 +84,9 @@ export async function POST(request: Request) {
         verified,
         search: search || null,
       },
-      count: athletes?.length || 0,
+      total_matched: athletes?.length || 0,
+      exported_count: limitedAthletes.length,
+      limit_applied: limit,
     },
   });
 
@@ -91,9 +111,9 @@ export async function POST(request: Request) {
     ].join(",")
   );
 
-  // Data rows
-  if (athletes && athletes.length > 0) {
-    for (const athlete of athletes) {
+  // Data rows (apply limit based on entitlements)
+  if (limitedAthletes && limitedAthletes.length > 0) {
+    for (const athlete of limitedAthletes) {
       const row = [
         `"${athlete.full_name || ""}"`,
         athlete.profile_id || "",

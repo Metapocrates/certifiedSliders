@@ -8,11 +8,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
         {
             url: `${BASE}/`,
             lastModified: new Date(),
+            changeFrequency: "weekly",
+            priority: 1.0,
+        },
+        {
+            url: `${BASE}/coaches`,
+            lastModified: new Date(),
+            changeFrequency: "monthly",
+            priority: 0.6,
         },
         {
             url: `${BASE}/rankings`,
             lastModified: new Date(),
+            changeFrequency: "weekly",
+            priority: 0.8,
         },
-        // Add more public pages as they’re created
+        // Add more public pages as they're created
     ];
 }
