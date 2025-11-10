@@ -21,7 +21,7 @@ jobs:
             gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/postgresql.gpg >/dev/null
           sudo apt-get update
           sudo apt-get -y install postgresql-client-17
-          echo "Installed: $(pg_dump --version)"
+          echo "Installed: $(/usr/lib/postgresql/17/bin/pg_dump --version)"
 
       - name: Generate timestamp
         id: ts
@@ -56,7 +56,7 @@ jobs:
           OUT="backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
 
           echo "Starting pg_dump..."
-          pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 -f "$OUT"
+          /usr/lib/postgresql/17/bin/pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 -f "$OUT"
 
           SIZE=$(du -h "$OUT" | cut -f1)
           echo "Backup completed: $OUT ($SIZE)"
