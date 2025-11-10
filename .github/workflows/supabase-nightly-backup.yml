@@ -2,7 +2,7 @@ name: Supabase Nightly Backup
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # 09:00 UTC nightly (1am PT / 2am PDT)
+    - cron: "0 9 * * *"
   workflow_dispatch:
 
 jobs:
@@ -10,34 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install PostgreSQL client 17 (match Supabase 17.4)
+      - name: Install PostgreSQL client 17
         run: |
           set -eu
           sudo apt-get update
           . /etc/os-release
-          echo "deb [arch=amd64,arm64] http://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/postgresql.asc >/dev/null
+          echo "deb [arch=amd64,arm64] http://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" | \
+            sudo tee /etc/apt/sources.list.d/pgdg.list
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
+            gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/postgresql.gpg >/dev/null
           sudo apt-get update
           sudo apt-get -y install postgresql-client-17
-          pg_dump --version
+          echo "Installed: $(pg_dump --version)"
 
-      - name: Make timestamp
+      - name: Generate timestamp
         id: ts
         run: echo "stamp=$(date -u +'%Y-%m-%dT%H-%M-%SZ')" >> $GITHUB_OUTPUT
 
-      - name: Dump database (force IPv4; robust DSN)
+      - name: Dump database
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # e.g. postgresql://postgres:ENCODED_PW@db.<ref>.supabase.co:5432/postgres?sslmode=require
-          SUPABASE_DB_IPV4: ${{ secrets.SUPABASE_DB_IPV4 }} # e.g. 3.151.29.56 (or your static IPv4 add-on)
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_IPV4: ${{ secrets.SUPABASE_DB_IPV4 }}
         run: |
           set -eu
 
           if [ -z "${SUPABASE_DB_URL:-}" ] || [ -z "${SUPABASE_DB_IPV4:-}" ]; then
-            echo "Missing SUPABASE_DB_URL or SUPABASE_DB_IPV4 secrets"
+            echo "ERROR: Missing required secrets (SUPABASE_DB_URL or SUPABASE_DB_IPV4)"
             exit 1
           fi
 
-          # Decide whether to append with ? or &
           if [[ "$SUPABASE_DB_URL" == *"?"* ]]; then
             SEP="&"
           else
@@ -45,7 +46,6 @@ jobs:
           fi
 
           EXTRA="hostaddr=${SUPABASE_DB_IPV4}&connect_timeout=10"
-          # Ensure sslmode is present
           if [[ "$SUPABASE_DB_URL" != *"sslmode="* ]]; then
             EXTRA="${EXTRA}&sslmode=require"
           fi
@@ -54,11 +54,14 @@ jobs:
 
           mkdir -p backup
           OUT="backup/supabase_${{ steps.ts.outputs.stamp }}.dump"
-          echo "Starting pg_dump to $OUT ..."
-          pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 -f "$OUT"
-          echo "pg_dump completed."
 
-      - name: Upload artifact (7-day retention)
+          echo "Starting pg_dump..."
+          pg_dump "$PG_DSN" --format=custom --no-owner --no-privileges -Z9 -f "$OUT"
+
+          SIZE=$(du -h "$OUT" | cut -f1)
+          echo "Backup completed: $OUT ($SIZE)"
+
+      - name: Upload backup artifact
         uses: actions/upload-artifact@v4
         with:
           name: supabase-backup-${{ steps.ts.outputs.stamp }}
