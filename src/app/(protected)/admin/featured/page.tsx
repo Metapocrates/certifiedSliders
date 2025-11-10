@@ -94,7 +94,7 @@ export default async function FeaturedAdminPage() {
         <p className="font-medium mb-1">How featuring works:</p>
         <ul className="list-disc list-inside space-y-1">
           <li><strong>Primary:</strong> 3-5 star athletes - these will appear on homepage carousel</li>
-          <li><strong>Optional:</strong> Other athletes - can be featured but won't show on homepage</li>
+          <li><strong>Optional:</strong> Other athletes - can be featured but won&apos;t show on homepage</li>
           <li>Homepage shows: manually featured 3-5★ athletes + random 3-5★ athletes (10 total)</li>
         </ul>
       </div>
