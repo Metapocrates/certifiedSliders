@@ -58,9 +58,6 @@ export default async function Header() {
             <Link href="/athletes" className={NAV_LINK_CLASSES}>
               Find athletes
             </Link>
-            <Link href="/rated-athletes" className={NAV_LINK_CLASSES}>
-              Rated Athletes
-            </Link>
             <Link href="/rankings" className={NAV_LINK_CLASSES}>
               Rankings
             </Link>
