@@ -33,7 +33,7 @@ export default async function ParentOnboardingPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-semibold text-app">Parent Onboarding</h1>
         <p className="mt-2 text-muted">
-          Link to your athlete's profile to submit results on their behalf
+          Link to your athlete&apos;s profile to submit results on their behalf
         </p>
       </div>
 

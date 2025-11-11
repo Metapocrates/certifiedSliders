@@ -15,21 +15,21 @@ export default function ParentHelpPage() {
         <section className="rounded-xl border border-app bg-card p-6">
           <h2 className="text-lg font-semibold text-app">How do I link to my athlete?</h2>
           <p className="mt-2 text-sm text-muted">
-            Go to your <Link href="/parent/onboarding" className="text-scarlet underline">onboarding page</Link> or dashboard to search for your athlete and send a link request. They'll receive a notification and can accept the connection from their profile.
+            Go to your <Link href="/parent/onboarding" className="text-scarlet underline">onboarding page</Link> or dashboard to search for your athlete and send a link request. They&apos;ll receive a notification and can accept the connection from their profile.
           </p>
         </section>
 
         <section className="rounded-xl border border-app bg-card p-6">
           <h2 className="text-lg font-semibold text-app">How do I submit results?</h2>
           <p className="mt-2 text-sm text-muted">
-            Once linked to your athlete, you can submit results on their behalf from the <Link href="/parent/submissions/new" className="text-scarlet underline">Submit Result</Link> page. You'll need proof (Athletic.net link, meet results, etc.) for verification.
+            Once linked to your athlete, you can submit results on their behalf from the <Link href="/parent/submissions/new" className="text-scarlet underline">Submit Result</Link> page. You&apos;ll need proof (Athletic.net link, meet results, etc.) for verification.
           </p>
         </section>
 
         <section className="rounded-xl border border-app bg-card p-6">
           <h2 className="text-lg font-semibold text-app">What happens after I submit a result?</h2>
           <p className="mt-2 text-sm text-muted">
-            Submitted results go through our verification process. Admins review the proof and either approve or reject the submission. You'll be able to track the status in your <Link href="/parent/submissions" className="text-scarlet underline">submissions list</Link>.
+            Submitted results go through our verification process. Admins review the proof and either approve or reject the submission. You&apos;ll be able to track the status in your <Link href="/parent/submissions" className="text-scarlet underline">submissions list</Link>.
           </p>
         </section>
 

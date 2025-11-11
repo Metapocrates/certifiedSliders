@@ -25,7 +25,7 @@ export default async function ParentSubmissionsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-app">My Submissions</h1>
           <p className="mt-1 text-sm text-muted">
-            Track results you've submitted on behalf of your athletes
+            Track results you&apos;ve submitted on behalf of your athletes
           </p>
         </div>
         <Link
