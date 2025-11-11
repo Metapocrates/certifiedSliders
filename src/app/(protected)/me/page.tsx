@@ -10,6 +10,7 @@ import type { CollegeInterest } from "./college-interests/CollegeInterestsSectio
 import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
 import MyVideos from "@/components/videos/MyVideos";
+import ParentInvitations from "@/components/athlete/ParentInvitations";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -66,7 +67,7 @@ export default async function MePage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  // Redirect non-athletes to their portals
+  // Redirect non-athletes to their portals IMMEDIATELY before any other data fetching
   if (profile?.user_type && profile.user_type !== 'athlete') {
     const redirectMap: Record<string, string> = {
       parent: '/parent/dashboard',
@@ -78,6 +79,8 @@ export default async function MePage() {
       redirect(redirectTo);
     }
   }
+
+  // From this point on, we know user_type is 'athlete' or null
 
   // Check if user is admin
   const { data: adminRow } = await supabase
@@ -125,6 +128,37 @@ export default async function MePage() {
     .order("is_primary", { ascending: false })
     .order("verified", { ascending: false })
     .order("verified_at", { ascending: false });
+
+  // Fetch pending parent link invitations
+  const { data: parentInvitationsData } = await supabase
+    .from("parent_links")
+    .select(`
+      id,
+      parent_user_id,
+      status,
+      note,
+      created_at,
+      parent:profiles!parent_user_id (
+        full_name
+      )
+    `)
+    .eq("athlete_id", profile?.id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  // Map invitations to serializable format for client component
+  const parentInvitations = JSON.parse(JSON.stringify(
+    (parentInvitationsData ?? []).map((inv: any) => ({
+      id: inv.id,
+      parent_user_id: inv.parent_user_id,
+      status: inv.status,
+      note: inv.note,
+      created_at: inv.created_at,
+      parent: inv.parent ? {
+        full_name: inv.parent.full_name
+      } : null
+    }))
+  ));
 
 type IdentityRow = {
   id: string;
@@ -249,6 +283,12 @@ type IdentityRow = {
           )}
         </div>
       </div>
+
+      {parentInvitations.length > 0 && (
+        <div className="mb-8">
+          <ParentInvitations invitations={parentInvitations} />
+        </div>
+      )}
 
       <LinkedProfilesSection identities={linkedIdentities} />
 

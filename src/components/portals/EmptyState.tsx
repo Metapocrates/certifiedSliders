@@ -3,6 +3,7 @@
  */
 
 import { ReactNode } from 'react';
+import Link from 'next/link';
 
 type EmptyStateProps = {
   icon?: ReactNode;
@@ -10,7 +11,7 @@ type EmptyStateProps = {
   description: string;
   action?: {
     label: string;
-    onClick: () => void;
+    href: string;
   };
   className?: string;
 };
@@ -32,12 +33,12 @@ export default function EmptyState({
       <h3 className="text-lg font-semibold text-app">{title}</h3>
       <p className="mt-2 max-w-md text-sm text-muted">{description}</p>
       {action && (
-        <button
-          onClick={action.onClick}
+        <Link
+          href={action.href}
           className="mt-6 rounded-lg bg-scarlet px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-scarlet/90"
         >
           {action.label}
-        </button>
+        </Link>
       )}
     </div>
   );

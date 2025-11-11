@@ -1,6 +1,4 @@
 import "server-only";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
@@ -19,9 +17,22 @@ export default async function MeLayout({ children }: { children: ReactNode }) {
   // Fetch profile for sidebar context
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, full_name, profile_pic_url, profile_id")
+    .select("id, username, full_name, profile_pic_url, profile_id, user_type")
     .eq("id", user.id)
     .maybeSingle();
+
+  // Redirect non-athletes to their appropriate portals
+  if (profile?.user_type && profile.user_type !== 'athlete') {
+    const redirectMap: Record<string, string> = {
+      parent: '/parent/dashboard',
+      ncaa_coach: '/coach/portal',
+      hs_coach: '/hs/portal'
+    };
+    const redirectTo = redirectMap[profile.user_type];
+    if (redirectTo) {
+      redirect(redirectTo);
+    }
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-64px)]">

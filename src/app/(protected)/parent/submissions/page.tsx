@@ -47,7 +47,7 @@ export default async function ParentSubmissionsPage() {
           description="Submit your first result to track your athlete's progress"
           action={{
             label: 'Submit Result',
-            onClick: () => window.location.href = '/parent/submissions/new'
+            href: '/parent/submissions/new'
           }}
         />
       </div>

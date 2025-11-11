@@ -88,7 +88,7 @@ export default async function ParentDashboardPage() {
             description="Search for your athlete and send a link request to get started"
             action={{
               label: 'Find Athlete',
-              onClick: () => window.location.href = '/parent/onboarding'
+              href: '/parent/onboarding'
             }}
           />
         ) : (

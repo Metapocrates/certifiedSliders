@@ -52,15 +52,15 @@ export default function ToSModal({ isOpen, actionType, onAccept, onDecline }: To
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-w-2xl w-full bg-white rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-6 py-4">
-          <h2 className="text-2xl font-semibold text-gray-900">Terms of Service</h2>
-          <p className="text-sm text-gray-600 mt-1">
+      <div className="max-w-2xl w-full bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Terms of Service</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
             Please review and accept our terms to {getActionText()}
           </p>
         </div>
 
-        <div className="px-6 py-4 space-y-4 text-sm text-gray-700">
+        <div className="px-6 py-4 space-y-4 text-sm text-gray-700 dark:text-gray-300">
           <section>
             <h3 className="font-semibold text-lg mb-2">1. Acceptance of Terms</h3>
             <p>
@@ -143,11 +143,11 @@ export default function ToSModal({ isOpen, actionType, onAccept, onDecline }: To
           </section>
         </div>
 
-        <div className="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex items-center justify-between gap-4">
+        <div className="sticky bottom-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between gap-4">
           <button
             onClick={onDecline}
             disabled={accepting}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
           >
             Decline
           </button>

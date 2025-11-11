@@ -20,17 +20,22 @@ export default async function Header() {
   const admin = user ? await isAdmin(user.id) : false;
 
   let profile:
-    | { username: string | null; profile_pic_url: string | null }
+    | { username: string | null; profile_pic_url: string | null; user_type: string | null }
     | null = null;
 
   if (user) {
     const { data } = await supabase
       .from("profiles")
-      .select("username, profile_pic_url")
+      .select("username, profile_pic_url, user_type")
       .eq("id", user.id)
       .maybeSingle();
     profile = data ?? null;
   }
+
+  // Determine submit result URL based on user type
+  const submitResultHref = profile?.user_type === 'parent'
+    ? '/parent/submissions/new'
+    : '/submit-result';
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/70">
@@ -83,7 +88,7 @@ export default async function Header() {
           ) : (
             <>
               <Link
-                href="/submit-result"
+                href={submitResultHref}
                 className="btn whitespace-nowrap text-xs sm:text-sm"
               >
                 Submit Result

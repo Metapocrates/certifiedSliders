@@ -2,6 +2,7 @@
 import { redirect } from 'next/navigation';
 import { createSupabaseServer } from '@/lib/supabase/compat';
 import SafeLink from '@/components/SafeLink';
+import AthleteSearch from './AthleteSearch';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -44,27 +45,7 @@ export default async function ParentOnboardingPage() {
           </p>
 
           <div className="mt-6">
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-              <p className="text-sm text-amber-900">
-                <strong>Coming Soon:</strong> Athlete search and invite functionality
-              </p>
-            </div>
-
-            {/* TODO: Add athlete search and invite form */}
-            <div className="mt-6">
-              <input
-                type="text"
-                placeholder="Search athlete by name..."
-                className="w-full rounded-lg border border-app px-4 py-3 text-sm"
-                disabled
-              />
-              <button
-                className="mt-3 w-full rounded-lg bg-scarlet px-4 py-3 text-sm font-semibold text-white opacity-50"
-                disabled
-              >
-                Search & Invite
-              </button>
-            </div>
+            <AthleteSearch />
           </div>
         </div>
 
@@ -87,7 +68,7 @@ export default async function ParentOnboardingPage() {
           </SafeLink>
           <SafeLink
             href="/parent/dashboard"
-            className="rounded-lg bg-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-300"
+            className="rounded-lg border border-app px-6 py-2.5 text-sm font-semibold text-app hover:bg-muted"
           >
             Skip for now →
           </SafeLink>
