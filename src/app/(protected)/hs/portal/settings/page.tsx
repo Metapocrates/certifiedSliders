@@ -75,7 +75,7 @@ export default async function SettingsPage({
             <div className="flex-1 text-sm text-amber-900 dark:text-amber-100">
               <p className="font-semibold mb-1">Limited Access</p>
               <p className="text-amber-800 dark:text-amber-200">
-                You don't have permission to modify team settings. Contact your head coach to request access.
+                You don&apos;t have permission to modify team settings. Contact your head coach to request access.
               </p>
             </div>
           </div>

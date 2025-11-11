@@ -120,7 +120,7 @@ export default async function PendingPage({
             </div>
             <h3 className="text-lg font-semibold text-app mb-2">No Pending Requests</h3>
             <p className="text-sm text-muted">
-              You'll see requests here when athletes want to join your team
+              You&apos;ll see requests here when athletes want to join your team
             </p>
           </div>
         ) : (
@@ -133,7 +133,7 @@ export default async function PendingPage({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-xl font-semibold text-app">Sent Invitations</h2>
-            <p className="text-sm text-muted">Athletes you've invited to join</p>
+            <p className="text-sm text-muted">Athletes you&apos;ve invited to join</p>
           </div>
           <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-3 py-1 text-sm font-medium text-blue-800 dark:text-blue-200">
             {pendingInvites.length} pending

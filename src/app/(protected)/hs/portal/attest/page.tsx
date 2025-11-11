@@ -95,7 +95,7 @@ export default async function AttestPage({
             <p className="text-blue-800 dark:text-blue-200">
               As a coach, you can attest (verify) results submitted by your athletes. Your attestation
               adds credibility and helps results get verified faster. Approving a result signals to admins
-              that it's legitimate. Rejecting removes it from the queue.
+              that it&apos;s legitimate. Rejecting removes it from the queue.
             </p>
           </div>
         </div>

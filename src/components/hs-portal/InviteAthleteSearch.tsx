@@ -173,7 +173,7 @@ export default function InviteAthleteSearch({ teamId }: { teamId: string }) {
 
       {results.length === 0 && search && !isSearching && (
         <div className="text-center py-12">
-          <p className="text-muted">No athletes found matching "{search}"</p>
+          <p className="text-muted">No athletes found matching &quot;{search}&quot;</p>
         </div>
       )}
 

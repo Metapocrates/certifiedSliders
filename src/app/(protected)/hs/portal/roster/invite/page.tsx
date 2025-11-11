@@ -71,7 +71,7 @@ export default async function InviteAthletePage({
             <p className="font-semibold mb-1">How athlete invitations work</p>
             <ul className="list-disc list-inside space-y-1 text-blue-800 dark:text-blue-200">
               <li>Search for athletes by name, username, or profile ID</li>
-              <li>Send invitations to athletes who aren't already on your roster</li>
+              <li>Send invitations to athletes who aren&apos;t already on your roster</li>
               <li>Athletes have 14 days to accept or decline</li>
               <li>You can send up to 10 invitations per 24 hours</li>
             </ul>
