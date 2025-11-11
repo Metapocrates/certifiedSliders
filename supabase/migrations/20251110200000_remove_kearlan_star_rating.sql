@@ -1,6 +1,11 @@
--- Remove legacy profile @kearlan (profile CS-KR638)
--- This profile should not be in the database at all
+-- Remove athlete data from @kearlan profile (CS-KR638)
+-- Profile is now a parent, but has straggler athlete data
+-- Ratings queries filter by class_year, so clearing that removes it from dropdown
 
--- Delete the profile (cascade will handle related records)
-DELETE FROM profiles
+UPDATE profiles
+SET
+  class_year = NULL,
+  gender = NULL,
+  school_name = NULL,
+  school_state = NULL
 WHERE profile_id = 'CS-KR638' OR username = 'kearlan';
