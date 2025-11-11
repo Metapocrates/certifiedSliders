@@ -65,6 +65,14 @@ export default async function MePage() {
     .eq("id", user.id)
     .maybeSingle();
 
+  // Check if user is admin
+  const { data: adminRow } = await supabase
+    .from("admins")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const isAdmin = !!adminRow?.user_id;
+
   const { data: collegeInterestsData } = await supabase
     .from("athlete_college_interests")
     .select("id, college_name, created_at")
@@ -232,7 +240,7 @@ type IdentityRow = {
 
       <CollegeInterestsSection interests={collegeInterests} />
 
-      <MyVideos />
+      <MyVideos isAdmin={isAdmin} />
 
       {/* Pending */}
       <Section title={`Pending (${pending.length})`}>

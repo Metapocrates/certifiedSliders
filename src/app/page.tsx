@@ -76,6 +76,7 @@ export default async function HomePage() {
   const { data: teamRows, error: teamsErr } = await supabase
     .from("profiles")
     .select("school_name, school_state")
+    .eq("user_type", "athlete")
     .not("school_name", "is", null)
     .neq("school_name", "")
     .limit(2000);

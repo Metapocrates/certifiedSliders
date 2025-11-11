@@ -41,6 +41,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
       "id, full_name, username, school_name, school_state, class_year, gender"
     )
     .eq("profile_id", profileId)
+    .eq("user_type", "athlete")
     .maybeSingle();
 
   if (!profile) {

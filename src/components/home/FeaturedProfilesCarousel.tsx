@@ -46,6 +46,7 @@ export default async function FeaturedProfilesCarousel() {
             "id, username, full_name, star_rating, class_year, school_name, school_state, profile_pic_url"
         )
         .eq("featured", true)
+        .eq("user_type", "athlete")
         .not("profile_pic_url", "is", null)
         .gte("star_rating", 3)
         .lte("star_rating", 5)
@@ -76,6 +77,7 @@ export default async function FeaturedProfilesCarousel() {
             .select(
                 "id, username, full_name, star_rating, class_year, school_name, school_state, profile_pic_url"
             )
+            .eq("user_type", "athlete")
             .or("featured.is.null,featured.eq.false")
             .not("profile_pic_url", "is", null)
             .gte("star_rating", 3)

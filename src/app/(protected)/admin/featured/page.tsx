@@ -64,6 +64,7 @@ export default async function FeaturedAdminPage() {
   const { data: primaryCandidates } = await supabase
     .from("profiles")
     .select("id, username, full_name, star_rating, featured")
+    .eq("user_type", "athlete")
     .gte("star_rating", 3)
     .lte("star_rating", 5)
     .order("star_rating", { ascending: false })
@@ -73,6 +74,7 @@ export default async function FeaturedAdminPage() {
   const { data: otherCandidates, error } = await supabase
     .from("profiles")
     .select("id, username, full_name, star_rating, featured")
+    .eq("user_type", "athlete")
     .or("star_rating.lt.3,star_rating.is.null")
     .order("star_rating", { ascending: false, nullsFirst: false })
     .order("username", { ascending: true })
@@ -128,7 +130,8 @@ async function FeaturedCount() {
   const { count } = await supabase
     .from("profiles")
     .select("id", { count: "exact", head: true })
-    .eq("featured", true);
+    .eq("featured", true)
+    .eq("user_type", "athlete");
   return <span className="text-sm text-gray-500">{count ?? 0} athletes</span>;
 }
 
@@ -138,6 +141,7 @@ async function FeaturedList() {
     .from("profiles")
     .select("id, username, full_name, star_rating")
     .eq("featured", true)
+    .eq("user_type", "athlete")
     .order("star_rating", { ascending: false, nullsFirst: false })
     .order("username", { ascending: true })
     .limit(100);

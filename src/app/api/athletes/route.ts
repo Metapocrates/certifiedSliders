@@ -20,7 +20,8 @@ export async function GET(request: Request) {
         .from("profiles")
         .select("id, profile_id, full_name, username, school_name, school_state, class_year, gender, profile_pic_url, star_rating")
         .not("profile_id", "is", null) // Only athletes with public profiles
-        .eq("status", "active"); // Only show active profiles in public search
+        .eq("status", "active") // Only show active profiles in public search
+        .eq("user_type", "athlete"); // Only show athletes in athlete search
 
     // Text search on name or aliases
     if (query) {

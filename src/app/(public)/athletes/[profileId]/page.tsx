@@ -25,6 +25,7 @@ export async function generateMetadata({ params }: { params: { profileId: string
     .from("profiles")
     .select("id, full_name, username, class_year, school_name, school_state, star_rating, gender, profile_pic_url, updated_at")
     .eq("profile_id", params.profileId)
+    .eq("user_type", "athlete")
     .maybeSingle();
 
   if (!profile) {
@@ -123,6 +124,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       "id, full_name, username, school_name, school_state, class_year, profile_pic_url, bio, bio_visibility, gender, claimed_by, star_rating, profile_id, instagram_url, twitter_url, tiktok_url, youtube_url"
     )
     .eq("profile_id", profileId)
+    .eq("user_type", "athlete")
     .maybeSingle();
 
   if (!profile) {
