@@ -4,6 +4,9 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import FeaturedForm from "./FeaturedForm";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AdminDashboard() {
   const supabase = createSupabaseServer();
   const me = await getSessionUser();
@@ -39,8 +42,8 @@ export default async function AdminDashboard() {
     supabase.from("verification_claims").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("v_pending_rating_reviews").select("result_id", { count: "exact", head: true }),
     supabase.from("result_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("results").select("id", { count: "exact", head: true }).in("status", ["verified", "approved"])
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("user_type", "athlete").eq("status", "active"),
+    supabase.from("results").select("id", { count: "exact", head: true }).eq("status", "verified")
   ]);
 
   const metrics = [
