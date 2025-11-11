@@ -1,4 +1,4 @@
--- Remove legacy star rating for @kearlan
+-- Remove legacy star rating for @kearlan (profile CS-KR638)
 UPDATE profiles
 SET star_rating = NULL
-WHERE username = 'kearlan';
+WHERE profile_id = 'CS-KR638' OR username = 'kearlan';
