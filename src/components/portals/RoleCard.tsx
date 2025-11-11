@@ -2,7 +2,7 @@
  * RoleCard - Shared component for role selection cards
  */
 
-import { ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 type RoleCardProps = {
   icon: ReactNode;
