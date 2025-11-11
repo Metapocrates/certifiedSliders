@@ -1,11 +1,11 @@
 -- Remove athlete data from @kearlan profile (CS-KR638)
 -- Profile is now admin/parent but has straggler athlete data from conversion
--- Must disable multiple triggers to allow this one-time cleanup
+-- Must disable user triggers (not system triggers) to allow this one-time cleanup
 
 DO $$
 BEGIN
-  -- Disable all triggers that would block this update
-  ALTER TABLE profiles DISABLE TRIGGER ALL;
+  -- Disable user-defined triggers (not system/constraint triggers)
+  ALTER TABLE profiles DISABLE TRIGGER USER;
 
   -- Clear all athlete-specific fields
   UPDATE profiles
@@ -17,6 +17,6 @@ BEGIN
     school_state = NULL
   WHERE profile_id = 'CS-KR638' OR username = 'kearlan';
 
-  -- Re-enable all triggers
-  ALTER TABLE profiles ENABLE TRIGGER ALL;
+  -- Re-enable user triggers
+  ALTER TABLE profiles ENABLE TRIGGER USER;
 END $$;
