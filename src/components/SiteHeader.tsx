@@ -58,18 +58,15 @@ export default async function Header() {
             <Link href="/athletes" className={NAV_LINK_CLASSES}>
               Find athletes
             </Link>
+            <Link href="/rated-athletes" className={NAV_LINK_CLASSES}>
+              Rated Athletes
+            </Link>
             <Link href="/rankings" className={NAV_LINK_CLASSES}>
               Rankings
             </Link>
 
             {admin && (
               <>
-                <Link href="/admin/results" className={NAV_LINK_CLASSES}>
-                  Results Queue
-                </Link>
-                <Link href="/admin/blog/new" className={NAV_LINK_CLASSES}>
-                  New Post
-                </Link>
                 <Link href="/admin/home" className={NAV_LINK_CLASSES}>
                   Home Manager
                 </Link>
