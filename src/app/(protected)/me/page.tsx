@@ -1,6 +1,7 @@
 // src/app/(protected)/me/page.tsx
 import Link from "next/link";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getAppBaseUrl } from "@/lib/env";
 import { makeClaimToken } from "@/lib/verification/claimToken";
@@ -64,6 +65,19 @@ export default async function MePage() {
     )
     .eq("id", user.id)
     .maybeSingle();
+
+  // Redirect non-athletes to their portals
+  if (profile?.user_type && profile.user_type !== 'athlete') {
+    const redirectMap: Record<string, string> = {
+      parent: '/parent/dashboard',
+      ncaa_coach: '/coach/portal',
+      hs_coach: '/hs/portal'
+    };
+    const redirectTo = redirectMap[profile.user_type];
+    if (redirectTo) {
+      redirect(redirectTo);
+    }
+  }
 
   // Check if user is admin
   const { data: adminRow } = await supabase
