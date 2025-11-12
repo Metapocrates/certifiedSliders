@@ -50,62 +50,95 @@ export default async function HomePage() {
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
 
-  const oneWeekAgoIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  // Fetch cumulative platform stats
+  const { count: totalAthletes } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("user_type", "athlete")
+    .eq("status", "active");
 
-  let verifiedThisWeek: number | null = null;
-  const { count: verifiedCountByVerifiedAt, error: verifiedAtErr } = await supabase
+  const { count: totalVerifiedResults } = await supabase
     .from("results")
     .select("id", { count: "exact", head: true })
-    .eq("status", "verified")
-    .gte("verified_at", oneWeekAgoIso);
+    .eq("status", "verified");
 
-  if (!verifiedAtErr) {
-    verifiedThisWeek = verifiedCountByVerifiedAt ?? 0;
-  } else {
-    const { count: verifiedCountByCreatedAt, error: createdAtErr } = await supabase
-      .from("results")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "verified")
-      .gte("created_at", oneWeekAgoIso);
-    if (!createdAtErr) {
-      verifiedThisWeek = verifiedCountByCreatedAt ?? 0;
-    }
-  }
-
-  let teamsRepresented: number | null = null;
-  const { data: teamRows, error: teamsErr } = await supabase
+  const { data: stateRows } = await supabase
     .from("profiles")
-    .select("school_name, school_state")
+    .select("school_state")
     .eq("user_type", "athlete")
-    .not("school_name", "is", null)
-    .neq("school_name", "")
-    .limit(2000);
+    .not("school_state", "is", null)
+    .neq("school_state", "");
 
-  if (!teamsErr && teamRows) {
-    const unique = new Set<string>();
-    for (const row of teamRows) {
-      const name = (row.school_name ?? "").trim();
-      if (!name) continue;
-      const state = (row.school_state ?? "").trim();
-      unique.add(`${name.toLowerCase()}|${state.toLowerCase()}`);
-    }
-    teamsRepresented = unique.size;
-  }
+  const statesRepresented = new Set(
+    (stateRows || [])
+      .map((r) => r.school_state?.trim())
+      .filter((s) => s && s.length === 2)
+  ).size;
 
-  const heroStats = [
+  // Define thresholds for switching to dynamic data
+  const THRESHOLDS = {
+    athletes: 50,      // Show real count when 50+ athletes
+    results: 100,      // Show real count when 100+ results
+    states: 10,        // Show real count when 10+ states
+  };
+
+  // Check if we should show dynamic data
+  const showDynamicData =
+    (totalAthletes ?? 0) >= THRESHOLDS.athletes &&
+    (totalVerifiedResults ?? 0) >= THRESHOLDS.results &&
+    statesRepresented >= THRESHOLDS.states;
+
+  // Static value props (shown until thresholds are met)
+  const staticStats = [
     {
-      id: "verified-week",
-      label: verifiedThisWeek === 1 ? "Certified PR this week" : "Certified PRs this week",
-      value: verifiedThisWeek,
-      description: "Every mark is reviewed by the admin crew before it hits the board.",
+      id: "coverage",
+      label: "National Coverage",
+      value: "All 50 States",
+      description: "Track & field athletes from every corner of the country.",
+      isStatic: true,
     },
     {
-      id: "teams-represented",
-      label: teamsRepresented === 1 ? "Team represented" : "Teams represented",
-      value: teamsRepresented,
-      description: "Athletes from programs across the country contribute verified marks.",
+      id: "events",
+      label: "Complete Event Coverage",
+      value: "15+ Events",
+      description: "Sprints, distance, hurdles, jumps, throws, and multi-events.",
+      isStatic: true,
+    },
+    {
+      id: "divisions",
+      label: "All Division Levels",
+      value: "D1 to D3",
+      description: "Supporting athletes at every competitive level nationwide.",
+      isStatic: true,
     },
   ];
+
+  // Dynamic stats (shown when thresholds are met)
+  const dynamicStats = [
+    {
+      id: "athletes",
+      label: totalAthletes === 1 ? "Active Athlete" : "Active Athletes",
+      value: totalAthletes ?? 0,
+      description: "Profiles with verified results and college interest.",
+      isStatic: false,
+    },
+    {
+      id: "results",
+      label: totalVerifiedResults === 1 ? "Verified Result" : "Verified Results",
+      value: totalVerifiedResults ?? 0,
+      description: "Every mark is reviewed by the admin crew before it hits the board.",
+      isStatic: false,
+    },
+    {
+      id: "states",
+      label: statesRepresented === 1 ? "State Represented" : "States Represented",
+      value: statesRepresented,
+      description: "Athletes from programs across the country contribute verified marks.",
+      isStatic: false,
+    },
+  ];
+
+  const heroStats = showDynamicData ? dynamicStats : staticStats;
 
   const primaryCta = user
     ? { href: "/submit-result", label: "Submit a result" }
@@ -156,7 +189,11 @@ export default async function HomePage() {
               <div className="space-y-4">
                 {heroStats.map((stat) => {
                   const valueDisplay =
-                    stat.value == null ? "—" : formatNumber(stat.value);
+                    stat.value == null
+                      ? "—"
+                      : "isStatic" in stat && stat.isStatic
+                        ? stat.value
+                        : formatNumber(stat.value as number);
                   return (
                     <div
                       key={stat.id}
