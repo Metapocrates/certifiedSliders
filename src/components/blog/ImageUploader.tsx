@@ -74,16 +74,27 @@ export default function ImageUploader({
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
+      // Upload to Supabase Storage with timeout
+      const uploadPromise = supabase.storage
         .from('blog-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false,
         });
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Upload timeout - please try again')), 30000)
+      );
+
+      const { data, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
+
       if (uploadError) {
-        throw uploadError;
+        console.error('Upload error details:', uploadError);
+        throw new Error(uploadError.message || 'Upload failed - storage bucket may not be configured');
+      }
+
+      if (!data) {
+        throw new Error('Upload failed - no data returned');
       }
 
       // Get public URL
@@ -95,7 +106,8 @@ export default function ImageUploader({
       onImageUploaded(publicUrl);
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to upload image');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to upload image';
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
