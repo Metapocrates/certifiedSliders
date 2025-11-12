@@ -166,6 +166,17 @@ export default async function ParentDashboardPage() {
           </Link>
 
           <Link
+            href="/me/edit"
+            className="group rounded-xl border border-app bg-card p-6 transition hover:border-scarlet hover:shadow-md"
+          >
+            <svg className="mb-3 h-8 w-8 text-scarlet" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <h3 className="font-semibold text-app">Edit Profile</h3>
+            <p className="mt-1 text-sm text-muted">Update your profile picture and info</p>
+          </Link>
+
+          <Link
             href="/parent/help"
             className="group rounded-xl border border-app bg-card p-6 transition hover:border-scarlet hover:shadow-md"
           >

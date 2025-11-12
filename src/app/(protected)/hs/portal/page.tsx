@@ -250,6 +250,14 @@ export default async function HSCoachPortalPage() {
             <span className="text-2xl">🔗</span>
             <span className="text-sm font-semibold text-app">Public Page</span>
           </Link>
+
+          <Link
+            href="/me/edit"
+            className="flex items-center gap-3 rounded-xl border border-app bg-card px-4 py-3 transition hover:border-scarlet hover:bg-muted"
+          >
+            <span className="text-2xl">👤</span>
+            <span className="text-sm font-semibold text-app">Edit Profile</span>
+          </Link>
         </div>
       </div>
     </div>

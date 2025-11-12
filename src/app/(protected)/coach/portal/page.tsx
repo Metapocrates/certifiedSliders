@@ -133,11 +133,19 @@ export default async function CoachPortalPage({
       )}
 
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Coach Portal</h1>
-        <p className="text-muted-foreground">
-          View athletes who have expressed interest in your program
-        </p>
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold">Coach Portal</h1>
+          <p className="text-muted-foreground">
+            View athletes who have expressed interest in your program
+          </p>
+        </div>
+        <a
+          href="/me/edit"
+          className="rounded-lg border border-app bg-card px-4 py-2 text-sm font-semibold text-app transition hover:border-scarlet hover:bg-scarlet hover:text-white"
+        >
+          Edit Profile
+        </a>
       </div>
 
       {/* Program Switcher */}
