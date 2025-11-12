@@ -75,22 +75,20 @@ export default function ImageUploader({
       const filePath = `${fileName}`;
 
       console.log('Starting upload to blog-images bucket:', filePath);
+      console.log('Supabase client initialized:', !!supabase);
 
-      // Upload to Supabase Storage with timeout
-      const uploadPromise = supabase.storage
-        .from('blog-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+      // Upload to Supabase Storage WITHOUT timeout to see what happens
+      console.log('Calling storage.from()...');
+      const bucket = supabase.storage.from('blog-images');
+      console.log('Got bucket reference:', !!bucket);
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Upload timeout after 10 seconds - likely a permissions or CORS issue')), 10000)
-      );
+      console.log('Calling upload()...');
+      const { data, error: uploadError } = await bucket.upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-      console.log('Waiting for upload to complete...');
-      const { data, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
-      console.log('Upload promise resolved');
+      console.log('Upload completed! Data:', data, 'Error:', uploadError);
 
       if (uploadError) {
         console.error('Upload error details:', uploadError);

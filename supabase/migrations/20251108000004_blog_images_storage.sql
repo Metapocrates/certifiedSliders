@@ -16,10 +16,6 @@ on conflict (id) do update set
 create policy "Admins can upload blog images"
 on storage.objects for insert
 to authenticated
-using (
-  bucket_id = 'blog-images'
-  and auth.uid() in (select user_id from public.admins)
-)
 with check (
   bucket_id = 'blog-images'
   and auth.uid() in (select user_id from public.admins)
