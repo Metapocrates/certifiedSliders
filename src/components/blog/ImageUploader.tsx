@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, type DragEvent } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
 
 interface ImageUploaderProps {
@@ -67,7 +67,13 @@ export default function ImageUploader({
     setUploading(true);
 
     try {
-      const supabase = createClient();
+      // Create a fresh Supabase client directly (bypassing auth-helpers singleton)
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      console.log('Created fresh Supabase client');
 
       // Generate unique filename
       const fileExt = file.name.split('.').pop();
