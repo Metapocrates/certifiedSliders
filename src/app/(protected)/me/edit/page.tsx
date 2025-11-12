@@ -6,6 +6,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import SettingsForm from "../../settings/SettingsForm";
 import AliasesManager from "../../settings/AliasesManager";
 import SocialMediaEditor from "@/components/profile/SocialMediaEditor";
+import ProfilePictureUploader from "@/components/profile/ProfilePictureUploader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -80,6 +81,10 @@ export default async function EditProfilePage() {
           </div>
           <div className="text-sm text-muted truncate">{initial.email}</div>
         </div>
+      </div>
+
+      <div className="mb-8 rounded-xl border border-app bg-card p-5">
+        <ProfilePictureUploader currentImageUrl={initial.profile_pic_url} />
       </div>
 
       <SettingsForm initial={initial} />

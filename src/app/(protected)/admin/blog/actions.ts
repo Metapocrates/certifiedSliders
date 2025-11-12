@@ -183,3 +183,42 @@ export async function setPostFeatured(formData: FormData) {
 
     return { ok: true };
 }
+
+export async function uploadBlogImage(formData: FormData) {
+    const supabase = createSupabaseServer();
+    const user = await getSessionUser();
+    if (!user) return { ok: false, message: "Not signed in." };
+    if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
+
+    const file = formData.get("image") as File | null;
+    if (!file) return { ok: false, message: "No file provided." };
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+        return { ok: false, message: "Please upload an image file" };
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        return { ok: false, message: "Image must be less than 5MB" };
+    }
+
+    // Generate unique filename
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = fileName;
+
+    const { error: upErr } = await supabase.storage
+        .from("blog-images")
+        .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type,
+        });
+
+    if (upErr) return { ok: false, message: upErr.message };
+
+    const { data: pub } = supabase.storage.from("blog-images").getPublicUrl(filePath);
+
+    return { ok: true, message: "Image uploaded.", url: pub.publicUrl };
+}
