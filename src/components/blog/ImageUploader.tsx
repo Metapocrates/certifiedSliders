@@ -94,7 +94,7 @@ export default function ImageUploader({
         console.error('Upload error details:', uploadError);
 
         // Check for specific error types
-        if (uploadError.statusCode === '403' || uploadError.message?.includes('permission') || uploadError.message?.includes('policy')) {
+        if (uploadError.message?.includes('permission') || uploadError.message?.includes('policy') || uploadError.message?.includes('403')) {
           throw new Error('Permission denied - ensure you are an admin with proper storage policies configured');
         }
 
