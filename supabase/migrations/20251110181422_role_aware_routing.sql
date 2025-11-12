@@ -43,7 +43,7 @@ COMMENT ON COLUMN public.parent_links.status IS 'pending | accepted | rejected |
 CREATE TABLE IF NOT EXISTS public.hs_staff (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  school_id uuid REFERENCES public.schools_highschool(id),
+  school_id uuid, -- Foreign key constraint will be added once schools_highschool table exists
   school_name text,
   school_state text,
   title text, -- 'Head Coach', 'Assistant Coach', 'Athletic Director'
