@@ -69,10 +69,26 @@ export default function ImageUploader({
     try {
       const supabase = createClient();
 
+      // First, verify the bucket exists
+      console.log('Checking if blog-images bucket exists...');
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets?.map(b => b.name));
+
+      if (bucketsError) {
+        console.error('Error listing buckets:', bucketsError);
+      }
+
+      const bucketExists = buckets?.some(b => b.name === 'blog-images');
+      if (!bucketExists) {
+        throw new Error('Storage bucket "blog-images" does not exist. Please run database migrations.');
+      }
+
       // Generate unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `${fileName}`;
+
+      console.log('Uploading file to blog-images bucket:', filePath);
 
       // Upload to Supabase Storage with timeout
       const uploadPromise = supabase.storage
@@ -83,13 +99,19 @@ export default function ImageUploader({
         });
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Upload timeout - please try again')), 30000)
+        setTimeout(() => reject(new Error('Upload timeout after 30 seconds - check storage policies and network')), 30000)
       );
 
       const { data, error: uploadError } = await Promise.race([uploadPromise, timeoutPromise]) as any;
 
       if (uploadError) {
         console.error('Upload error details:', uploadError);
+
+        // Check for specific error types
+        if (uploadError.statusCode === '403' || uploadError.message?.includes('permission') || uploadError.message?.includes('policy')) {
+          throw new Error('Permission denied - ensure you are an admin with proper storage policies configured');
+        }
+
         throw new Error(uploadError.message || 'Upload failed - storage bucket may not be configured');
       }
 
@@ -97,10 +119,14 @@ export default function ImageUploader({
         throw new Error('Upload failed - no data returned');
       }
 
+      console.log('Upload successful:', data);
+
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('blog-images')
         .getPublicUrl(filePath);
+
+      console.log('Public URL:', publicUrl);
 
       setPreview(publicUrl);
       onImageUploaded(publicUrl);
