@@ -1,12 +1,25 @@
--- Create blog-images storage bucket
-insert into storage.buckets (id, name, public)
-values ('blog-images', 'blog-images', true)
-on conflict (id) do nothing;
+-- Create blog-images storage bucket with full configuration
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'blog-images',
+  'blog-images',
+  true,
+  5242880, -- 5MB
+  ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp']
+)
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
 
 -- Allow admins to upload images
 create policy "Admins can upload blog images"
 on storage.objects for insert
 to authenticated
+using (
+  bucket_id = 'blog-images'
+  and auth.uid() in (select user_id from public.admins)
+)
 with check (
   bucket_id = 'blog-images'
   and auth.uid() in (select user_id from public.admins)
