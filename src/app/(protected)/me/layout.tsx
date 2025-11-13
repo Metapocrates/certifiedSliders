@@ -21,18 +21,8 @@ export default async function MeLayout({ children }: { children: ReactNode }) {
     .eq("id", user.id)
     .maybeSingle();
 
-  // Redirect non-athletes to their appropriate portals
-  if (profile?.user_type && profile.user_type !== 'athlete') {
-    const redirectMap: Record<string, string> = {
-      parent: '/parent/dashboard',
-      ncaa_coach: '/coach/portal',
-      hs_coach: '/hs/portal'
-    };
-    const redirectTo = redirectMap[profile.user_type];
-    if (redirectTo) {
-      redirect(redirectTo);
-    }
-  }
+  // Note: We don't redirect non-athletes here because all user types need access to /me/edit
+  // The /me (dashboard) page itself handles redirects for non-athletes
 
   return (
     <div className="flex min-h-[calc(100vh-64px)]">
@@ -43,13 +33,18 @@ export default async function MeLayout({ children }: { children: ReactNode }) {
               My Profile
             </p>
             <h2 className="mt-2 text-xl font-semibold text-app">
-              {profile?.full_name || "Athlete"}
+              {profile?.full_name || profile?.username || "User"}
             </h2>
             <p className="mt-1 text-xs text-muted">
-              Manage your profile, events, and public page
+              {profile?.user_type === 'athlete' || !profile?.user_type
+                ? 'Manage your profile, events, and public page'
+                : 'Manage your profile settings'}
             </p>
           </div>
-          <SidebarNav profileId={profile?.profile_id ?? null} />
+          <SidebarNav
+            profileId={profile?.profile_id ?? null}
+            userType={profile?.user_type ?? null}
+          />
         </div>
       </aside>
       <main className="flex-1 bg-app px-8 py-10">{children}</main>
