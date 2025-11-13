@@ -7,6 +7,7 @@ import SettingsForm from "../../settings/SettingsForm";
 import AliasesManager from "../../settings/AliasesManager";
 import SocialMediaEditor from "@/components/profile/SocialMediaEditor";
 import ProfilePictureUploader from "@/components/profile/ProfilePictureUploader";
+import SimpleProfileForm from "@/components/profile/SimpleProfileForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,7 +29,7 @@ export default async function EditProfilePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, class_year, class_year_locked_at, school_name, school_state, profile_pic_url, bio, gender, instagram_url, twitter_url, tiktok_url, youtube_url"
+      "id, username, full_name, class_year, class_year_locked_at, school_name, school_state, profile_pic_url, bio, gender, instagram_url, twitter_url, tiktok_url, youtube_url, user_type"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -51,13 +52,23 @@ export default async function EditProfilePage() {
     email: user.email ?? "",
   };
 
+  const simpleInitial = {
+    username: profile?.username ?? "",
+    full_name: profile?.full_name ?? "",
+    bio: profile?.bio ?? "",
+    email: user.email ?? "",
+  };
+
+  const isAthlete = !profile?.user_type || profile?.user_type === 'athlete';
+
   return (
     <div className="max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-app">Edit Profile Details</h1>
+        <h1 className="text-2xl font-semibold text-app">Edit Profile</h1>
         <p className="mt-2 text-sm text-muted">
-          Update your public username, bio, school info, and profile picture. Your public page will be at{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 text-xs">/athletes/&lt;username&gt;</code>.
+          {isAthlete
+            ? 'Update your public username, bio, school info, and profile picture.'
+            : 'Update your profile picture, username, and bio.'}
         </p>
       </div>
 
@@ -87,26 +98,32 @@ export default async function EditProfilePage() {
         <ProfilePictureUploader currentImageUrl={initial.profile_pic_url} />
       </div>
 
-      <SettingsForm initial={initial} />
+      {isAthlete ? (
+        <>
+          <SettingsForm initial={initial} />
 
-      <div id="social-media" className="mt-12 border-t border-app pt-8">
-        <SocialMediaEditor
-          initialData={{
-            instagram_url: profile?.instagram_url ?? null,
-            twitter_url: profile?.twitter_url ?? null,
-            tiktok_url: profile?.tiktok_url ?? null,
-            youtube_url: profile?.youtube_url ?? null,
-          }}
-        />
-      </div>
+          <div id="social-media" className="mt-12 border-t border-app pt-8">
+            <SocialMediaEditor
+              initialData={{
+                instagram_url: profile?.instagram_url ?? null,
+                twitter_url: profile?.twitter_url ?? null,
+                tiktok_url: profile?.tiktok_url ?? null,
+                youtube_url: profile?.youtube_url ?? null,
+              }}
+            />
+          </div>
 
-      <div className="mt-12 border-t border-app pt-8">
-        <h2 className="text-xl font-semibold text-app mb-2">Aliases & Nicknames</h2>
-        <p className="text-sm text-muted mb-6">
-          Add alternate names to make your profile easier to find in search. You can control which aliases are visible to the public.
-        </p>
-        <AliasesManager initialAliases={aliases ?? []} />
-      </div>
+          <div className="mt-12 border-t border-app pt-8">
+            <h2 className="text-xl font-semibold text-app mb-2">Aliases & Nicknames</h2>
+            <p className="text-sm text-muted mb-6">
+              Add alternate names to make your profile easier to find in search. You can control which aliases are visible to the public.
+            </p>
+            <AliasesManager initialAliases={aliases ?? []} />
+          </div>
+        </>
+      ) : (
+        <SimpleProfileForm initial={simpleInitial} />
+      )}
     </div>
   );
 }
