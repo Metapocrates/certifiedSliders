@@ -1,12 +1,11 @@
 [project]
 # Supabase project configuration
 
-[functions.process_email_queue]
-# Schedule email queue processing
-# Production: every 2 minutes
-# Staging: every 5 minutes
-
-[[functions.process_email_queue.schedule]]
-# Runs every 2 minutes (120 seconds)
-# Adjust for staging by changing to "*/5 * * * *" (every 5 minutes)
-cron = "*/2 * * * *"
+# Note: Cron schedules for edge functions are configured via Supabase Dashboard
+# or using the CLI/API, not in config.toml
+#
+# To set up the cron schedule for process_email_queue:
+# 1. Go to Supabase Dashboard > Edge Functions > process_email_queue
+# 2. Click "Add Cron Job"
+# 3. Set schedule to "*/2 * * * *" (every 2 minutes for production)
+# 4. Or use CLI: supabase functions schedule process_email_queue --cron "*/2 * * * *"
