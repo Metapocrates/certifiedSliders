@@ -1,11 +1,11 @@
 // Supabase Edge Function: Process Email Queue
-// Processes queued emails and sends them via SendGrid
+// Processes queued emails and sends them via Resend
 // Schedule this to run every 1-5 minutes via Supabase Dashboard
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const FROM_EMAIL = Deno.env.get("MAIL_FROM") || "noreply@certifiedsliders.com";
 const FROM_NAME = Deno.env.get("MAIL_FROM_NAME") || "Certified Sliders";
 
@@ -24,34 +24,28 @@ interface Email {
 }
 
 async function sendEmail(email: Email) {
-  if (!SENDGRID_API_KEY) {
-    throw new Error("SENDGRID_API_KEY not configured");
+  if (!RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY not configured");
   }
 
-  const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+  const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${SENDGRID_API_KEY}`,
+      Authorization: `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      personalizations: [
-        {
-          to: [{ email: email.to_email, name: email.to_name || undefined }],
-        },
-      ],
-      from: { email: FROM_EMAIL, name: FROM_NAME },
+      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      to: [email.to_email],
       subject: email.subject,
-      content: [
-        { type: "text/plain", value: email.body_text },
-        ...(email.body_html ? [{ type: "text/html", value: email.body_html }] : []),
-      ],
+      text: email.body_text,
+      html: email.body_html || undefined,
     }),
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`SendGrid error: ${res.status} ${errorText}`);
+    throw new Error(`Resend error: ${res.status} ${errorText}`);
   }
 }
 
