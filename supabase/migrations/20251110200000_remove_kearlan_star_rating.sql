@@ -8,6 +8,7 @@ BEGIN
   ALTER TABLE profiles DISABLE TRIGGER USER;
 
   -- Clear all athlete-specific fields
+  -- Use only username since profile_id column may not exist yet
   UPDATE profiles
   SET
     star_rating = NULL,
@@ -15,7 +16,7 @@ BEGIN
     gender = NULL,
     school_name = NULL,
     school_state = NULL
-  WHERE profile_id = 'CS-KR638' OR username = 'kearlan';
+  WHERE username = 'kearlan';
 
   -- Re-enable user triggers
   ALTER TABLE profiles ENABLE TRIGGER USER;
