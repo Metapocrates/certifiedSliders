@@ -91,20 +91,55 @@ async function processQueue() {
         .update({ status: "sent", sent_at: new Date().toISOString() })
         .eq("id", email.id);
 
+      // Log to audit_log
+      await supabase
+        .from("audit_log")
+        .insert({
+          action: "email_sent",
+          entity: "outbound_email",
+          entity_id: null, // email.id is bigserial, not uuid
+          context: {
+            email_id: email.id,
+            template: email.template,
+            to_email: email.to_email,
+            subject: email.subject,
+            meta: email.meta,
+          },
+        });
+
       sent++;
-      console.log(`✓ Sent email ${email.id} to ${email.to_email}`);
+      console.log(`✓ Sent email ${email.id} (${email.template}) to ${email.to_email}`);
     } catch (error: any) {
+      const errorMessage = error?.message || String(error);
+
       // Mark as failed
       await supabase
         .from("outbound_emails")
         .update({
           status: "failed",
-          error: error?.message || String(error),
+          error: errorMessage,
         })
         .eq("id", email.id);
 
+      // Log to audit_log
+      await supabase
+        .from("audit_log")
+        .insert({
+          action: "email_failed",
+          entity: "outbound_email",
+          entity_id: null, // email.id is bigserial, not uuid
+          context: {
+            email_id: email.id,
+            template: email.template,
+            to_email: email.to_email,
+            subject: email.subject,
+            error: errorMessage,
+            meta: email.meta,
+          },
+        });
+
       failed++;
-      console.error(`✗ Failed to send email ${email.id}:`, error);
+      console.error(`✗ Failed to send email ${email.id} (${email.template}):`, error);
     }
   }
 

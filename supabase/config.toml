@@ -1,0 +1,12 @@
+[project]
+# Supabase project configuration
+
+[functions.process_email_queue]
+# Schedule email queue processing
+# Production: every 2 minutes
+# Staging: every 5 minutes
+
+[[functions.process_email_queue.schedule]]
+# Runs every 2 minutes (120 seconds)
+# Adjust for staging by changing to "*/5 * * * *" (every 5 minutes)
+cron = "*/2 * * * *"

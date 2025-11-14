@@ -34,6 +34,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: "/admin/videos", label: "Video Moderation" },
     { href: "/admin/admins", label: "Admin Management" },
     { href: "/admin/blog", label: "Blog" },
+    { href: "/admin/emails", label: "Email Queue" },
   ];
 
   return (
