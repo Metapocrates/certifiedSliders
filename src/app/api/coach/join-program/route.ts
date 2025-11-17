@@ -18,6 +18,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing program_id" }, { status: 400 });
   }
 
+  // Set user_type to ncaa_coach in profiles table
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({ user_type: "ncaa_coach" })
+    .eq("id", user.id);
+
+  if (profileError) {
+    console.error("Error updating user_type:", profileError);
+    return NextResponse.json({ error: profileError.message }, { status: 500 });
+  }
+
   // Create program membership
   const { error } = await supabase
     .from("program_memberships")
