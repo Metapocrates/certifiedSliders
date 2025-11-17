@@ -85,7 +85,7 @@ SECURITY DEFINER
 AS $$
   SELECT DISTINCT ON (r.event)
     r.event,
-    r.mark as mark_text,
+    COALESCE(r.mark_text, r.mark_seconds::text) as mark_text,
     r.mark_seconds,
     r.meet_name,
     r.meet_date,
@@ -126,7 +126,7 @@ SECURITY DEFINER
 AS $$
   SELECT
     r.id as result_id,
-    r.mark as mark_text,
+    COALESCE(r.mark_text, r.mark_seconds::text) as mark_text,
     r.mark_seconds,
     r.meet_name,
     r.meet_date,
