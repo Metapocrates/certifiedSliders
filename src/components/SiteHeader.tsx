@@ -37,6 +37,19 @@ export default async function Header() {
     ? '/parent/submissions/new'
     : '/submit-result';
 
+  // Determine dashboard URL based on user type
+  const dashboardHref =
+    profile?.user_type === 'ncaa_coach' ? '/coach/portal' :
+    profile?.user_type === 'hs_coach' ? '/hs/portal' :
+    admin ? '/admin/home' :
+    '/me';
+
+  const dashboardLabel =
+    profile?.user_type === 'ncaa_coach' ? 'Coach Portal' :
+    profile?.user_type === 'hs_coach' ? 'HS Portal' :
+    admin ? 'Admin' :
+    'My Profile';
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container flex flex-wrap items-center justify-between gap-3 py-2 sm:py-3">
@@ -91,8 +104,8 @@ export default async function Header() {
                 Submit Result
               </Link>
 
-              <Link href="/me" className="btn whitespace-nowrap text-xs sm:text-sm">
-                My Profile
+              <Link href={dashboardHref} className="btn whitespace-nowrap text-xs sm:text-sm">
+                {dashboardLabel}
               </Link>
 
               <form action={signOut}>
@@ -106,9 +119,9 @@ export default async function Header() {
               </form>
 
               <Link
-                href="/me"
+                href={dashboardHref}
                 className="relative block h-8 w-8 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
-                title="My profile"
+                title={dashboardLabel}
               >
                 <Image
                   src={profile?.profile_pic_url ?? "/avatar-placeholder.png"}
