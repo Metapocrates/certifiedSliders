@@ -73,7 +73,34 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogle(e: React.MouseEvent<HTMLButtonElement>) {
+  async function handleGoogleSignIn(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setMsg("");
+
+    try {
+      const supabase = supabaseBrowser();
+      const origin = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
+      const nextParam = new URLSearchParams(window.location.search).get("next");
+      const redirectPath = nextParam || "/auth/post-login";
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) window.location.assign(data.url);
+    } catch (err: any) {
+      setMsg(err?.message || "Google sign-in failed");
+      setBusy(false);
+    }
+  }
+
+  async function handleGoogleSignUp(e: React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     // Redirect to registration page for user type selection
     const nextParam = new URLSearchParams(window.location.search).get("next");
@@ -171,12 +198,36 @@ export default function LoginPage() {
               </div>
             ) : null}
 
-            <div className="mt-8 space-y-6">
+            <div className="mt-8 space-y-4">
               <button
                 type="button"
-                onClick={handleGoogle}
+                onClick={handleGoogleSignIn}
                 disabled={busy}
                 className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-app bg-card text-sm font-semibold text-app transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
+                  <span className="text-sm font-bold text-[#4285F4]">G</span>
+                </span>
+                {busy ? "Redirecting…" : "Sign in with Google"}
+              </button>
+              <p className="text-xs text-center text-muted -mt-2">
+                Existing users: Sign in with your Google account
+              </p>
+
+              <div className="relative my-4">
+                <span className="block h-px w-full bg-muted" />
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <span className="rounded-full bg-card px-3 text-xs font-semibold uppercase tracking-[0.3em] text-muted">
+                    Or create new account
+                  </span>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignUp}
+                disabled={busy}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-full border-2 border-scarlet bg-card text-sm font-semibold text-scarlet transition hover:bg-scarlet hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
                   <span className="text-sm font-bold text-[#4285F4]">G</span>
