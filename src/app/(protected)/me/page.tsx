@@ -11,6 +11,8 @@ import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
 import MyVideos from "@/components/videos/MyVideos";
 import ParentInvitations from "@/components/athlete/ParentInvitations";
+import ProfileBorder from "@/components/athlete/ProfileBorder";
+import { getStarDisplay } from "@/lib/profileBorder";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -62,7 +64,7 @@ export default async function MePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type"
+      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type, star_rating"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -235,54 +237,61 @@ type IdentityRow = {
         </div>
       </div>
 
-      <div className="mb-8 flex items-center gap-4 rounded-xl border border-app bg-card p-5">
-        <div className="relative h-16 w-16 overflow-hidden rounded-full bg-gray-100">
-          {profile?.profile_pic_url ? (
-            <Image src={profile.profile_pic_url} alt="" fill sizes="64px" className="object-cover" />
-          ) : (
-            <Image src="/favicon-64x64.png" alt="" fill sizes="64px" className="object-contain p-2" />
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-semibold text-app">
-              {profile?.full_name || user.email || "Athlete"}
-            </h2>
-            {profile?.profile_id && (
-              <span className="rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-mono text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
-                {profile.profile_id}
-              </span>
-            )}
-            {profile?.user_type && profile.user_type !== 'athlete' && (
-              <span className="rounded-md bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700">
-                {profile.user_type === 'ncaa_coach' && '🎓 College Coach'}
-                {profile.user_type === 'parent' && '👨‍👩‍👧‍👦 Parent'}
-                {profile.user_type === 'hs_coach' && '📋 HS Coach'}
-              </span>
+      <ProfileBorder starRating={profile?.star_rating} showBadge className="mb-8">
+        <div className="flex items-center gap-4">
+          <div className="relative h-16 w-16 overflow-hidden rounded-full bg-gray-100">
+            {profile?.profile_pic_url ? (
+              <Image src={profile.profile_pic_url} alt="" fill sizes="64px" className="object-cover" />
+            ) : (
+              <Image src="/favicon-64x64.png" alt="" fill sizes="64px" className="object-contain p-2" />
             )}
           </div>
-          <p className="text-sm text-muted">
-            {profile?.school_name
-              ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
-              : "No school set"}
-            {" • "}
-            {profile?.class_year ? `Class of ${profile.class_year}` : "No class year"}
-          </p>
-          {profile?.profile_id && (
-            <p className="mt-1 text-xs text-muted">
-              Public page:{" "}
-              <Link
-                className="font-medium text-scarlet hover:underline"
-                href={`/athletes/${profile.profile_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                /athletes/{profile.profile_id} →
-              </Link>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg font-semibold text-app">
+                {profile?.full_name || user.email || "Athlete"}
+              </h2>
+              {profile?.star_rating != null && profile.star_rating > 0 && (
+                <span className="text-base">
+                  {getStarDisplay(profile.star_rating).emoji}
+                </span>
+              )}
+              {profile?.profile_id && (
+                <span className="rounded-md bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs font-mono text-gray-600 dark:text-gray-400 border border-gray-300 dark:border-gray-600">
+                  {profile.profile_id}
+                </span>
+              )}
+              {profile?.user_type && profile.user_type !== 'athlete' && (
+                <span className="rounded-md bg-blue-100 dark:bg-blue-900 px-2 py-0.5 text-xs font-semibold text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-700">
+                  {profile.user_type === 'ncaa_coach' && '🎓 College Coach'}
+                  {profile.user_type === 'parent' && '👨‍👩‍👧‍👦 Parent'}
+                  {profile.user_type === 'hs_coach' && '📋 HS Coach'}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-muted">
+              {profile?.school_name
+                ? `${profile.school_name}${profile.school_state ? `, ${profile.school_state}` : ""}`
+                : "No school set"}
+              {" • "}
+              {profile?.class_year ? `Class of ${profile.class_year}` : "No class year"}
             </p>
-          )}
+            {profile?.profile_id && (
+              <p className="mt-1 text-xs text-muted">
+                Public page:{" "}
+                <Link
+                  className="font-medium text-scarlet hover:underline"
+                  href={`/athletes/${profile.profile_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  /athletes/{profile.profile_id} →
+                </Link>
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      </ProfileBorder>
 
       {parentInvitations.length > 0 && (
         <div className="mb-8">
