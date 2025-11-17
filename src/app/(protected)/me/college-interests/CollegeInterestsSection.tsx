@@ -1,12 +1,16 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { addCollegeInterest, removeCollegeInterest } from "./actions";
+import { addCollegeInterest, removeCollegeInterest, toggleDreamSchool } from "./actions";
 
 export type CollegeInterest = {
   id: string;
   collegeName: string;
   createdAt: string;
+  isDreamSchool?: boolean;
+  lastModifiedAt?: string;
+  canModify?: boolean;
+  daysUntilModifiable?: number;
 };
 
 type Suggestion = {
@@ -67,6 +71,23 @@ export default function CollegeInterestsSection({
     });
   }
 
+  function handleToggleDream(id: string, currentValue: boolean) {
+    setError(null);
+    startTransition(async () => {
+      const res = await toggleDreamSchool(id, !currentValue);
+      if (!res?.ok) {
+        setError(res?.message ?? "Could not update dream school status.");
+        return;
+      }
+      // Update local state
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, isDreamSchool: !currentValue } : item
+        )
+      );
+    });
+  }
+
   async function fetchSuggestions(name: string) {
     const query = name.trim();
     if (query.length < 2) {
@@ -120,24 +141,60 @@ export default function CollegeInterestsSection({
       </div>
 
       {items.length ? (
-        <ul className="flex flex-wrap gap-3">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="group flex items-center gap-2 rounded-full border border-app bg-muted px-3 py-1.5 text-sm font-medium text-app"
-            >
-              <span>{item.collegeName}</span>
-              <button
-                type="button"
-                onClick={() => handleRemove(item.id)}
-                disabled={pending}
-                className="text-xs text-muted transition hover:text-scarlet"
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-2">
+          <p className="text-xs text-muted">
+            Tip: Mark up to 2 schools as dream schools. You can modify entries after 14 days. ({items.length}/10 schools)
+          </p>
+          <ul className="flex flex-wrap gap-3">
+            {items.map((item) => {
+              const dreamCount = items.filter((i) => i.isDreamSchool).length;
+              const canMarkDream = !item.isDreamSchool && dreamCount < 2;
+
+              return (
+                <li
+                  key={item.id}
+                  className={`group flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium ${
+                    item.isDreamSchool
+                      ? "border-yellow-400 bg-yellow-50 text-yellow-800"
+                      : "border-app bg-muted text-app"
+                  }`}
+                >
+                  {item.isDreamSchool && <span className="text-base">⭐</span>}
+                  <span>{item.collegeName}</span>
+                  <div className="flex items-center gap-1">
+                    {(canMarkDream || item.isDreamSchool) && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleDream(item.id, item.isDreamSchool || false)}
+                        disabled={pending}
+                        title={
+                          item.isDreamSchool
+                            ? "Remove dream school flag"
+                            : "Mark as dream school"
+                        }
+                        className={`text-xs transition ${
+                          item.isDreamSchool
+                            ? "text-yellow-600 hover:text-yellow-800"
+                            : "text-gray-400 hover:text-yellow-500"
+                        } disabled:opacity-50`}
+                      >
+                        {item.isDreamSchool ? "★" : "☆"}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(item.id)}
+                      disabled={pending}
+                      className="text-xs text-muted transition hover:text-scarlet"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       ) : (
         <p className="rounded-2xl border border-dashed border-app/60 bg-muted/40 px-4 py-4 text-sm text-muted">
           No colleges tracked yet. Add one below.

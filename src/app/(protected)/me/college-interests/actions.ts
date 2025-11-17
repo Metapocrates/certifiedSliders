@@ -72,3 +72,25 @@ export async function removeCollegeInterest(id: string) {
   await revalidateProfilePaths(supabase);
   return { ok: true };
 }
+
+export async function toggleDreamSchool(id: string, isDream: boolean) {
+  const { supabase, user } = await getCurrentUser();
+  if (!user) return { ok: false, message: "Not signed in." };
+
+  const { data, error } = await supabase.rpc("rpc_toggle_dream_school", {
+    _interest_id: id,
+    _is_dream: isDream,
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  const result = data?.[0];
+  if (!result?.success) {
+    return { ok: false, message: result?.message || "Failed to update dream school status" };
+  }
+
+  await revalidateProfilePaths(supabase);
+  return { ok: true, message: result.message };
+}
