@@ -71,15 +71,13 @@ COMMENT ON FUNCTION update_pr_flags IS 'Automatically updates is_pr flag for all
 CREATE OR REPLACE FUNCTION rpc_get_athlete_prs(_athlete_id uuid)
 RETURNS TABLE (
   event text,
-  mark text,
-  mark_seconds_adj numeric,
+  mark_text text,
+  mark_seconds numeric,
   meet_name text,
   meet_date date,
   season text,
-  wind numeric,
-  timing text,
   proof_url text,
-  status text
+  result_status text
 )
 LANGUAGE sql
 STABLE
@@ -87,20 +85,18 @@ SECURITY DEFINER
 AS $$
   SELECT DISTINCT ON (r.event)
     r.event,
-    r.mark,
-    r.mark_seconds_adj,
+    r.mark as mark_text,
+    r.mark_seconds,
     r.meet_name,
     r.meet_date,
     r.season,
-    r.wind,
-    r.timing,
     r.proof_url,
-    r.status
+    r.status as result_status
   FROM public.results r
   WHERE r.athlete_id = _athlete_id
     AND r.status IN ('verified', 'approved')
     AND r.is_pr = true
-  ORDER BY r.event, r.mark_seconds_adj ASC NULLS LAST, r.meet_date DESC;
+  ORDER BY r.event, r.mark_seconds ASC NULLS LAST, r.meet_date DESC;
 $$;
 
 COMMENT ON FUNCTION rpc_get_athlete_prs IS 'Get personal records for an athlete across all events';
@@ -113,16 +109,14 @@ CREATE OR REPLACE FUNCTION rpc_get_athlete_event_history(
   _season text DEFAULT NULL
 )
 RETURNS TABLE (
-  id bigint,
-  mark text,
-  mark_seconds_adj numeric,
+  result_id bigint,
+  mark_text text,
+  mark_seconds numeric,
   meet_name text,
   meet_date date,
   season text,
-  wind numeric,
-  timing text,
   proof_url text,
-  status text,
+  result_status text,
   is_pr boolean,
   created_at timestamptz
 )
@@ -131,16 +125,14 @@ STABLE
 SECURITY DEFINER
 AS $$
   SELECT
-    r.id,
-    r.mark,
-    r.mark_seconds_adj,
+    r.id as result_id,
+    r.mark as mark_text,
+    r.mark_seconds,
     r.meet_name,
     r.meet_date,
     r.season,
-    r.wind,
-    r.timing,
     r.proof_url,
-    r.status,
+    r.status as result_status,
     r.is_pr,
     r.created_at
   FROM public.results r

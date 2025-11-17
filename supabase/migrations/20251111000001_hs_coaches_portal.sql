@@ -519,6 +519,8 @@ CREATE POLICY "Team staff can create bulk jobs"
 -- ============================================================================
 -- RLS POLICIES: TEAM METRICS DAILY
 -- ============================================================================
+-- DISABLED: Waiting for team_metrics_daily materialized view to be created
+/*
 ALTER MATERIALIZED VIEW team_metrics_daily OWNER TO postgres;
 
 -- Team staff can view their team's metrics
@@ -532,6 +534,7 @@ CREATE POLICY "Team staff can view metrics"
         AND team_staff.status = 'active'
     )
   );
+*/
 
 -- ============================================================================
 -- HELPER FUNCTIONS
