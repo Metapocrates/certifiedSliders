@@ -1,7 +1,7 @@
 // src/app/(protected)/admin/emails/page.tsx
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
-import { isAdmin } from "../actions";
+import { isAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

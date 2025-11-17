@@ -148,6 +148,24 @@ export default async function CoachPortalPage({
         </a>
       </div>
 
+      {/* Navigation Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-8">
+          <a
+            href="/coach/portal"
+            className="border-b-2 border-app px-1 py-4 text-sm font-medium text-app"
+          >
+            Athletes
+          </a>
+          <a
+            href={`/coach/portal/analytics${activeMembership.program_id ? `?program=${activeMembership.program_id}` : ""}`}
+            className="border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+          >
+            Analytics {tier < 1 && <span className="ml-1 text-xs text-purple-600">Premium</span>}
+          </a>
+        </nav>
+      </div>
+
       {/* Program Switcher */}
       {programs.length > 1 && (
         <div className="space-y-2">
