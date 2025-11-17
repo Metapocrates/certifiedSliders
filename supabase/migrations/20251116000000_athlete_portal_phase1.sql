@@ -79,10 +79,12 @@ RETURNS TABLE (
   proof_url text,
   result_status text
 )
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 AS $$
+BEGIN
+  RETURN QUERY
   SELECT DISTINCT ON (r.event)
     r.event,
     r.mark as mark_text,
@@ -92,11 +94,12 @@ AS $$
     r.season,
     r.proof_url,
     r.status as result_status
-  FROM public.results r
+  FROM results r
   WHERE r.athlete_id = _athlete_id
     AND r.status IN ('verified', 'approved')
     AND r.is_pr = true
   ORDER BY r.event, r.mark_seconds ASC NULLS LAST, r.meet_date DESC;
+END;
 $$;
 
 COMMENT ON FUNCTION rpc_get_athlete_prs IS 'Get personal records for an athlete across all events';
@@ -120,10 +123,12 @@ RETURNS TABLE (
   is_pr boolean,
   created_at timestamptz
 )
-LANGUAGE sql
+LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 AS $$
+BEGIN
+  RETURN QUERY
   SELECT
     r.id as result_id,
     r.mark as mark_text,
@@ -135,12 +140,13 @@ AS $$
     r.status as result_status,
     r.is_pr,
     r.created_at
-  FROM public.results r
+  FROM results r
   WHERE r.athlete_id = _athlete_id
     AND r.event = _event
     AND r.status IN ('verified', 'approved', 'pending')
     AND (_season IS NULL OR r.season = _season)
   ORDER BY r.meet_date DESC NULLS LAST, r.created_at DESC;
+END;
 $$;
 
 COMMENT ON FUNCTION rpc_get_athlete_event_history IS 'Get all results for a specific event, optionally filtered by season';
