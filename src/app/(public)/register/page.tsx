@@ -88,12 +88,16 @@ export default function RegisterPage() {
         }),
       });
 
-      // Redirect based on user type
-      if (selectedType === "ncaa_coach") {
-        router.push("/coach/onboarding");
-      } else {
-        router.push("/me");
-      }
+      // Redirect to role-based dashboard
+      const roleRoutes: Record<string, string> = {
+        athlete: "/dashboard/athlete",
+        hs_coach: "/dashboard/hs-coach",
+        ncaa_coach: "/dashboard/ncaa-coach",
+        parent: "/dashboard/parent",
+      };
+
+      const nextRoute = roleRoutes[selectedType] || "/dashboard/athlete";
+      router.push(nextRoute);
     } catch (err: any) {
       setError(err?.message || "Signup failed");
       setLoading(false);
@@ -113,7 +117,14 @@ export default function RegisterPage() {
       const supabase = supabaseBrowser();
       const origin = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
 
-      const redirectPath = selectedType === "ncaa_coach" ? "/coach/onboarding" : "/me";
+      const roleRoutes: Record<string, string> = {
+        athlete: "/dashboard/athlete",
+        hs_coach: "/dashboard/hs-coach",
+        ncaa_coach: "/dashboard/ncaa-coach",
+        parent: "/dashboard/parent",
+      };
+
+      const redirectPath = roleRoutes[selectedType] || "/dashboard/athlete";
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",

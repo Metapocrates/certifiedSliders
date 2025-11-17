@@ -59,10 +59,12 @@ export default function LoginPage() {
 
       await syncServerSession(supabase);
 
-      // ✅ Redirect: honor ?next=/... if present and safe; else go home
+      // ✅ Redirect: use post-login handler to determine dashboard based on role
       const nextParam = new URLSearchParams(window.location.search).get("next");
-      const next = nextParam && /^\/(?!\/)/.test(nextParam) ? nextParam : "/";
-      router.replace(next);
+      const postLoginUrl = nextParam
+        ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
+        : "/auth/post-login";
+      router.replace(postLoginUrl);
       return;
     } catch (err: any) {
       setMsg(err?.message || "Auth error");
