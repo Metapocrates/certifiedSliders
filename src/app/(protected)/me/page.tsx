@@ -11,6 +11,7 @@ import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
 import SocialLinksSection from "./social-links/SocialLinksSection";
 import type { SocialLinks } from "./social-links/actions";
+import CertifyResultSection from "./certify/CertifyResultSection";
 import MyVideos from "@/components/videos/MyVideos";
 import ParentInvitations from "@/components/athlete/ParentInvitations";
 import ProfileBorder from "@/components/athlete/ProfileBorder";
@@ -150,6 +151,14 @@ export default async function MePage() {
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
+  // Fetch results submissions (for Fast Verify / 2-Link Method)
+  const { data: submissionsData } = await supabase
+    .from("results_submissions")
+    .select("id, status, mode, profile_url, result_url, context_url, created_at, decided_at, reason")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
   // Map invitations to serializable format for client component
   const parentInvitations = JSON.parse(JSON.stringify(
     (parentInvitationsData ?? []).map((inv: any) => ({
@@ -163,6 +172,19 @@ export default async function MePage() {
       } : null
     }))
   ));
+
+  // Map submissions to serializable format
+  const submissions = (submissionsData ?? []).map((sub: any) => ({
+    id: sub.id,
+    status: sub.status,
+    mode: sub.mode,
+    profileUrl: sub.profile_url,
+    resultUrl: sub.result_url,
+    contextUrl: sub.context_url,
+    createdAt: sub.created_at,
+    decidedAt: sub.decided_at,
+    reason: sub.reason,
+  }));
 
 type IdentityRow = {
   id: string;
@@ -302,6 +324,11 @@ type IdentityRow = {
       )}
 
       <LinkedProfilesSection identities={linkedIdentities} />
+
+      <CertifyResultSection
+        submissions={submissions}
+        hasVerifiedIdentity={linkedIdentities.some(id => id.verified)}
+      />
 
       <SocialLinksSection initialLinks={(profile?.social_links as SocialLinks) || {}} />
 
