@@ -10,6 +10,7 @@ type PageProps = {
   params: { profileId: string };
   searchParams?: {
     sort?: "date_desc" | "date_asc" | "event_asc" | "season_then_date";
+    season?: "all" | "indoor" | "outdoor";
   };
 };
 
@@ -53,15 +54,22 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
     );
   }
 
-  // Fetch all verified results for this athlete
-  const { data: results } = await supabase
+  // Build query with optional season filter
+  const seasonFilter = searchParams?.season || "all";
+  let query = supabase
     .from("results")
     .select(
-      "event, mark, mark_seconds_adj, wind, season, meet_name, meet_date, proof_url, status, grade"
+      "event, mark, mark_seconds, wind, season, meet_name, meet_date, proof_url, status, grade, is_pr"
     )
     .eq("athlete_id", profile.id)
-    .eq("status", "verified")
-    .limit(2000);
+    .in("status", ["verified", "approved"]);
+
+  // Apply season filter if specified
+  if (seasonFilter === "indoor" || seasonFilter === "outdoor") {
+    query = query.eq("season", seasonFilter);
+  }
+
+  const { data: results } = await query.limit(2000);
 
   const list = (results ?? []).slice();
 
@@ -108,7 +116,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
         </p>
       </div>
 
-      {/* Sort controls */}
+      {/* Sort and Filter controls */}
       <form className="mb-4 flex flex-wrap items-center gap-2" method="get">
         <label className="text-sm">
           <span className="mr-2 font-medium">Sort:</span>
@@ -121,6 +129,18 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
             <option value="date_asc">Oldest first</option>
             <option value="event_asc">Event (A→Z)</option>
             <option value="season_then_date">Season → Newest</option>
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="mr-2 font-medium">Season:</span>
+          <select
+            name="season"
+            defaultValue={seasonFilter}
+            className="rounded-lg border px-3 py-2 text-sm"
+          >
+            <option value="all">All seasons</option>
+            <option value="outdoor">Outdoor only</option>
+            <option value="indoor">Indoor only</option>
           </select>
         </label>
         <button
@@ -138,6 +158,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
             <tr className="text-left">
               <th className="px-3 py-2">Event</th>
               <th className="px-3 py-2">Mark</th>
+              <th className="px-3 py-2">PR</th>
               <th className="px-3 py-2">Wind</th>
               <th className="px-3 py-2">Grade</th>
               <th className="px-3 py-2">Season</th>
@@ -149,13 +170,13 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td className="px-3 py-3 text-gray-600" colSpan={8}>
+                <td className="px-3 py-3 text-gray-600" colSpan={9}>
                   No verified results yet.
                 </td>
               </tr>
             ) : (
               list.map((r: any, i: number) => {
-                const mark = fmtTime(r.mark_seconds_adj, r.mark);
+                const mark = fmtTime(r.mark_seconds, r.mark);
                 const wind =
                   r.wind != null ? `${Number(r.wind).toFixed(1)} m/s` : "—";
                 const grade = formatGrade(r.grade);
@@ -167,6 +188,15 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
                   <tr key={`${r.event}-${r.meet_date}-${i}`} className="border-t">
                     <td className="px-3 py-2">{r.event || "—"}</td>
                     <td className="px-3 py-2 font-medium">{mark}</td>
+                    <td className="px-3 py-2">
+                      {r.is_pr ? (
+                        <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800 border border-yellow-300">
+                          PR
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="px-3 py-2">{wind}</td>
                     <td className="px-3 py-2">{grade}</td>
                     <td className="px-3 py-2">{season}</td>
