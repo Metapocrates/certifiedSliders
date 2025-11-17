@@ -9,6 +9,8 @@ import CollegeInterestsSection from "./college-interests/CollegeInterestsSection
 import type { CollegeInterest } from "./college-interests/CollegeInterestsSection";
 import LinkedProfilesSection from "./linked-profiles/LinkedProfilesSection";
 import type { LinkedIdentity } from "./linked-profiles/LinkedProfilesSection";
+import SocialLinksSection from "./social-links/SocialLinksSection";
+import type { SocialLinks } from "./social-links/actions";
 import MyVideos from "@/components/videos/MyVideos";
 import ParentInvitations from "@/components/athlete/ParentInvitations";
 import ProfileBorder from "@/components/athlete/ProfileBorder";
@@ -64,7 +66,7 @@ export default async function MePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type, star_rating"
+      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type, star_rating, social_links"
     )
     .eq("id", user.id)
     .maybeSingle();
@@ -300,6 +302,8 @@ type IdentityRow = {
       )}
 
       <LinkedProfilesSection identities={linkedIdentities} />
+
+      <SocialLinksSection initialLinks={(profile?.social_links as SocialLinks) || {}} />
 
       <CollegeInterestsSection interests={collegeInterests} />
 
