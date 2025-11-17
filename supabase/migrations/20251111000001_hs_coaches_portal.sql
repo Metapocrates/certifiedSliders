@@ -114,7 +114,7 @@ CREATE INDEX idx_hs_athlete_team_requests_status ON hs_athlete_team_requests(sta
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS hs_attestations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  result_id INT NOT NULL REFERENCES results(id) ON DELETE CASCADE,
+  result_id UUID NOT NULL REFERENCES results(id) ON DELETE CASCADE,
   team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
   attester_id UUID NOT NULL REFERENCES auth.users(id),
   decision TEXT NOT NULL CHECK (decision IN ('approved', 'rejected')),
@@ -188,6 +188,8 @@ CREATE INDEX idx_rate_limit_buckets_window_end ON rate_limit_buckets(window_end)
 -- TEAM METRICS DAILY (MATERIALIZED VIEW)
 -- ============================================================================
 -- TODO: Populate this via cron job daily
+-- DISABLED: Waiting for results table to have status column
+/*
 CREATE MATERIALIZED VIEW IF NOT EXISTS team_metrics_daily AS
 SELECT
   tm.team_id,
@@ -205,6 +207,7 @@ WHERE tm.status = 'active'
 GROUP BY tm.team_id;
 
 CREATE UNIQUE INDEX idx_team_metrics_daily_team_id ON team_metrics_daily(team_id);
+*/
 
 -- ============================================================================
 -- RLS POLICIES: TEAMS
