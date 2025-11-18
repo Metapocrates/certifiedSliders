@@ -10,6 +10,7 @@ type Program = {
   division: string | null;
   location_city: string | null;
   location_state: string | null;
+  is_test_program?: boolean;
 };
 
 export default function ProgramSelector({ programs }: { programs: Program[] }) {
@@ -145,7 +146,14 @@ export default function ProgramSelector({ programs }: { programs: Program[] }) {
               disabled={loading}
               className="w-full rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-accent hover:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <div className="font-semibold">{program.name}</div>
+              <div className="flex items-center gap-2">
+                <div className="font-semibold">{program.name}</div>
+                {program.is_test_program && (
+                  <span className="rounded-md bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
+                    TEST ONLY
+                  </span>
+                )}
+              </div>
               {program.division && (
                 <div className="text-sm text-muted-foreground">{program.division}</div>
               )}

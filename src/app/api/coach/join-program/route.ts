@@ -18,6 +18,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing program_id" }, { status: 400 });
   }
 
+  // Fetch the selected program to check if it's a test program
+  const { data: program, error: programError } = await supabase
+    .from("programs")
+    .select("id, name, domain, is_test_program, allowed_test_email_domains")
+    .eq("id", programId)
+    .single();
+
+  if (programError || !program) {
+    console.error("Error fetching program:", programError);
+    return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
+
+  // Email domain validation
+  const userEmail = user.email?.toLowerCase();
+  const emailDomain = userEmail?.split('@').pop();
+  const isEduEmail = emailDomain?.endsWith('.edu') ?? false;
+
+  // Check if email is allowed for this program
+  const isAllowedTestDomain = program.is_test_program &&
+    program.allowed_test_email_domains?.includes(emailDomain ?? '');
+
+  // Validation: either .edu email OR allowed test domain for test programs
+  if (!isEduEmail && !isAllowedTestDomain) {
+    return NextResponse.json({
+      error: program.is_test_program
+        ? `Email domain not allowed for test program. Allowed domains: ${program.allowed_test_email_domains?.join(', ')}`
+        : "Only .edu email addresses can register for NCAA programs. Please use your official school email address."
+    }, { status: 403 });
+  }
+
   // Set user_type to ncaa_coach in profiles table
   const { error: profileError } = await supabase
     .from("profiles")
@@ -29,13 +59,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 500 });
   }
 
-  // Create program membership
+  // Create program membership with test flag
   const { error } = await supabase
     .from("program_memberships")
     .insert({
       program_id: programId,
       user_id: user.id,
       role: "coach",
+      is_test_coach: program.is_test_program ?? false,
     });
 
   if (error) {

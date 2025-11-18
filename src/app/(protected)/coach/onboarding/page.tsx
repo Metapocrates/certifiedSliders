@@ -23,10 +23,10 @@ export default async function CoachOnboardingPage() {
     redirect("/coach/portal");
   }
 
-  // Fetch all available programs
+  // Fetch all available programs (including test flags)
   const { data: programs } = await supabase
     .from("programs")
-    .select("id, name, short_name, division, location_city, location_state")
+    .select("id, name, short_name, division, location_city, location_state, is_test_program")
     .eq("is_active", true)
     .order("name");
 
