@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/compat";
-import { getUserRole } from "@/lib/roles";
+import { isAdminUser } from "@/lib/roles";
 
 /**
  * Admin API endpoint to reset all test university data
@@ -27,8 +27,8 @@ export async function DELETE(request: Request) {
   }
 
   // Check if user is admin
-  const roleInfo = await getUserRole(user.id);
-  if (!roleInfo || roleInfo.role !== "admin") {
+  const isAdmin = await isAdminUser();
+  if (!isAdmin) {
     return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
   }
 
