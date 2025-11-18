@@ -188,15 +188,15 @@ export default function TestToolsPage() {
             It allows developers and QA testers to register as coaches using non-.edu email addresses (Gmail, iCloud, Outlook, Yahoo).
           </p>
           <p>
-            When signing up as a coach, select "Certified Sliders Test University Track & Field" from the program list.
-            You'll see a "(TEST ONLY)" badge next to it.
+            When signing up as a coach, select &quot;Certified Sliders Test University Track &amp; Field&quot; from the program list.
+            You&apos;ll see a &quot;(TEST ONLY)&quot; badge next to it.
           </p>
           <p>
             Test coaches are automatically verified and can access all coach portal features just like real coaches.
-            A yellow banner at the top of the portal will remind you that you're in test mode.
+            A yellow banner at the top of the portal will remind you that you&apos;re in test mode.
           </p>
           <p className="font-medium">
-            Use the "Reset Test University Data" button above to clean up test coaches and start fresh.
+            Use the &quot;Reset Test University Data&quot; button above to clean up test coaches and start fresh.
           </p>
         </div>
       </div>
