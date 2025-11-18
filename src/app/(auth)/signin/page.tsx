@@ -62,15 +62,27 @@ export default function SignInPage() {
     setPendingPw(true);
     try {
       // Sign in only (signup redirects to /register)
-      const { error } = await supabaseBrowser.auth.signInWithPassword({
+      const { data, error } = await supabaseBrowser.auth.signInWithPassword({
         email: emailPw,
         password,
       });
 
       if (error) throw error;
-      await fetch("/auth/callback", { method: "POST" });
-      router.push("/me");
-      router.refresh();
+
+      // Sync session to server cookies
+      if (data?.session) {
+        await fetch("/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          }),
+        });
+      }
+
+      // Navigate to post-login handler which will redirect to appropriate dashboard
+      window.location.href = "/auth/post-login";
     } catch (e: any) {
       setErr(e?.message ?? "Sign-in failed.");
     } finally {
