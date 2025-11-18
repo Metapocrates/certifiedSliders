@@ -20,19 +20,38 @@ const { count: currentCount } = await supabase
 
 console.log(`Current programs count: ${currentCount}`);
 
-// Run the sync query - fetch all track & field related programs
-const { data: ncaaPrograms, error: fetchError } = await supabase
-  .from('ncaa_track_programs')
-  .select('school_name, school_short_name, division, sport')
-  .in('sport', ['Indoor Track & Field', 'Outdoor Track & Field', 'Cross Country'])
-  .not('school_name', 'is', null);
+// Fetch ALL programs using pagination (Supabase has 1000 record limit)
+console.log('Fetching all NCAA programs...');
+let ncaaPrograms = [];
+let from = 0;
+const pageSize = 1000;
+let hasMore = true;
 
-if (fetchError) {
-  console.error('Error fetching NCAA programs:', fetchError);
-  process.exit(1);
+while (hasMore) {
+  const { data, error } = await supabase
+    .from('ncaa_track_programs')
+    .select('school_name, school_short_name, division, sport')
+    .in('sport', ['Indoor Track & Field', 'Outdoor Track & Field', 'Cross Country'])
+    .not('school_name', 'is', null)
+    .range(from, from + pageSize - 1);
+
+  if (error) {
+    console.error('Error fetching NCAA programs:', error);
+    process.exit(1);
+  }
+
+  if (data && data.length > 0) {
+    ncaaPrograms = ncaaPrograms.concat(data);
+    from += pageSize;
+    console.log(`  Fetched ${ncaaPrograms.length} records so far...`);
+  }
+
+  if (!data || data.length < pageSize) {
+    hasMore = false;
+  }
 }
 
-console.log(`Found ${ncaaPrograms.length} NCAA program records`);
+console.log(`Found ${ncaaPrograms.length} total NCAA program records`);
 
 // Group by school name to get unique schools
 const uniqueSchools = {};
