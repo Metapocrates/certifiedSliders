@@ -89,15 +89,16 @@ export default function RegisterPage() {
       });
 
       // Redirect to role-based dashboard
+      // NCAA coaches go directly to onboarding since they need to select a program first
       const roleRoutes: Record<string, string> = {
         athlete: "/dashboard/athlete",
         hs_coach: "/dashboard/hs-coach",
-        ncaa_coach: "/dashboard/ncaa-coach",
+        ncaa_coach: "/coach/onboarding",
         parent: "/dashboard/parent",
       };
 
       const nextRoute = roleRoutes[selectedType] || "/dashboard/athlete";
-      router.push(nextRoute);
+      window.location.href = nextRoute; // Use full page navigation to ensure cookies are set
     } catch (err: any) {
       setError(err?.message || "Signup failed");
       setLoading(false);
@@ -117,10 +118,11 @@ export default function RegisterPage() {
       const supabase = supabaseBrowser();
       const origin = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
 
+      // NCAA coaches go directly to onboarding since they need to select a program first
       const roleRoutes: Record<string, string> = {
         athlete: "/dashboard/athlete",
         hs_coach: "/dashboard/hs-coach",
-        ncaa_coach: "/dashboard/ncaa-coach",
+        ncaa_coach: "/coach/onboarding",
         parent: "/dashboard/parent",
       };
 

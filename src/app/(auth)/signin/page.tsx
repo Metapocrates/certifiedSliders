@@ -42,10 +42,10 @@ export default function SignInPage() {
         ? (process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || window.location.origin)
         : process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || "";
 
-      const { data, error } = await supabaseBrowser.auth.signInWithOAuth({
+      const { data, error} = await supabaseBrowser.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${origin}/auth/callback?next=/me`,
+          redirectTo: `${origin}/auth/callback?next=/auth/post-login`,
         },
       });
 
