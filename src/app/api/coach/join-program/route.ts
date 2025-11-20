@@ -35,18 +35,16 @@ export async function POST(request: Request) {
   const emailDomain = userEmail?.split('@').pop();
   const isEduEmail = emailDomain?.endsWith('.edu') ?? false;
 
-  // Check if email is allowed for this program
-  const isAllowedTestDomain = program.is_test_program &&
-    program.allowed_test_email_domains?.includes(emailDomain ?? '');
-
-  // Validation: either .edu email OR allowed test domain for test programs
-  if (!isEduEmail && !isAllowedTestDomain) {
-    return NextResponse.json({
-      error: program.is_test_program
-        ? `Email domain not allowed for test program. Allowed domains: ${program.allowed_test_email_domains?.join(', ')}`
-        : "Only .edu email addresses can register for NCAA programs. Please use your official school email address."
-    }, { status: 403 });
+  // Test programs bypass email validation for testing purposes
+  if (!program.is_test_program) {
+    // For real NCAA programs: require .edu email
+    if (!isEduEmail) {
+      return NextResponse.json({
+        error: "NCAA coach accounts require a .edu email address. Please sign in with your official school email to access the coach portal."
+      }, { status: 403 });
+    }
   }
+  // Test programs accept any email domain for internal testing
 
   // Set user_type to ncaa_coach in profiles table
   const { error: profileError } = await supabase
