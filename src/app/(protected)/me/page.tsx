@@ -67,7 +67,7 @@ export default async function MePage() {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type, star_rating, social_links"
+      "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type, star_rating"
     )
     .eq("id", user.id)
     .maybeSingle();
