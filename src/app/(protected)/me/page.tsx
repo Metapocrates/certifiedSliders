@@ -330,7 +330,7 @@ type IdentityRow = {
         hasVerifiedIdentity={linkedIdentities.some(id => id.verified)}
       />
 
-      <SocialLinksSection initialLinks={(profile?.social_links as SocialLinks) || {}} />
+      <SocialLinksSection initialLinks={{}} />
 
       <CollegeInterestsSection interests={collegeInterests} />
 
