@@ -1,11 +1,10 @@
-// src/app/(public)/athletes/[username]/opengraph-image.tsx
+// Route handler for OpenGraph image generation
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+
+const size = { width: 1200, height: 630 };
 
 type CardData = {
   name: string;
@@ -20,12 +19,12 @@ type CardData = {
 
 export const GET = async (
   request: Request,
-  { params }: { params: { username: string } }
+  { params }: { params: { profileId: string } }
 ) => {
   try {
-    const username = params.username;
+    const profileId = params.profileId;
     const search = new URL(request.url).searchParams;
-    const data = parseSearch(search, username);
+    const data = parseSearch(search, profileId);
 
     const tier = data.tier ?? data.fallbackTier ?? 0;
     const certifiedLabel = tier >= 3 && tier <= 5
@@ -190,11 +189,9 @@ export const GET = async (
       size
     );
   } catch {
-    return createFallbackResponse({ username: params.username });
+    return createFallbackResponse({ username: params.profileId });
   }
 };
-
-export default GET;
 
 function parseSearch(params: URLSearchParams, username: string): CardData {
   const name = params.get("name")?.trim() || prettifyUsername(username);
