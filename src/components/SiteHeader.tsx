@@ -7,6 +7,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { getSessionUser, isAdmin } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 import ThemeToggle from "@/components/ThemeToggle";
+import UserAvatar from "@/components/UserAvatar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -120,15 +121,13 @@ export default async function Header() {
 
               <Link
                 href={dashboardHref}
-                className="relative block h-8 w-8 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700"
+                className="block"
                 title={dashboardLabel}
               >
-                <Image
-                  src={profile?.profile_pic_url ?? "/avatar-placeholder.png"}
+                <UserAvatar
+                  src={profile?.profile_pic_url}
                   alt="Avatar"
-                  fill
-                  sizes="32px"
-                  className="object-cover"
+                  size={32}
                   unoptimized
                 />
               </Link>

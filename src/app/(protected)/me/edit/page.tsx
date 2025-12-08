@@ -8,6 +8,7 @@ import AliasesManager from "../../settings/AliasesManager";
 import SocialMediaEditor from "@/components/profile/SocialMediaEditor";
 import ProfilePictureUploader from "@/components/profile/ProfilePictureUploader";
 import SimpleProfileForm from "@/components/profile/SimpleProfileForm";
+import UserAvatar from "@/components/UserAvatar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -73,19 +74,11 @@ export default async function EditProfilePage() {
       </div>
 
       <div className="mb-6 flex items-center gap-4 rounded-xl border border-app bg-card p-5">
-        <div className="relative h-16 w-16 overflow-hidden rounded-full bg-gray-100">
-          {initial.profile_pic_url ? (
-            <Image
-              src={initial.profile_pic_url}
-              alt="Avatar"
-              fill
-              sizes="64px"
-              className="object-cover"
-            />
-          ) : (
-            <Image src="/favicon-64x64.png" alt="Avatar" fill sizes="64px" className="object-contain p-2" />
-          )}
-        </div>
+        <UserAvatar
+          src={initial.profile_pic_url}
+          alt="Avatar"
+          size={64}
+        />
         <div className="min-w-0 flex-1">
           <div className="font-semibold text-app truncate">
             {initial.full_name || initial.username || initial.email}

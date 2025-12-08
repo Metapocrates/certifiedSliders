@@ -21,6 +21,7 @@ export default function ServerActionImageUploader({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
+  const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -111,11 +112,12 @@ export default function ServerActionImageUploader({
         <div className="relative">
           <div className="relative h-48 w-full overflow-hidden rounded-lg border border-app bg-muted">
             <Image
-              src={preview}
+              src={imageError ? "/runner-default.png" : preview}
               alt="Preview"
               fill
               className="object-contain"
               unoptimized
+              onError={() => setImageError(true)}
             />
           </div>
           <button

@@ -6,6 +6,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import SettingsForm from "./SettingsForm";
 import AliasesManager from "./AliasesManager";
 import SocialMediaEditor from "@/components/profile/SocialMediaEditor";
+import UserAvatar from "@/components/UserAvatar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -59,19 +60,11 @@ export default async function SettingsPage() {
       </p>
 
       <div className="mb-6 flex items-center gap-3 rounded-xl border p-4">
-        <div className="relative h-14 w-14 overflow-hidden rounded-full bg-gray-100">
-          {initial.profile_pic_url ? (
-            <Image
-              src={initial.profile_pic_url}
-              alt="Avatar"
-              fill
-              sizes="56px"
-              className="object-cover"
-            />
-          ) : (
-            <Image src="/favicon-64x64.png" alt="Avatar" fill sizes="56px" className="object-contain p-1" />
-          )}
-        </div>
+        <UserAvatar
+          src={initial.profile_pic_url}
+          alt="Avatar"
+          size={56}
+        />
         <div className="min-w-0">
           <div className="font-medium truncate">
             {initial.full_name || initial.username || initial.email}
