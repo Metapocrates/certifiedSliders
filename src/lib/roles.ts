@@ -132,17 +132,17 @@ export async function getUserRole(userId?: string): Promise<UserRoleInfo | null>
 export function getDefaultRouteForRole(role: UserRole): string {
   switch (role) {
     case "athlete":
-      return "/dashboard/athlete";
+      return "/me"; // Athlete dashboard - fully functional
     case "hs_coach":
-      return "/dashboard/hs-coach";
+      return "/hs-coach"; // HS Coach coming soon page
     case "ncaa_coach":
-      return "/dashboard/ncaa-coach";
+      return "/ncaa-coach"; // NCAA Coach coming soon page
     case "parent":
-      return "/dashboard/parent";
+      return "/parent"; // Parent coming soon page
     case "admin":
-      return "/dashboard/admin";
+      return "/admin"; // Admin dashboard - fully functional
     default:
-      return "/dashboard/athlete";
+      return "/me"; // Default to athlete dashboard
   }
 }
 
