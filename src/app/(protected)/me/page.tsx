@@ -75,9 +75,9 @@ export default async function MePage() {
   // Redirect non-athletes to their portals IMMEDIATELY before any other data fetching
   if (profile?.user_type && profile.user_type !== 'athlete') {
     const redirectMap: Record<string, string> = {
-      parent: '/parent/dashboard',
-      ncaa_coach: '/coach/portal',
-      hs_coach: '/hs/portal'
+      parent: '/parent',
+      ncaa_coach: '/ncaa-coach',
+      hs_coach: '/hs-coach'
     };
     const redirectTo = redirectMap[profile.user_type];
     if (redirectTo) {
