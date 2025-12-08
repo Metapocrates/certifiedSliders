@@ -9,7 +9,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 export async function GET(req: Request) {
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
-    const next = url.searchParams.get("next") ?? "/me";
+    const next = url.searchParams.get("next") ?? "/auth/post-login"; // Use role-based routing
     const pendingType = url.searchParams.get("pending_type");
 
     if (!code) {
