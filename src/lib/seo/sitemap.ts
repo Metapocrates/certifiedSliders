@@ -12,7 +12,7 @@ export type SitemapEntry = {
  * Returns profile_id and updated_at for all profiles
  */
 export async function getAthleteProfiles(limit = 50000, offset = 0): Promise<Array<{ profile_id: string; updated_at: string }>> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("profiles")
@@ -33,7 +33,7 @@ export async function getAthleteProfiles(limit = 50000, offset = 0): Promise<Arr
  * Get total count of profiles for sitemap pagination
  */
 export async function getAthleteCount(): Promise<number> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { count, error } = await supabase
     .from("profiles")

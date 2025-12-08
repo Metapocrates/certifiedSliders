@@ -5,7 +5,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import AuthClientProbe from "./AuthClientProbe";
 
 export default async function DebugAuthPage() {
-  const supabase = supabaseServer();
+  const supabase = await supabaseServer();
 
   // SERVER: What the server sees right now
   const { data: { session } } = await supabase.auth.getSession();

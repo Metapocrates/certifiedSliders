@@ -6,29 +6,27 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 async function assertAdmin() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: auth } = await supabase.auth.getUser();
     const user = auth?.user ?? null;
-    if (!user) return { ok: false, error: "Not signed in." as const, supabase };
+    if (!user) throw new Error("Not signed in.");
 
     const { data: adminRow, error } = await supabase
         .from("admins")
         .select("user_id")
         .eq("user_id", user.id)
         .maybeSingle();
-    if (error || !adminRow) return { ok: false, error: "Unauthorized." as const, supabase };
+    if (error || !adminRow) throw new Error("Unauthorized.");
 
-    return { ok: true as const, supabase };
+    return supabase;
 }
 
 export async function approveResultAction(formData: FormData) {
-    const gate = await assertAdmin();
-    if (!gate.ok) return gate;
+    const supabase = await assertAdmin();
 
     const id = Number(formData.get("id"));
-    if (!id) return { ok: false, error: "Missing id." };
+    if (!id) throw new Error("Missing id.");
 
-    const { supabase } = gate;
     const { error } = await supabase
         .from("results")
         .update({
@@ -40,15 +38,14 @@ export async function approveResultAction(formData: FormData) {
         .select("id")
         .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) throw new Error(error.message);
 
     revalidatePath("/admin/results");
     redirect("/admin/results");
 }
 
 export async function rejectResultAction(formData: FormData) {
-    const gate = await assertAdmin();
-    if (!gate.ok) return gate;
+    const supabase = await assertAdmin();
 
     const id = Number(formData.get("id"));
     // Persist reason (trim empty to null)
@@ -56,9 +53,7 @@ export async function rejectResultAction(formData: FormData) {
     const reason =
         typeof rawReason === "string" ? rawReason.trim().slice(0, 2000) || null : null;
 
-    if (!id) return { ok: false, error: "Missing id." };
-
-    const { supabase } = gate;
+    if (!id) throw new Error("Missing id.");
 
     console.log("Rejecting result:", id, "with reason:", reason);
 
@@ -76,7 +71,7 @@ export async function rejectResultAction(formData: FormData) {
 
     if (error) {
         console.error("Reject error:", error);
-        return { ok: false, error: error.message };
+        throw new Error(error.message);
     }
 
     revalidatePath("/admin/results");
@@ -84,13 +79,10 @@ export async function rejectResultAction(formData: FormData) {
 }
 
 export async function deleteResultAction(formData: FormData) {
-    const gate = await assertAdmin();
-    if (!gate.ok) return gate;
+    const supabase = await assertAdmin();
 
     const id = Number(formData.get("id"));
-    if (!id) return { ok: false, error: "Missing id." };
-
-    const { supabase } = gate;
+    if (!id) throw new Error("Missing id.");
 
     console.log("Deleting result:", id);
 
@@ -114,12 +106,12 @@ export async function deleteResultAction(formData: FormData) {
 
     if (error) {
         console.error("Delete error:", error);
-        return { ok: false, error: error.message };
+        throw new Error(error.message);
     }
 
     if (!data || data.length === 0) {
         console.error("No result was deleted - might not exist or permission denied");
-        return { ok: false, error: "Result not found or permission denied" };
+        throw new Error("Result not found or permission denied");
     }
 
     revalidatePath("/admin/results");

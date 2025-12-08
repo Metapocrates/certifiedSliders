@@ -20,7 +20,7 @@ type RatedAthlete = {
 };
 
 export default async function RatedAthletesPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Fetch athletes with star ratings 3-5
   const { data: athletes } = await supabase

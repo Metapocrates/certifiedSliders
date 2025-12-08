@@ -8,7 +8,7 @@ import { supabaseServer } from "@/utils/supabase-server";
 
 
 export async function GET() {
-    const supabase = supabaseServer();
+    const supabase = await supabaseServer();
     const { data, error } = await supabase
         .from("mv_best_event")
         .select("athlete_id, full_name, event, mark, mark_seconds")

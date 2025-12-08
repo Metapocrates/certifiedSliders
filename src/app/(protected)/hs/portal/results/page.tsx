@@ -29,15 +29,16 @@ type TeamResult = {
 export default async function TeamResultsPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     team?: string;
     athlete?: string;
     event?: string;
     season?: string;
     status?: string;
-  };
+  }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();
@@ -45,7 +46,7 @@ export default async function TeamResultsPage({
     redirect("/login?next=/hs/portal/results");
   }
 
-  const teamId = searchParams?.team;
+  const teamId = resolvedSearchParams?.team;
   if (!teamId) {
     redirect("/hs/portal");
   }
@@ -73,10 +74,10 @@ export default async function TeamResultsPage({
   // Get results
   const { data: results } = await supabase.rpc("rpc_get_team_results", {
     p_team_id: teamId,
-    p_athlete_id: searchParams?.athlete || null,
-    p_event: searchParams?.event || null,
-    p_season: searchParams?.season || null,
-    p_status: searchParams?.status || null,
+    p_athlete_id: resolvedSearchParams?.athlete || null,
+    p_event: resolvedSearchParams?.event || null,
+    p_season: resolvedSearchParams?.season || null,
+    p_status: resolvedSearchParams?.status || null,
     p_limit: 100,
     p_offset: 0,
   });

@@ -4,7 +4,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 export const runtime = "nodejs";
 
 export async function POST() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
     error,

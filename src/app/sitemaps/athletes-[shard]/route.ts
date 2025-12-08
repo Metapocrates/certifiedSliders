@@ -6,9 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   request: Request,
-  { params }: { params: { shard: string } }
+  { params }: { params: Promise<{ shard: string }> }
 ) {
-  const shardIndex = parseInt(params.shard, 10);
+  const resolvedParams = await params;
+  const shardIndex = parseInt(resolvedParams.shard, 10);
   const perShard = 40000;
   const offset = shardIndex * perShard;
 

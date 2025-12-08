@@ -11,7 +11,7 @@ const ReviewJoinRequestSchema = z.object({
 });
 
 export async function reviewJoinRequestAction(formData: FormData) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();

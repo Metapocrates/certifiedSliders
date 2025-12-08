@@ -150,11 +150,13 @@ export default async function BlogPostPage({
   params,
   searchParams,
 }: {
-  params: { slug: string };
-  searchParams?: { preview?: string };
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ preview?: string }>;
 }) {
-  const supabase = createSupabaseServer();
-  const previewRequested = searchParams?.preview === "1";
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
+  const previewRequested = resolvedSearchParams?.preview === "1";
 
   let previewAllowed = false;
   if (previewRequested) {
@@ -169,7 +171,7 @@ export default async function BlogPostPage({
     .select(
       "slug, title, excerpt, content, cover_image_url, tags, published_at, status, video_url, author_override, author:profiles!blog_posts_author_id_fkey(full_name, username)"
     )
-    .eq("slug", params.slug)
+    .eq("slug", resolvedParams.slug)
     .limit(1);
 
   if (!previewAllowed) {

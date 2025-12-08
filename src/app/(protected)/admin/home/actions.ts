@@ -11,7 +11,7 @@ const FeaturedSchema = z.object({
 });
 
 export async function setFeaturedByUsername(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const me = await getSessionUser();
     if (!me) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(me.id))) return { ok: false, message: "Admins only." };
@@ -46,7 +46,7 @@ export async function setFeaturedByUsername(formData: FormData) {
 }
 
 export async function clearFeatured() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const me = await getSessionUser();
     if (!me) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(me.id))) return { ok: false, message: "Admins only." };
@@ -71,7 +71,7 @@ const NewsSchema = z.object({
 });
 
 export async function createNewsItem(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const me = await getSessionUser();
     if (!me) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(me.id))) return { ok: false, message: "Admins only." };
@@ -100,7 +100,7 @@ export async function createNewsItem(formData: FormData) {
 }
 
 export async function deleteNewsItem(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const me = await getSessionUser();
     if (!me) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(me.id))) return { ok: false, message: "Admins only." };

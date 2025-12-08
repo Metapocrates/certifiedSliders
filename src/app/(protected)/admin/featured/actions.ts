@@ -17,7 +17,7 @@ export async function setFeaturedAction(prevState: any, formData: FormData) {
         return { ok: false, error: 'Unauthorized' };
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Admin check — relies on your admins table
     const { data: isAdmin } = await supabase

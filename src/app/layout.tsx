@@ -50,7 +50,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: authData } = await supabase.auth.getUser();
   const user = authData?.user ?? null;
 

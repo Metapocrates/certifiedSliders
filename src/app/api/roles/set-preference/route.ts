@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/compat';
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

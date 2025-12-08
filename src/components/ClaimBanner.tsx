@@ -20,7 +20,7 @@ export default async function ClaimBanner({
   // Server Action: create a claim
   async function requestClaim() {
     "use server";
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const {
       data: { user },

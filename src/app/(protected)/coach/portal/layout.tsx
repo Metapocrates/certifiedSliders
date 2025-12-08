@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export default async function CoachPortalLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Get authenticated user (already checked in parent layout)
   const { data: { user } } = await supabase.auth.getUser();

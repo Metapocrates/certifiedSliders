@@ -18,13 +18,14 @@ import FollowButton from "@/components/profile/FollowButton";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function generateMetadata({ params }: { params: { profileId: string } }): Promise<Metadata> {
-  const supabase = createSupabaseServer();
+export async function generateMetadata({ params }: { params: Promise<{ profileId: string }> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, full_name, username, class_year, school_name, school_state, star_rating, gender, profile_pic_url, updated_at")
-    .eq("profile_id", params.profileId)
+    .eq("profile_id", resolvedParams.profileId)
     .eq("user_type", "athlete")
     .maybeSingle();
 
@@ -45,8 +46,8 @@ export async function generateMetadata({ params }: { params: { profileId: string
     .limit(1);
 
   const primaryEvent = bestMarks?.[0]?.event || null;
-  const name = profile.full_name || profile.username || params.profileId;
-  const url = `https://www.certifiedsliders.com/athletes/${params.profileId}`;
+  const name = profile.full_name || profile.username || resolvedParams.profileId;
+  const url = `https://www.certifiedsliders.com/athletes/${resolvedParams.profileId}`;
 
   const title = formatAthleteMetaTitle(name, profile.class_year, primaryEvent);
   const description = formatAthleteMetaDescription(
@@ -83,8 +84,8 @@ export async function generateMetadata({ params }: { params: { profileId: string
 }
 
 type PageProps = {
-  params: { profileId: string };
-  searchParams: { claimed?: "ok" | "already" | "not_found" | "fail" };
+  params: Promise<{ profileId: string }>;
+  searchParams?: Promise<{ claimed?: "ok" | "already" | "not_found" | "fail" }>;
 };
 
 function fmtTime(sec: number | null | undefined, text?: string | null) {
@@ -110,8 +111,10 @@ function Toast({ kind, msg }: { kind: "success" | "error" | "info"; msg: string 
 }
 
 export default async function AthleteProfilePage({ params, searchParams }: PageProps) {
-  const { profileId } = params;
-  const supabase = createSupabaseServer();
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const { profileId } = resolvedParams;
+  const supabase = await createSupabaseServer();
 
   // Who's viewing?
   const { data: authData } = await supabase.auth.getUser();
@@ -309,7 +312,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
     profile.profile_id || ""
   )}&back=${encodeURIComponent(`/athletes/${profile.profile_id}`)}`;
 
-  const hostHeaders = headers();
+  const hostHeaders = await headers();
   const proto = hostHeaders.get("x-forwarded-proto") ?? "https";
   const host =
     hostHeaders.get("x-forwarded-host") ??
@@ -330,7 +333,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
 
   // Toasts from claim flow (?claimed=ok|already|not_found|fail)
   let toast: { kind: "success" | "error" | "info"; msg: string } | null = null;
-  switch (searchParams.claimed) {
+  switch (resolvedSearchParams?.claimed) {
     case "ok":
       toast = { kind: "success", msg: "Profile claimed! You can edit in Settings." };
       break;
@@ -341,7 +344,7 @@ export default async function AthleteProfilePage({ params, searchParams }: PageP
       toast = { kind: "error", msg: "Could not find that profile to claim." };
       break;
     case "fail":
-      toast = { kind: "error", msg: "Couldn’t claim profile. Please try again." };
+      toast = { kind: "error", msg: "Couldn't claim profile. Please try again." };
       break;
   }
 

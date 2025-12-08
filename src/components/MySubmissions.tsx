@@ -21,7 +21,7 @@ function fmtDate(iso?: string | null) {
 }
 
 export default async function MySubmissions({ athleteId }: { athleteId: string }) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data, error } = await supabase
     .from("results")
     .select("id,event,mark_seconds,mark_seconds_adj,meet_name,meet_date,status,proof_url")

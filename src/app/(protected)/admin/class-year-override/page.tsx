@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function AdminClassYearOverridePage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
 

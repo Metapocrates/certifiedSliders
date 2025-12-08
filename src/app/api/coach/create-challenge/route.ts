@@ -3,7 +3,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { randomBytes } from "crypto";
 
 export async function POST(request: Request) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

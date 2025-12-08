@@ -43,7 +43,7 @@ type RatingInput = {
 
 export async function getPendingRatingReviewsAction() {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || !(await isAdmin(user.id))) {
@@ -71,7 +71,7 @@ export async function getPendingRatingReviewsAction() {
 
 export async function getRatingInputsForAthleteAction(athleteId: string) {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || !(await isAdmin(user.id))) {
@@ -96,7 +96,7 @@ export async function getRatingInputsForAthleteAction(athleteId: string) {
 
 export async function submitRatingDecisionAction(formData: FormData) {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || !(await isAdmin(user.id))) {

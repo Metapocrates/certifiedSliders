@@ -13,7 +13,7 @@ type Params = {
 };
 
 export async function getRankings(params: Params) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Prefer the MV for speed. It should already flag wind-legal.
     let q = supabase

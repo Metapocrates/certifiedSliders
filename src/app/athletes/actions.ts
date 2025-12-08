@@ -18,7 +18,7 @@ const EditProfileSchema = z.object({
 });
 
 export async function updateProfile(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
 
@@ -69,7 +69,7 @@ export async function updateProfile(formData: FormData) {
 
 /* ---------- Upload avatar ---------- */
 export async function uploadAvatar(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
 
@@ -114,7 +114,7 @@ const SubmitResultSchema = z.object({
 });
 
 export async function submitResult(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
 

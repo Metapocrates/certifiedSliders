@@ -7,7 +7,7 @@ import { createSupabaseServer } from '@/lib/supabase/compat';
  */
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

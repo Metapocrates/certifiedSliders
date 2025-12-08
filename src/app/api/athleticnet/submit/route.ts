@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid_request" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
     error: userError,

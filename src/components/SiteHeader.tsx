@@ -15,7 +15,7 @@ const NAV_LINK_CLASSES =
   "text-sm text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm px-1.5 py-1";
 
 export default async function Header() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const user = await getSessionUser();
   const admin = user ? await isAdmin(user.id) : false;
 

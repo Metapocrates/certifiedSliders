@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     } = normalized;
 
     // Update database record
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const updateData: Record<string, unknown> = {
       status,

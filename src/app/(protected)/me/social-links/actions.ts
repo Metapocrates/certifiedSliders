@@ -11,7 +11,7 @@ export type SocialLinks = {
 };
 
 export async function updateSocialLinks(links: SocialLinks) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {

@@ -5,7 +5,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import SidebarNav from "./_components/SidebarNav";
 
 export default async function MeLayout({ children }: { children: ReactNode }) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Require signed-in user
   const {

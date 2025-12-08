@@ -9,7 +9,7 @@ const UploadUrlSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check authentication
   const { data: { user } } = await supabase.auth.getUser();

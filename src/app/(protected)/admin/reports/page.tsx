@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function AdminReportsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth + admin
   const { data: authData } = await supabase.auth.getUser();

@@ -4,7 +4,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import ProgramSelector from "@/components/coach/ProgramSelector";
 
 export default async function CoachOnboardingPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser();

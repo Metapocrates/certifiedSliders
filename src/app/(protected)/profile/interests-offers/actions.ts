@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 
 // Athlete: add/remove interest
 export async function addAthleteInterestAction(collegeName: string) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data, error } = await supabase
     .from("athlete_interests")
     .insert([{ college_name: collegeName }])
@@ -17,7 +17,7 @@ export async function addAthleteInterestAction(collegeName: string) {
 }
 
 export async function removeAthleteInterestAction(id: string) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { error } = await supabase
     .from("athlete_interests")
     .delete()
@@ -32,7 +32,7 @@ export async function upsertCollegeOfferAction(
   collegeName: string,
   offerType: "interest" | "offer"
 ) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data, error } = await supabase
     .from("college_offers")
     .upsert(
@@ -47,7 +47,7 @@ export async function upsertCollegeOfferAction(
 }
 
 export async function deleteCollegeOfferAction(id: string) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { error } = await supabase
     .from("college_offers")
     .delete()

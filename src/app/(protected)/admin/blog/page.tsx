@@ -27,7 +27,7 @@ function formatDate(iso: string | null) {
 }
 
 export default async function AdminBlogIndex() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const me = await getSessionUser();
   if (!me) redirect("/signin");
   if (!(await isAdmin(me.id))) redirect("/");

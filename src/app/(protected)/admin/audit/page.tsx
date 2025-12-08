@@ -15,7 +15,7 @@ type AuditRow = {
 export const dynamic = "force-dynamic";
 
 async function getAudit(): Promise<AuditRow[]> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const user = await getSessionUser();
   if (!user) throw new Error("Not signed in.");
   const { data: adminRow } = await supabase

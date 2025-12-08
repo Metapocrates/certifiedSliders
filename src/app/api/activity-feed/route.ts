@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServer } from '@/lib/supabase/compat';
 
 export async function GET(req: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check authentication
   const { data: { user } } = await supabase.auth.getUser();

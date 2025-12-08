@@ -7,9 +7,10 @@ export const runtime = "nodejs";
 // Returns all results for a specific athlete and event, paginated
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { profileId: string; event: string } }
+  { params }: { params: Promise<{ profileId: string; event: string }> }
 ) => {
-  const supabase = createSupabaseServer();
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
   const { searchParams } = new URL(req.url);
 
   const page = parseInt(searchParams.get("page") || "1", 10);
@@ -17,13 +18,13 @@ export const GET = async (
   const offset = (page - 1) * limit;
 
   // Decode event name (it may be URL-encoded)
-  const eventName = decodeURIComponent(params.event);
+  const eventName = decodeURIComponent(resolvedParams.event);
 
   // First, get the athlete ID from profile_id
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
-    .eq("profile_id", params.profileId)
+    .eq("profile_id", resolvedParams.profileId)
     .maybeSingle();
 
   if (!profile) {

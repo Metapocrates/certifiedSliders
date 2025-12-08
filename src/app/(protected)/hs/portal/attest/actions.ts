@@ -12,7 +12,7 @@ const AttestResultSchema = z.object({
 });
 
 export async function attestResultAction(formData: FormData) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();

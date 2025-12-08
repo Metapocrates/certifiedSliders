@@ -34,7 +34,7 @@ function TagBadge({ tag }: { tag: string }) {
 }
 
 export default async function BlogIndex() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("blog_posts")

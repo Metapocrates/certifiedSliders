@@ -18,7 +18,7 @@ import { isAdminUser } from "@/lib/roles";
  * - Real program data
  */
 export async function DELETE(request: Request) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

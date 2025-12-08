@@ -36,7 +36,7 @@ function hashSnapshot(html: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
     error: authError,

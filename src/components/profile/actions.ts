@@ -22,7 +22,7 @@ export async function updateSimpleProfileAction(
   prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const {
     data: { user },

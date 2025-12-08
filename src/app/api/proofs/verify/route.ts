@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: false, error: "Invalid resultId" }, { status: 400 });
         }
 
-        const supabase = createSupabaseServer();
+        const supabase = await createSupabaseServer();
 
         // Optional: enforce admin
         const { data: me } = await supabase.auth.getUser();

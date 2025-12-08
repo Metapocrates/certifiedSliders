@@ -7,9 +7,10 @@ import VerificationMethods from "@/components/coach/VerificationMethods";
 export default async function CoachVerifyPage({
   searchParams,
 }: {
-  searchParams?: { program?: string };
+  searchParams?: Promise<{ program?: string }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
   // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser();
@@ -28,7 +29,7 @@ export default async function CoachVerifyPage({
   }
 
   // Determine active program
-  const programParam = searchParams?.program;
+  const programParam = resolvedSearchParams?.program;
   const activeMembership = programParam
     ? memberships.find((m) => m.program_id === programParam)
     : memberships[0];

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
         }
 
-        const supabase = createSupabaseServer();
+        const supabase = await createSupabaseServer();
         const { data, error } = await supabase.rpc("request_claim", {
             p_athlete_id: athlete_id,
             p_evidence_url: evidence_url || null,

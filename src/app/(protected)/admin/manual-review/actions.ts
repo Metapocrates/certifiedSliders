@@ -7,7 +7,7 @@ export async function approveManualReviewAction(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!id) return;
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check admin
   const { data: auth } = await supabase.auth.getUser();
@@ -36,7 +36,7 @@ export async function rejectManualReviewAction(formData: FormData) {
   const reason = String(formData.get("reason") || "");
   if (!id) return;
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check admin
   const { data: auth } = await supabase.auth.getUser();

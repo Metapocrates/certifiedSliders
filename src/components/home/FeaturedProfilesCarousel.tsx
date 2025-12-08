@@ -30,7 +30,7 @@ function fmtTime(sec: number | null | undefined, text?: string | null) {
 }
 
 export default async function FeaturedProfilesCarousel() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Strategy:
     // 1) Get manually featured athletes (featured=true, 3-5 stars)

@@ -11,7 +11,7 @@ async function adjustTime(
     timing: 'FAT' | 'hand' | null
 ): Promise<{ seconds: number }> {
     try {
-        const supabase = createSupabaseServer();
+        const supabase = await createSupabaseServer();
         const { data, error } = await supabase.rpc('adjust_time', {
             p_event: event, p_seconds: seconds, p_timing: timing,
         });
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         const user = await getSessionUser();
         if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const supabase = createSupabaseServer();
+        const supabase = await createSupabaseServer();
 
         const parsed = parseMarkToSeconds(markText);
         const adj = await adjustTime(event, parsed.seconds, (timing ?? parsed.timing ?? null) as any);

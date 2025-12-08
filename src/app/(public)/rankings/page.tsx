@@ -9,8 +9,9 @@ import RankingsJsonLd from "@/components/seo/RankingsJsonLd";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function generateMetadata({ searchParams }: { searchParams?: any }): Promise<Metadata> {
-  const params = searchParams || {};
+export async function generateMetadata({ searchParams }: { searchParams?: Promise<any> }): Promise<Metadata> {
+  const resolvedSearchParams = await searchParams;
+  const params = resolvedSearchParams || {};
   const { event, classYear, gender } = params;
 
   const currentYear = new Date().getFullYear();
@@ -49,13 +50,13 @@ export async function generateMetadata({ searchParams }: { searchParams?: any })
 }
 
 type PageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     event?: string;
     classYear?: string;
     grade?: string;
     gender?: "M" | "F" | "";
     state?: string;
-  };
+  }>;
 };
 
 type RankRow = {
@@ -125,13 +126,14 @@ const CLASS_YEARS = (() => {
 })();
 
 export default async function RankingsPage({ searchParams }: PageProps) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
-  const eventFilter = (searchParams?.event || "").trim();
-  const classYearFilter = (searchParams?.classYear || "").trim();
-  const gradeFilter = (searchParams?.grade || "").trim();
-  const genderFilter = (searchParams?.gender || "").trim() as "M" | "F" | "";
-  const stateFilter = (searchParams?.state || "").trim();
+  const eventFilter = (resolvedSearchParams?.event || "").trim();
+  const classYearFilter = (resolvedSearchParams?.classYear || "").trim();
+  const gradeFilter = (resolvedSearchParams?.grade || "").trim();
+  const genderFilter = (resolvedSearchParams?.gender || "").trim() as "M" | "F" | "";
+  const stateFilter = (resolvedSearchParams?.state || "").trim();
 
   // Step 1: fetch candidate profiles if any profile-based filters were provided
   let profIdsFilter: Set<string> | null = null;

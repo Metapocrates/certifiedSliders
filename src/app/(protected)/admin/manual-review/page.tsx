@@ -41,7 +41,7 @@ function computeDiff(original: any, edited: any): DiffField[] {
 }
 
 export default async function AdminManualReviewPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
 

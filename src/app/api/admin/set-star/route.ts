@@ -7,7 +7,7 @@ const ALLOWED = new Set([3, 4, 5]);
 
 export async function POST(req: NextRequest) {
     // 1) Caller must be logged in
-    const userClient = supabaseServer();
+    const userClient = await supabaseServer();
     const {
         data: { user },
         error: userErr,

@@ -4,8 +4,9 @@ import { getSessionUser, isAdmin } from "@/lib/auth";
 import { setPostStatus, setPostFeatured } from "../actions";
 import EditPostForm from "./EditPostForm";
 
-export default async function EditBlogPostPage({ params }: { params: { slug: string } }) {
-  const supabase = createSupabaseServer();
+export default async function EditBlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
   const me = await getSessionUser();
   if (!me) redirect("/signin");
   if (!(await isAdmin(me.id))) redirect("/");
@@ -13,7 +14,7 @@ export default async function EditBlogPostPage({ params }: { params: { slug: str
   const { data: post } = await supabase
     .from("blog_posts")
     .select("slug, title, excerpt, content, cover_image_url, tags, status, video_url, author_override, featured, published_at")
-    .eq("slug", params.slug)
+    .eq("slug", resolvedParams.slug)
     .maybeSingle();
 
   if (!post) {

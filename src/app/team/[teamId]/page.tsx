@@ -27,15 +27,16 @@ type RosterAthlete = {
 export default async function PublicTeamPage({
   params,
 }: {
-  params: { teamId: string };
+  params: Promise<{ teamId: string }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
 
   // Get team info
   const { data: team } = await supabase
     .from("teams")
     .select("*")
-    .eq("id", params.teamId)
+    .eq("id", resolvedParams.teamId)
     .maybeSingle();
 
   // If team doesn't exist or isn't public, show 404
@@ -45,7 +46,7 @@ export default async function PublicTeamPage({
 
   // Get active roster
   const { data: roster } = await supabase.rpc("rpc_get_team_roster", {
-    p_team_id: params.teamId,
+    p_team_id: resolvedParams.teamId,
     p_status: "active",
   });
 
@@ -70,7 +71,7 @@ export default async function PublicTeamPage({
       const { data: membership } = await supabase
         .from("team_memberships")
         .select("id")
-        .eq("team_id", params.teamId)
+        .eq("team_id", resolvedParams.teamId)
         .eq("athlete_id", user.id)
         .eq("status", "active")
         .maybeSingle();
@@ -79,7 +80,7 @@ export default async function PublicTeamPage({
       const { data: request } = await supabase
         .from("hs_athlete_team_requests")
         .select("id")
-        .eq("team_id", params.teamId)
+        .eq("team_id", resolvedParams.teamId)
         .eq("athlete_id", user.id)
         .eq("status", "pending")
         .maybeSingle();
@@ -147,7 +148,7 @@ export default async function PublicTeamPage({
             Send a request to the coaching staff
           </p>
           <Link
-            href={`/athletes/team-request?team=${params.teamId}`}
+            href={`/athletes/team-request?team=${resolvedParams.teamId}`}
             className="inline-block rounded-lg bg-scarlet px-6 py-2 text-sm font-semibold text-white hover:bg-scarlet/90"
           >
             Request to Join

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Check if user is admin (needed for override)
     const { data: adminCheck } = await supabase
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const { data: profile, error } = await supabase
       .from('profiles')

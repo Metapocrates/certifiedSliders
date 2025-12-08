@@ -29,9 +29,10 @@ type RosterAthlete = {
 export default async function RosterPage({
   searchParams,
 }: {
-  searchParams?: { team?: string; status?: string };
+  searchParams?: Promise<{ team?: string; status?: string }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();
@@ -39,7 +40,7 @@ export default async function RosterPage({
     redirect("/login?next=/hs/portal/roster");
   }
 
-  const teamId = searchParams?.team;
+  const teamId = resolvedSearchParams?.team;
   if (!teamId) {
     redirect("/hs/portal");
   }
@@ -65,7 +66,7 @@ export default async function RosterPage({
     .single();
 
   // Get roster
-  const status = searchParams?.status || "active";
+  const status = resolvedSearchParams?.status || "active";
   const { data: roster } = await supabase.rpc("rpc_get_team_roster", {
     p_team_id: teamId,
     p_status: status,

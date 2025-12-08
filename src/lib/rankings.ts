@@ -35,7 +35,7 @@ export async function fetchRankings(q: RankingsQuery) {
     const from = (page - 1) * perPage;
     const to = from + perPage - 1;
 
-    const supabase = supabaseServer();
+    const supabase = await supabaseServer();
 
     let base = supabase.from("mv_best_event").select("*", { count: "exact" });
 

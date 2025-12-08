@@ -7,7 +7,7 @@ export async function dismissReportAction(formData: FormData) {
   const id = Number(formData.get("id"));
   if (!id) return;
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check admin
   const { data: authData } = await supabase.auth.getUser();
@@ -41,7 +41,7 @@ export async function actionReportAction(formData: FormData) {
 
   if (!reportId || !resultId) return;
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check admin
   const { data: authData } = await supabase.auth.getUser();

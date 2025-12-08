@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export async function overrideClassYearAction(formData: FormData) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;

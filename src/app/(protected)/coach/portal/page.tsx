@@ -7,7 +7,7 @@ import CoachPortalFilters from "@/components/coach/CoachPortalFilters";
 export default async function CoachPortalPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     program?: string;
     classYear?: string;
     event?: string;
@@ -15,9 +15,10 @@ export default async function CoachPortalPage({
     verified?: string;
     search?: string;
     page?: string;
-  };
+  }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
   // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser();
@@ -42,7 +43,7 @@ export default async function CoachPortalPage({
   }
 
   // Determine active program (from URL or default to first)
-  const programParam = searchParams?.program;
+  const programParam = resolvedSearchParams?.program;
   const activeMembership = programParam
     ? memberships.find((m) => m.program_id === programParam)
     : memberships[0];
@@ -64,12 +65,12 @@ export default async function CoachPortalPage({
   const tier = verification?.tier ?? 0;
 
   // Parse filters
-  const classYear = searchParams?.classYear ? parseInt(searchParams.classYear, 10) : undefined;
-  const event = searchParams?.event || undefined;
-  const state = searchParams?.state || undefined;
-  const verified = searchParams?.verified === "true";
-  const search = searchParams?.search || undefined;
-  const page = searchParams?.page ? parseInt(searchParams.page, 10) : 1;
+  const classYear = resolvedSearchParams?.classYear ? parseInt(resolvedSearchParams.classYear, 10) : undefined;
+  const event = resolvedSearchParams?.event || undefined;
+  const state = resolvedSearchParams?.state || undefined;
+  const verified = resolvedSearchParams?.verified === "true";
+  const search = resolvedSearchParams?.search || undefined;
+  const page = resolvedSearchParams?.page ? parseInt(resolvedSearchParams.page, 10) : 1;
   const perPage = 50;
   const offset = (page - 1) * perPage;
 
@@ -175,7 +176,7 @@ export default async function CoachPortalPage({
             value={activeMembership.program_id}
             onChange={(e) => {
               const newProgramId = e.target.value;
-              const params = new URLSearchParams(searchParams);
+              const params = new URLSearchParams(resolvedSearchParams);
               params.set("program", newProgramId);
               window.location.href = `/coach/portal?${params.toString()}`;
             }}
@@ -208,11 +209,11 @@ export default async function CoachPortalPage({
       {/* Filters */}
       <CoachPortalFilters
         initial={{
-          classYear: searchParams?.classYear || "",
-          event: searchParams?.event || "",
-          state: searchParams?.state || "",
-          verified: searchParams?.verified === "true",
-          search: searchParams?.search || "",
+          classYear: resolvedSearchParams?.classYear || "",
+          event: resolvedSearchParams?.event || "",
+          state: resolvedSearchParams?.state || "",
+          verified: resolvedSearchParams?.verified === "true",
+          search: resolvedSearchParams?.search || "",
         }}
       />
 
@@ -262,7 +263,7 @@ export default async function CoachPortalPage({
           {page > 1 && (
             <a
               href={`/coach/portal?${new URLSearchParams({
-                ...searchParams,
+                ...resolvedSearchParams,
                 page: (page - 1).toString(),
               }).toString()}`}
               className="rounded-md px-4 py-2 border"
@@ -274,7 +275,7 @@ export default async function CoachPortalPage({
           {athletesList.length === perPage && (
             <a
               href={`/coach/portal?${new URLSearchParams({
-                ...searchParams,
+                ...resolvedSearchParams,
                 page: (page + 1).toString(),
               }).toString()}`}
               className="rounded-md px-4 py-2 border"

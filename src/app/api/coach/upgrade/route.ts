@@ -10,7 +10,7 @@ import { createCheckoutSession, createBillingPortalSession } from "@/lib/stripe/
 import { getAppBaseUrl } from "@/lib/env";
 
 export async function POST(request: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const {

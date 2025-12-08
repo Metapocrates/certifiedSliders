@@ -8,12 +8,13 @@ import { dedupeResults } from "@/lib/results/dedupe";
 
 type Params = { id: string };
 
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const supabase = createSupabaseServer();
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
   const { data } = await supabase
     .from("profiles")
     .select("full_name, school_name, school_state")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .maybeSingle();
 
   const title = data?.full_name ? `${data.full_name} – Certified Sliders` : "Athlete – Certified Sliders";
@@ -25,7 +26,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 async function getAthleteData(athleteId: string) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const [profileRes, bestRes, resultsRes] = await Promise.all([
     supabase
@@ -61,8 +62,9 @@ async function getAthleteData(athleteId: string) {
   };
 }
 
-export default async function AthletePage({ params }: { params: Params }) {
-  const { profile, best, resultsVerified } = await getAthleteData(params.id);
+export default async function AthletePage({ params }: { params: Promise<Params> }) {
+  const resolvedParams = await params;
+  const { profile, best, resultsVerified } = await getAthleteData(resolvedParams.id);
 
   if (!profile) notFound();
 

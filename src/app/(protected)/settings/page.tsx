@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();

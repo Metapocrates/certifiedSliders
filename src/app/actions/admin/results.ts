@@ -8,7 +8,7 @@ export async function approveResult(resultId: number) {
     const user = await getSessionUser();
     if (!user || !(await isAdmin(user.id))) throw new Error('Unauthorized');
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Update result → verified
     const { error: rerr } = await supabase
@@ -44,7 +44,7 @@ export async function rejectResult(resultId: number) {
     const user = await getSessionUser();
     if (!user || !(await isAdmin(user.id))) throw new Error('Unauthorized');
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const { error: rerr } = await supabase
         .from('results')

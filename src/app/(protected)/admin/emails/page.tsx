@@ -22,7 +22,7 @@ type OutboundEmail = {
 };
 
 export default async function AdminEmailsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();

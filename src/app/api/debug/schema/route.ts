@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export async function GET() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   try {
     // Check indexes

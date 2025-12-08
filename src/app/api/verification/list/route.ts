@@ -11,7 +11,7 @@ export const GET = async (req: NextRequest) => {
   }
 
   const provider = req.nextUrl.searchParams.get("provider") ?? "athleticnet";
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("external_identities")

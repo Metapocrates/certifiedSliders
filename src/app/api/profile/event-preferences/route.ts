@@ -25,7 +25,7 @@ export const GET = async (req: NextRequest) => {
     return jsonError("Unauthorized", "UNAUTHORIZED", 401);
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("athlete_event_preferences")
@@ -69,7 +69,7 @@ export const PUT = async (req: NextRequest) => {
     );
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Delete all existing preferences for this user
   const { error: deleteError } = await supabase

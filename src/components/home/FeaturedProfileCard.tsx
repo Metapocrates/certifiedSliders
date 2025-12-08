@@ -6,7 +6,7 @@ import { getStarTierAccent } from "@/lib/star-theme";
 
 
 export default async function FeaturedProfileCard() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Try admin-curated featured profile
   const { data: feat } = await supabase

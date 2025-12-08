@@ -64,7 +64,7 @@ function statusColor(status: string) {
 }
 
 export default async function AdminIdentitiesPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const {
     data: { user },

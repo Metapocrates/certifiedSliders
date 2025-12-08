@@ -23,7 +23,7 @@ export {
 export async function getProgramEntitlements(
   programId: string
 ): Promise<ProgramEntitlements | null> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("program_entitlements")
@@ -46,7 +46,7 @@ export async function isFeatureEnabledServer(
   programId: string,
   featureKey: FeatureKey
 ): Promise<boolean> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase.rpc("is_feature_enabled", {
     _program_id: programId,
@@ -65,7 +65,7 @@ export async function isFeatureEnabledServer(
  * SERVER-SIDE: Get CSV export limit for a program
  */
 export async function getCsvExportLimitServer(programId: string): Promise<number> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase.rpc("get_csv_export_limit", {
     _program_id: programId,

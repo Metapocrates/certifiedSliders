@@ -16,7 +16,7 @@ function fmtDate(d?: string | null) {
 }
 
 export default async function AdminResultsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
 

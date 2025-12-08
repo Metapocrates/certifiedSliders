@@ -8,9 +8,10 @@ import FlagButton from "@/components/FlagButton";
 export default async function CoachAthleteDetailPage({
   params,
 }: {
-  params: { profileId: string };
+  params: Promise<{ profileId: string }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
 
   // Get authenticated user
   const { data: { user } } = await supabase.auth.getUser();
@@ -34,7 +35,7 @@ export default async function CoachAthleteDetailPage({
   const { data: profile } = await supabase
     .from("profiles")
     .select("id")
-    .eq("profile_id", params.profileId)
+    .eq("profile_id", resolvedParams.profileId)
     .maybeSingle();
 
   if (!profile) {
@@ -181,7 +182,7 @@ export default async function CoachAthleteDetailPage({
           <div className="pt-4 border-t">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium">Bio</h3>
-              <FlagButton contentType="bio" contentId={params.profileId} />
+              <FlagButton contentType="bio" contentId={resolvedParams.profileId} />
             </div>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{athlete.bio}</p>
           </div>
@@ -359,7 +360,7 @@ export default async function CoachAthleteDetailPage({
       {/* View Full Profile */}
       <div className="text-center">
         <a
-          href={`/athletes/${params.profileId}`}
+          href={`/athletes/${resolvedParams.profileId}`}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block rounded-md px-6 py-3 bg-black text-app font-medium"

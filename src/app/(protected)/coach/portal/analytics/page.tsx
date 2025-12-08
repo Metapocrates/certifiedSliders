@@ -30,9 +30,10 @@ interface StatsSummary {
 export default async function CoachAnalyticsPage({
   searchParams,
 }: {
-  searchParams: { program?: string };
+  searchParams?: Promise<{ program?: string }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const {
@@ -41,7 +42,7 @@ export default async function CoachAnalyticsPage({
   if (!user) redirect("/login?next=/coach/portal/analytics");
 
   // Get program ID from query param or get first membership
-  let programId: string = searchParams.program || "";
+  let programId: string = resolvedSearchParams?.program || "";
 
   if (!programId) {
     const { data: memberships } = await supabase

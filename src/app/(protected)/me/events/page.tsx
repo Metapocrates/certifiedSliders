@@ -20,7 +20,7 @@ function fmtTime(sec: number | null | undefined, text?: string | null) {
 }
 
 export default async function EventsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();

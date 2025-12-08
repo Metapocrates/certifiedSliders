@@ -2,8 +2,8 @@ import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 /** Server-scoped Supabase client for App Router */
-export function supabaseServer() {
-    const cookieStore = cookies();
+export async function supabaseServer() {
+    const cookieStore = await cookies();
 
     const get = (name: string) => cookieStore.get(name)?.value;
     const set = (name: string, value: string, options: CookieOptions) => {

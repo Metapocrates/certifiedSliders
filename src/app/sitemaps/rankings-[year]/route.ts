@@ -11,9 +11,10 @@ const EVENTS = [
 
 export async function GET(
   request: Request,
-  { params }: { params: { year: string } }
+  { params }: { params: Promise<{ year: string }> }
 ) {
-  const { year } = params;
+  const resolvedParams = await params;
+  const { year } = resolvedParams;
 
   const urls = EVENTS.map((event) => {
     return `

@@ -20,7 +20,7 @@ export async function setStarRatingAction(formData: FormData) {
         return { ok: false, error: 'Unauthorized' };
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // SECURITY DEFINER RPC enforces admin and writes the audit row
     const { error } = await supabase.rpc('set_star_rating', {

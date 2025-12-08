@@ -21,7 +21,7 @@ export const GET = async (req: NextRequest) => {
     return jsonError("Unauthorized", "UNAUTHORIZED", 401);
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("athlete_aliases")
@@ -59,7 +59,7 @@ export const POST = async (req: NextRequest) => {
     return jsonError("Alias must be between 2 and 100 characters", "INVALID_ALIAS_LENGTH");
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check if alias already exists for this athlete
   const { data: existing } = await supabase

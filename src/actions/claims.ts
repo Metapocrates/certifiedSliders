@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 async function isAdminUser() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const {
         data: { user },
     } = await supabase.auth.getUser();
@@ -14,7 +14,7 @@ async function isAdminUser() {
 }
 
 export async function requestClaimAction(athleteId: string, slug: string) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const {
         data: { user },
         error: userErr,
@@ -31,14 +31,14 @@ export async function requestClaimAction(athleteId: string, slug: string) {
 }
 
 export async function cancelMyClaimAction(claimId: string, slug: string) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { error } = await supabase.from("athlete_claims").update({ status: "canceled" }).eq("id", claimId);
     if (error) throw new Error(error.message);
     revalidatePath(`/athletes/${slug}`);
 }
 
 export async function adminApproveClaimAction(claimId: string, slug: string) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     if (!(await isAdminUser())) throw new Error("Not authorized");
 
     const { data: claim, error: claimErr } = await supabase
@@ -71,7 +71,7 @@ export async function adminApproveClaimAction(claimId: string, slug: string) {
 }
 
 export async function adminDenyClaimAction(claimId: string, slug: string) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     if (!(await isAdminUser())) throw new Error("Not authorized");
     const { error } = await supabase.from("athlete_claims").update({ status: "denied" }).eq("id", claimId);
     if (error) throw new Error(error.message);

@@ -48,7 +48,7 @@ export type ConfirmActionResult =
 export async function confirmParentSubmitAction(
   input: ParentConfirmInput
 ): Promise<ConfirmActionResult> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: auth } = await supabase.auth.getUser();

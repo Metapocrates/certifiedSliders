@@ -9,7 +9,7 @@ import { getUserRole } from "@/lib/roles";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check if user is authenticated
   const {

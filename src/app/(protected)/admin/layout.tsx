@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Require signed-in user
   const {

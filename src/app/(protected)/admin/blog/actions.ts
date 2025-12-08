@@ -33,7 +33,7 @@ function slugify(s: string) {
 }
 
 export async function createPost(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
@@ -104,10 +104,10 @@ const FeaturedSchema = z.object({
 });
 
 export async function setPostStatus(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
-    if (!user) return { ok: false, message: "Not signed in." };
-    if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
+    if (!user) throw new Error("Not signed in.");
+    if (!(await isAdmin(user.id))) throw new Error("Admins only.");
 
     const parsed = StatusSchema.safeParse({
         slug: formData.get("slug"),
@@ -115,7 +115,7 @@ export async function setPostStatus(formData: FormData) {
     });
 
     if (!parsed.success) {
-        return { ok: false, message: "Invalid status change." };
+        throw new Error("Invalid status change.");
     }
 
     const { slug, status } = parsed.data;
@@ -128,7 +128,7 @@ export async function setPostStatus(formData: FormData) {
         .maybeSingle();
 
     if (fetchErr || !existing) {
-        return { ok: false, message: "Post not found." };
+        throw new Error("Post not found.");
     }
 
     const updates: Record<string, any> = { status };
@@ -139,7 +139,7 @@ export async function setPostStatus(formData: FormData) {
     }
 
     const { error } = await supabase.from("blog_posts").update(updates).eq("slug", slug);
-    if (error) return { ok: false, message: error.message };
+    if (error) throw new Error(error.message);
 
     revalidatePath("/blog");
     revalidatePath("/admin/blog");
@@ -149,14 +149,14 @@ export async function setPostStatus(formData: FormData) {
     if (redirectTo) {
         redirect(redirectTo);
     }
-    return { ok: true };
+    // No return needed when used as form action
 }
 
 export async function setPostFeatured(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
-    if (!user) return { ok: false, message: "Not signed in." };
-    if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
+    if (!user) throw new Error("Not signed in.");
+    if (!(await isAdmin(user.id))) throw new Error("Admins only.");
 
     const parsed = FeaturedSchema.safeParse({
         slug: formData.get("slug"),
@@ -164,7 +164,7 @@ export async function setPostFeatured(formData: FormData) {
     });
 
     if (!parsed.success) {
-        return { ok: false, message: "Invalid featured toggle." };
+        throw new Error("Invalid featured toggle.");
     }
 
     const { slug, featured } = parsed.data;
@@ -175,17 +175,17 @@ export async function setPostFeatured(formData: FormData) {
         .update({ featured: flag })
         .eq("slug", slug);
 
-    if (error) return { ok: false, message: error.message };
+    if (error) throw new Error(error.message);
 
     revalidatePath("/blog");
     revalidatePath("/admin/blog");
     revalidatePath("/");
 
-    return { ok: true };
+    // No return needed when used as form action
 }
 
 export async function uploadBlogImage(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };

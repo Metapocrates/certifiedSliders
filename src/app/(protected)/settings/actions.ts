@@ -25,7 +25,7 @@ export async function updateProfileAction(
     prevState: ActionResult | null,
     formData: FormData
 ): Promise<ActionResult> {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // ✅ Get the user from THIS supabase instance (so the DB call has auth)
     const {

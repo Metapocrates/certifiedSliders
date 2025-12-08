@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const claimId = String(form.get("claim_id") || "");
     if (!claimId) return NextResponse.json({ ok: false, error: "missing claim_id" }, { status: 400 });
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { error } = await supabase.rpc("approve_claim", { p_claim_id: claimId });
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
 

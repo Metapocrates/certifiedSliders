@@ -10,9 +10,10 @@ export const revalidate = 0;
 export default async function AnalyticsPage({
   searchParams,
 }: {
-  searchParams?: { team?: string };
+  searchParams?: Promise<{ team?: string }>;
 }) {
-  const supabase = createSupabaseServer();
+  const resolvedSearchParams = await searchParams;
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();
@@ -20,7 +21,7 @@ export default async function AnalyticsPage({
     redirect("/login?next=/hs/portal/analytics");
   }
 
-  const teamId = searchParams?.team;
+  const teamId = resolvedSearchParams?.team;
   if (!teamId) {
     redirect("/hs/portal");
   }

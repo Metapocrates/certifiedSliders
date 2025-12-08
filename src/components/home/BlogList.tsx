@@ -27,7 +27,7 @@ function formatDate(iso: string | null) {
 }
 
 export default async function BlogList() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("blog_posts")

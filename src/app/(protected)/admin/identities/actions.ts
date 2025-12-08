@@ -8,7 +8,7 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 const ADMIN_PATH = "/admin/identities";
 
 async function requireAdmin() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const {
     data: { user },

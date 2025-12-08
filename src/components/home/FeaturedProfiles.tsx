@@ -23,7 +23,7 @@ export default async function FeaturedProfiles({
 }: {
     limit?: number;
 }) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Step 1: Get manually featured athletes (featured=true, 3-5 stars)
     const { data: manuallyFeatured } = await supabase

@@ -22,7 +22,7 @@ export async function ensureProfileAction() {
     const user = await getSessionUser();
     if (!user) throw new Error("Not signed in");
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Check if it exists
     const { data: existing, error: selErr } = await supabase
@@ -154,8 +154,6 @@ export async function deletePendingResultAction(formData: FormData) {
 
     revalidatePath("/me");
     revalidatePath("/admin");
-
-    return { ok: true as const };
 }
 
 /** Banner data: does the signed-in user meet any 3★/4★/5★ cutoff? */
@@ -170,7 +168,7 @@ type RankableRow = {
 };
 
 export async function getMyRankableAction() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) return { ok: false as const, error: "Not signed in." };
 

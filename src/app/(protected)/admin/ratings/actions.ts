@@ -21,7 +21,7 @@ type EligibleRPCRow = {
 };
 
 export async function getStandardsMetaAction() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const { data: std, error: stdErr } = await supabase
         .from("rating_standards_grade")
@@ -62,7 +62,7 @@ export async function getEligibleAthletesByGradeAction(params: {
     classYear: number;
     gender: Gender;
 }) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) return { ok: false as const, error: "Not signed in." };
@@ -98,7 +98,7 @@ export async function getEligibleAthletesByGradeAction(params: {
 
 // ---------- Helper: resilient history insert ----------
 async function insertRatingHistory(
-    supabase: ReturnType<typeof createSupabaseServer>,
+    supabase: Awaited<ReturnType<typeof createSupabaseServer>>,
     baseRecord: Record<string, unknown>,
     note?: string
 ) {
@@ -125,7 +125,7 @@ async function insertRatingHistory(
 
 /** Server-side guard: cannot assign > eligibleStar for the selected (event,grade,classYear). */
 export async function setStarRatingAction(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) return { ok: false as const, error: "Not signed in." };

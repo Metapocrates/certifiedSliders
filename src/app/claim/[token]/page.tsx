@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type ClaimState =
@@ -8,11 +8,12 @@ type ClaimState =
   | { status: "success" }
   | { status: "error"; message: string };
 
-export default function ClaimPage({ params }: { params: { token: string } }) {
+export default function ClaimPage({ params }: { params: Promise<{ token: string }> }) {
+  const resolvedParams = use(params);
   const [state, setState] = useState<ClaimState>({ status: "pending" });
 
   // The token param is actually the row ID now (short UUID)
-  const rowId = params.token;
+  const rowId = resolvedParams.token;
 
   useEffect(() => {
     let cancelled = false;

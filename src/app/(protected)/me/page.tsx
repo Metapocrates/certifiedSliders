@@ -42,7 +42,7 @@ function fmtTime(sec: number | null | undefined, text?: string | null) {
 }
 
 export default async function MePage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // who am I
   const { data: auth } = await supabase.auth.getUser();

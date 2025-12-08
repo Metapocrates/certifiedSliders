@@ -19,10 +19,11 @@ type CardData = {
 
 export const GET = async (
   request: Request,
-  { params }: { params: { profileId: string } }
+  { params }: { params: Promise<{ profileId: string }> }
 ) => {
   try {
-    const profileId = params.profileId;
+    const resolvedParams = await params;
+    const profileId = resolvedParams.profileId;
     const search = new URL(request.url).searchParams;
     const data = parseSearch(search, profileId);
 
@@ -189,7 +190,8 @@ export const GET = async (
       size
     );
   } catch {
-    return createFallbackResponse({ username: params.profileId });
+    const resolvedParams = await params;
+    return createFallbackResponse({ username: resolvedParams.profileId });
   }
 };
 

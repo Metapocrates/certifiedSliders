@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function CreateTeamPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();

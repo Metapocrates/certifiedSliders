@@ -12,7 +12,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
  * Security: Should be protected by cron secret or admin auth
  */
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Security check: Verify cron secret or admin auth
   const cronSecret = req.headers.get("x-cron-secret");

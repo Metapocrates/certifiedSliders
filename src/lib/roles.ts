@@ -20,7 +20,7 @@ export interface UserRoleInfo {
  * SERVER-SIDE ONLY
  */
 export async function getUserRole(userId?: string): Promise<UserRoleInfo | null> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Get current user if not provided
   let targetUserId = userId;

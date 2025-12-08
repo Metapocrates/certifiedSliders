@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Get IP address and user agent for audit trail
     const ip_address = req.headers.get('x-forwarded-for')?.split(',')[0] ||
@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     // Check if user has accepted
     const { data, error } = await supabase

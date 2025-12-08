@@ -17,15 +17,12 @@ export default function InlineActions({ id }: { id: string }) {
             try {
                 const fd = new FormData();
                 fd.append("id", id);
-                const res = await approveResultAction(fd);
-                if (res?.ok) {
-                    toast.success("Result approved ✅");
-                    router.refresh();
-                } else {
-                    toast.error(res?.error ?? "Error approving result");
-                }
-            } catch {
-                toast.error("Unexpected error approving");
+                await approveResultAction(fd);
+                // Action redirects on success, so this won't execute
+                toast.success("Result approved ✅");
+                router.refresh();
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Error approving result");
             }
         });
 
@@ -35,17 +32,14 @@ export default function InlineActions({ id }: { id: string }) {
                 const fd = new FormData();
                 fd.append("id", id);
                 if (reason.trim()) fd.append("reason", reason.trim());
-                const res = await rejectResultAction(fd);
-                if (res?.ok) {
-                    toast.success("Result rejected ❌");
-                    setRejectOpen(false);
-                    setReason("");
-                    router.refresh();
-                } else {
-                    toast.error(res?.error ?? "Error rejecting result");
-                }
-            } catch {
-                toast.error("Unexpected error rejecting");
+                await rejectResultAction(fd);
+                // Action redirects on success, so this won't execute
+                toast.success("Result rejected ❌");
+                setRejectOpen(false);
+                setReason("");
+                router.refresh();
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Error rejecting result");
             }
         });
 

@@ -33,7 +33,7 @@ function slugify(s: string) {
 }
 
 export async function updatePost(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };
@@ -125,7 +125,7 @@ export async function updatePost(formData: FormData) {
 }
 
 export async function deletePost(formData: FormData) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const user = await getSessionUser();
     if (!user) return { ok: false, message: "Not signed in." };
     if (!(await isAdmin(user.id))) return { ok: false, message: "Admins only." };

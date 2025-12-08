@@ -43,7 +43,7 @@ export default async function VerifiedResultsList({
   athleteId: string;
   limit?: number;
 }) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data, error } = await supabase
     .from("results")

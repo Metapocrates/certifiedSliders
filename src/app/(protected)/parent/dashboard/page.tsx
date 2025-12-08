@@ -19,7 +19,7 @@ type LinkedAthlete = {
 };
 
 export default async function ParentDashboardPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

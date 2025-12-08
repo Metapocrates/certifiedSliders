@@ -4,13 +4,13 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import { revalidatePath } from "next/cache";
 
 async function getCurrentUser() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
   return { supabase, user };
 }
 
-async function revalidateProfilePaths(supabase: ReturnType<typeof createSupabaseServer>) {
+async function revalidateProfilePaths(supabase: Awaited<ReturnType<typeof createSupabaseServer>>) {
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
   if (!user) return;

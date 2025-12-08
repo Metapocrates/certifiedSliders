@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type PageProps = {
-  params: { profileId: string };
-  searchParams?: {
+  params: Promise<{ profileId: string }>;
+  searchParams?: Promise<{
     sort?: "date_desc" | "date_asc" | "event_asc" | "season_then_date";
     season?: "all" | "indoor" | "outdoor";
-  };
+  }>;
 };
 
 function fmtTime(sec: number | null | undefined, text?: string | null) {
@@ -32,8 +32,10 @@ function fmtDate(d?: string | null) {
 }
 
 export default async function AthleteHistoryPage({ params, searchParams }: PageProps) {
-  const { profileId } = params;
-  const supabase = createSupabaseServer();
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const { profileId } = resolvedParams;
+  const supabase = await createSupabaseServer();
 
   // Load profile (id + basics for header)
   const { data: profile } = await supabase
@@ -55,7 +57,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
   }
 
   // Build query with optional season filter
-  const seasonFilter = searchParams?.season || "all";
+  const seasonFilter = resolvedSearchParams?.season || "all";
   let query = supabase
     .from("results")
     .select(
@@ -74,7 +76,7 @@ export default async function AthleteHistoryPage({ params, searchParams }: PageP
   const list = (results ?? []).slice();
 
   // Sorting
-  const sort = searchParams?.sort || "date_desc";
+  const sort = resolvedSearchParams?.sort || "date_desc";
   list.sort((a: any, b: any) => {
     const aDate = a.meet_date ? new Date(a.meet_date).getTime() : 0;
     const bDate = b.meet_date ? new Date(b.meet_date).getTime() : 0;

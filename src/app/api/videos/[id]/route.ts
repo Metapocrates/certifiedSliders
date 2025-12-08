@@ -8,9 +8,10 @@ import { getVideoProvider } from '@/lib/videos/providers';
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const supabase = createSupabaseServer();
+  const resolvedParams = await params;
+  const supabase = await createSupabaseServer();
 
   // Check authentication
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,7 +20,7 @@ export async function DELETE(
   }
 
   try {
-    const videoId = params.id;
+    const videoId = resolvedParams.id;
 
     // Get video to verify ownership and get provider info
     const { data: video, error: fetchError } = await supabase

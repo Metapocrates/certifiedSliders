@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const gender = searchParams.get("gender");
     const state = searchParams.get("state");
 
-    const supabase = supabaseServer();
+    const supabase = await supabaseServer();
 
     // Start with base query joining profiles for additional data
     let queryBuilder = supabase

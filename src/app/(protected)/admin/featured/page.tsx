@@ -22,7 +22,7 @@ type FeaturedListRow = {
 };
 
 export default async function FeaturedAdminPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Viewer + Admin check
   const { data: authData } = await supabase.auth.getUser();
@@ -126,7 +126,7 @@ export default async function FeaturedAdminPage() {
 }
 
 async function FeaturedCount() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { count } = await supabase
     .from("profiles")
     .select("id", { count: "exact", head: true })
@@ -136,7 +136,7 @@ async function FeaturedCount() {
 }
 
 async function FeaturedList() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data } = await supabase
     .from("profiles")
     .select("id, username, full_name, star_rating")

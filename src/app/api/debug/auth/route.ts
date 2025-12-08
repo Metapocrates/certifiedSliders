@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export async function GET() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: { user }, error } = await supabase.auth.getUser();
 
     // Return a tiny payload to confirm whether the SERVER sees your session

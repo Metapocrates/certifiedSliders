@@ -6,7 +6,7 @@ import AdminClaimPanel from "@/components/admin/AdminClaimPanel";
 
 
 export default async function AdminClaimsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const user = await getSessionUser();
   if (!user) notFound();
   const admin = await isAdmin(user.id);

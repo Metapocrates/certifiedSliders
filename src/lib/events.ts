@@ -14,7 +14,7 @@ export type EventRow = {
 };
 
 export async function getEvents(): Promise<EventRow[]> {
-    const supabase = supabaseServer();
+    const supabase = await supabaseServer();
     const { data, error } = await supabase
         .from("events")
         .select("*")

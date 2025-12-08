@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 export async function GET() {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data, error } = await supabase.auth.getUser();
     return NextResponse.json(
         { ok: !error, user: data?.user ?? null, error: error?.message ?? null },

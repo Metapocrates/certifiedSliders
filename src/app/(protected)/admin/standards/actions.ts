@@ -4,11 +4,11 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 
 type Gender = "M" | "F" | "U";
 
-function adminClient() {
-    return createSupabaseServer();
+async function adminClient() {
+    return await createSupabaseServer();
 }
 
-async function assertAdmin(supabase: ReturnType<typeof createSupabaseServer>) {
+async function assertAdmin(supabase: Awaited<ReturnType<typeof createSupabaseServer>>) {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth?.user) throw new Error("Not signed in.");
     const { data: adminRow } = await supabase
@@ -21,7 +21,7 @@ async function assertAdmin(supabase: ReturnType<typeof createSupabaseServer>) {
 }
 
 export async function listStandardsAction() {
-    const supabase = adminClient();
+    const supabase = await adminClient();
     await assertAdmin(supabase);
     const { data, error } = await supabase
         .from("rating_standards_grade")
@@ -45,7 +45,7 @@ export async function upsertStandardAction(input: {
     source?: string | null;
     notes?: string | null;
 }) {
-    const supabase = adminClient();
+    const supabase = await adminClient();
     await assertAdmin(supabase);
 
     const payload = {
@@ -73,7 +73,7 @@ export async function deleteStandardAction(key: {
     grade: 9 | 10 | 11 | 12;
     gender: Gender;
 }) {
-    const supabase = adminClient();
+    const supabase = await adminClient();
     await assertAdmin(supabase);
 
     const { error } = await supabase

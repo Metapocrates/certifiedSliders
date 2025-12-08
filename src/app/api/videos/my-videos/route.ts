@@ -6,7 +6,7 @@ import { createSupabaseServer } from '@/lib/supabase/compat';
  * Fetch current user's video submissions
  */
 export async function GET(req: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check authentication
   const { data: { user } } = await supabase.auth.getUser();

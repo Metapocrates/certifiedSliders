@@ -26,7 +26,7 @@ type UserTeam = {
 };
 
 export default async function HSCoachPortalPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Auth check
   const { data: { user } } = await supabase.auth.getUser();

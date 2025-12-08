@@ -18,7 +18,7 @@ export type UserRole = {
  * Priority: Admin > NCAA Coach > HS Coach > Parent > Athlete
  */
 export async function resolveDefaultRouteForUser(userId: string): Promise<string> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check if route already set
   const { data: profile } = await supabase
@@ -51,7 +51,7 @@ export async function resolveDefaultRouteForUser(userId: string): Promise<string
  * Detect user role based on database relationships
  */
 export async function detectUserRole(userId: string): Promise<UserRole> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check Admin
   const { data: adminRow } = await supabase
@@ -144,7 +144,7 @@ export async function detectUserRole(userId: string): Promise<UserRole> {
  * Get all applicable roles for a user (for multi-role scenarios)
  */
 export async function getUserRoles(userId: string): Promise<UserRole[]> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const roles: UserRole[] = [];
 
   // Check all roles
@@ -169,7 +169,7 @@ export async function getUserRoles(userId: string): Promise<UserRole[]> {
  * Check if user has a specific role
  */
 export async function hasRole(userId: string, role: UserRole['role']): Promise<boolean> {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   switch (role) {
     case 'admin':

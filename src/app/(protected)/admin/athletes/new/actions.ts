@@ -4,8 +4,8 @@ import { cookies, headers } from "next/headers";
 import crypto from "node:crypto";
 import { createServerClient } from "@supabase/ssr";
 
-function supabaseServer() {
-    const cookieStore = cookies();
+async function supabaseServer() {
+    const cookieStore = await cookies();
     return createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,7 +26,7 @@ function supabaseServer() {
 }
 
 export async function createProfileAction(formData: FormData) {
-    const supabase = supabaseServer();
+    const supabase = await supabaseServer();
 
     const username = (formData.get("username") as string)?.trim();
     const full_name = (formData.get("full_name") as string)?.trim();
@@ -49,7 +49,7 @@ export async function createProfileAction(formData: FormData) {
         return { ok: false, error: error.message };
     }
 
-    const hdrs = headers();
+    const hdrs = await headers();
     const origin =
         (hdrs.get("x-forwarded-proto") && hdrs.get("x-forwarded-host"))
             ? `${hdrs.get("x-forwarded-proto")}://${hdrs.get("x-forwarded-host")}`

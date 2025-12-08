@@ -4,7 +4,7 @@ import NewPostForm from "./NewPostForm";
 import { redirect } from "next/navigation";
 
 export default async function NewBlogPostPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const me = await getSessionUser();
   if (!me) redirect("/signin");
   if (!(await isAdmin(me.id))) redirect("/");

@@ -69,7 +69,7 @@ function getStatusBadge(status: string) {
 }
 
 export default async function ParentSubmissionsPage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

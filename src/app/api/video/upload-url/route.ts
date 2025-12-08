@@ -10,7 +10,7 @@ export const runtime = 'edge';
  */
 export async function POST(req: NextRequest) {
   try {
-    const supabase = supabaseServer();
+    const supabase = await supabaseServer();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {

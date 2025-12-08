@@ -46,7 +46,7 @@ const whatsNew = [
 ];
 
 export default async function HomePage() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth?.user ?? null;
 

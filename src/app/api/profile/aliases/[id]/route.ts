@@ -17,8 +17,9 @@ function jsonError(message: string, code: string, status = 400) {
 // PATCH /api/profile/aliases/[id] - Update alias
 export const PATCH = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const resolvedParams = await params;
   const user = await getSessionUser();
   if (!user) {
     return jsonError("Unauthorized", "UNAUTHORIZED", 401);
@@ -31,13 +32,13 @@ export const PATCH = async (
     return jsonError("Invalid request body", "BAD_REQUEST");
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Verify ownership
   const { data: existing, error: fetchError } = await supabase
     .from("athlete_aliases")
     .select("id, athlete_id")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .maybeSingle();
 
   if (fetchError) {
@@ -71,7 +72,7 @@ export const PATCH = async (
   const { data, error } = await supabase
     .from("athlete_aliases")
     .update(updates)
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("athlete_id", user.id)
     .select("id, alias, type, is_public, updated_at")
     .single();
@@ -86,20 +87,21 @@ export const PATCH = async (
 // DELETE /api/profile/aliases/[id] - Delete alias
 export const DELETE = async (
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) => {
+  const resolvedParams = await params;
   const user = await getSessionUser();
   if (!user) {
     return jsonError("Unauthorized", "UNAUTHORIZED", 401);
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Verify ownership
   const { data: existing, error: fetchError } = await supabase
     .from("athlete_aliases")
     .select("id, athlete_id")
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .maybeSingle();
 
   if (fetchError) {
@@ -118,7 +120,7 @@ export const DELETE = async (
   const { error } = await supabase
     .from("athlete_aliases")
     .delete()
-    .eq("id", params.id)
+    .eq("id", resolvedParams.id)
     .eq("athlete_id", user.id);
 
   if (error) {

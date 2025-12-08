@@ -6,7 +6,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
  * Check if user type allows result submission (athletes and parents only)
  */
 export async function GET() {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

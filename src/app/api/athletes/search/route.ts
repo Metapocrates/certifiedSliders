@@ -5,7 +5,7 @@ import { createSupabaseServer } from '@/lib/supabase/compat';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check auth
   const { data: { user } } = await supabase.auth.getUser();

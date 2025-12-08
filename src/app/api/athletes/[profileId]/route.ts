@@ -17,10 +17,11 @@ type Athlete = {
 
 export async function GET(
     _req: Request,
-    ctx: { params: { username: string } }
+    ctx: { params: Promise<{ username: string }> }
 ) {
-    const supabase = createSupabaseServer();
-    const slug = ctx.params.username; // <— was params.slug; folder is [username]
+    const resolvedParams = await ctx.params;
+    const supabase = await createSupabaseServer();
+    const slug = resolvedParams.username; // <— was params.slug; folder is [username]
 
     const { data, error } = await supabase
         .from("athletes")

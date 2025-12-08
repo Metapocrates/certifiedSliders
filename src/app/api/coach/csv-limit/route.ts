@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ limit: 10, error: "Missing program parameter" }, { status: 400 });
   }
 
-  const supabase = createSupabaseServer();
+  const supabase = await createSupabaseServer();
 
   // Check if user is authenticated and has access to this program
   const { data: { user } } = await supabase.auth.getUser();

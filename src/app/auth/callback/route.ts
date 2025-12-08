@@ -18,7 +18,7 @@ export async function GET(req: Request) {
         return NextResponse.redirect(redirect);
     }
 
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
         const redirect = new URL(`/signin?error=${encodeURIComponent(error.message)}`, url.origin);
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-    const supabase = createSupabaseServer();
+    const supabase = await createSupabaseServer();
 
     let access_token: string | null = null;
     let refresh_token: string | null = null;
