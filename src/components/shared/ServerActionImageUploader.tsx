@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, type DragEvent, type FormEvent } from 'react';
+import { useState, useRef, type DragEvent } from 'react';
 import Image from 'next/image';
 
 interface ServerActionImageUploaderProps {
@@ -24,7 +24,6 @@ export default function ServerActionImageUploader({
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const formRef = useRef<HTMLFormElement>(null);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -139,16 +138,14 @@ export default function ServerActionImageUploader({
               : 'border-app/40 hover:border-app hover:bg-muted/30'
           }`}
         >
-          <form ref={formRef}>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileInputChange}
-              className="hidden"
-              disabled={uploading}
-            />
-          </form>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileInputChange}
+            className="hidden"
+            disabled={uploading}
+          />
 
           {uploading ? (
             <div className="space-y-2">
