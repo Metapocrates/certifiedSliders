@@ -116,7 +116,8 @@ export default function RegisterPage() {
 
     try {
       const supabase = supabaseBrowser();
-      const origin = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
+      // Use window.location.origin directly to ensure correct redirect in dev
+      const origin = window.location.origin;
 
       // NCAA coaches go directly to onboarding since they need to select a program first
       const roleRoutes: Record<string, string> = {

@@ -38,8 +38,9 @@ export default function SignInPage() {
   async function onGoogleSignIn() {
     setErr(null);
     try {
+      // Use window.location.origin directly for client-side to ensure correct redirect in dev
       const origin = typeof window !== "undefined"
-        ? (process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || window.location.origin)
+        ? window.location.origin
         : process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || "";
 
       const { data, error} = await supabaseBrowser.auth.signInWithOAuth({

@@ -81,7 +81,8 @@ export default function LoginPage() {
 
     try {
       const supabase = supabaseBrowser();
-      const origin = process.env.NEXT_PUBLIC_SUPABASE_SITE_URL ?? window.location.origin;
+      // Use window.location.origin directly to ensure correct redirect in dev
+      const origin = window.location.origin;
       const nextParam = new URLSearchParams(window.location.search).get("next");
       const redirectPath = nextParam || "/auth/post-login";
 
