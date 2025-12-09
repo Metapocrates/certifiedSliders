@@ -21,6 +21,7 @@ export default function ImageGallery({ onSelectImage, onClose }: ImageGalleryPro
   const loadImages = async () => {
     try {
       const supabase = createClient();
+
       const { data, error: listError } = await supabase.storage
         .from('blog-images')
         .list('', {
@@ -29,9 +30,14 @@ export default function ImageGallery({ onSelectImage, onClose }: ImageGalleryPro
           sortBy: { column: 'created_at', order: 'desc' },
         });
 
-      if (listError) throw listError;
+      if (listError) {
+        throw listError;
+      }
 
-      const urls = (data || []).map((file) => {
+      // Filter out folder placeholders (files starting with .)
+      const validFiles = (data || []).filter(file => !file.name.startsWith('.'));
+
+      const urls = validFiles.map((file) => {
         const { data: { publicUrl } } = supabase.storage
           .from('blog-images')
           .getPublicUrl(file.name);
@@ -39,9 +45,9 @@ export default function ImageGallery({ onSelectImage, onClose }: ImageGalleryPro
       });
 
       setImages(urls);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load images:', err);
-      setError('Failed to load images');
+      setError(err?.message || 'Failed to load images');
     } finally {
       setLoading(false);
     }
