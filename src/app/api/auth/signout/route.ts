@@ -5,6 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
     const supabase = await createSupabaseServer();
-    await supabase.auth.signOut(); // clears Supabase auth cookies
+    // Clear local session and all cookies
+    await supabase.auth.signOut({ scope: 'local' });
     return NextResponse.json({ ok: true });
 }

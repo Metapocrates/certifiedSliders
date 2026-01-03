@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 
 interface ImageGalleryProps {
@@ -20,28 +19,39 @@ export default function ImageGallery({ onSelectImage, onClose }: ImageGalleryPro
 
   const loadImages = async () => {
     try {
-      const supabase = createClient();
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-      const { data, error: listError } = await supabase.storage
-        .from('blog-images')
-        .list('', {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: 'created_at', order: 'desc' },
-        });
+      // Direct fetch to Storage API (avoids GoTrueClient conflicts)
+      const response = await fetch(
+        `${supabaseUrl}/storage/v1/object/list/blog-images`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${anonKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prefix: '',
+            limit: 100,
+            offset: 0,
+            sortBy: { column: 'created_at', order: 'desc' },
+          }),
+        }
+      );
 
-      if (listError) {
-        throw listError;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Storage API error: ${response.status} - ${errorText}`);
       }
 
-      // Filter out folder placeholders (files starting with .)
-      const validFiles = (data || []).filter(file => !file.name.startsWith('.'));
+      const data = await response.json();
 
-      const urls = validFiles.map((file) => {
-        const { data: { publicUrl } } = supabase.storage
-          .from('blog-images')
-          .getPublicUrl(file.name);
-        return publicUrl;
+      // Filter out folder placeholders (files starting with .)
+      const validFiles = (data || []).filter((file: any) => !file.name.startsWith('.'));
+
+      const urls = validFiles.map((file: any) => {
+        return `${supabaseUrl}/storage/v1/object/public/blog-images/${file.name}`;
       });
 
       setImages(urls);

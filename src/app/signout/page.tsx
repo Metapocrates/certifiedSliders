@@ -2,21 +2,18 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 export default function SignoutPage() {
   const router = useRouter();
 
   useEffect(() => {
     const run = async () => {
-      // Browser Supabase client (NEXT_PUBLIC_* envs must be set)
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      // Use the singleton browser client to avoid multiple GoTrueClient instances
+      const supabase = supabaseBrowser();
 
-      // 1) Clear client session (localStorage)
-      await supabase.auth.signOut().catch(() => {});
+      // 1) Clear client session (localStorage) with local scope
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 
       // 2) Clear server cookies
       await fetch("/api/auth/signout", { method: "POST" }).catch(() => {});

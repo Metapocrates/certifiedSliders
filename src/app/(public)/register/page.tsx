@@ -133,6 +133,9 @@ export default function RegisterPage() {
         provider: "google",
         options: {
           redirectTo: `${origin}/auth/callback?next=${redirectPath}&pending_type=${selectedType}`,
+          queryParams: {
+            prompt: 'select_account', // Force Google to show account picker for sign up
+          },
         },
       });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, type DragEvent } from 'react';
+import { useState, useRef, useEffect, type DragEvent } from 'react';
 import Image from 'next/image';
 
 interface ServerActionImageUploaderProps {
@@ -24,6 +24,12 @@ export default function ServerActionImageUploader({
   const [imageError, setImageError] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync preview when parent's currentImageUrl changes
+  useEffect(() => {
+    setPreview(currentImageUrl || null);
+    setImageError(false);
+  }, [currentImageUrl]);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();

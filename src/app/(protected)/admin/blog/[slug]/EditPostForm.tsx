@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { updatePost, deletePost } from "./actions";
 import ImageUploader from "@/components/blog/ImageUploader";
-import ImageGallery from "@/components/blog/ImageGallery";
+import { uploadBlogImage } from "@/app/(protected)/admin/blog/actions";
 
 type Post = {
   slug: string;
@@ -25,8 +25,48 @@ export default function EditPostForm({ initial }: { initial: Post }) {
   const [isPending, startTransition] = useTransition();
   const [isDeleting, startDelete] = useTransition();
   const [coverImageUrl, setCoverImageUrl] = useState(initial.cover_image_url ?? "");
-  const [showGallery, setShowGallery] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const defaultAuthorMode = initial.author_override ? "team" : "self";
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate
+    if (!file.type.startsWith('image/')) {
+      setMsg('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setMsg('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setMsg('');
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const result = await uploadBlogImage(formData);
+
+      if (!result.ok) {
+        throw new Error(result.message);
+      }
+      if (result.url) {
+        setCoverImageUrl(result.url);
+        setMsg('Image uploaded!');
+      }
+    } catch (err: any) {
+      setMsg(err?.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   async function doDelete() {
     if (!confirm("Delete this post? This cannot be undone.")) return;
@@ -98,12 +138,21 @@ export default function EditPostForm({ initial }: { initial: Post }) {
           helperText="Recommended: 1200x630px for social sharing"
         />
         <input type="hidden" name="cover_image_url" value={coverImageUrl} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={isUploading}
+        />
         <button
           type="button"
-          onClick={() => setShowGallery(true)}
-          className="text-sm font-semibold text-scarlet hover:underline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="text-sm font-semibold text-scarlet hover:underline disabled:opacity-50"
         >
-          Or choose from gallery
+          {isUploading ? 'Uploading...' : 'Or select from device'}
         </button>
       </div>
 
@@ -181,16 +230,6 @@ export default function EditPostForm({ initial }: { initial: Post }) {
       </div>
 
       {msg && <div className="text-sm mt-1">{msg}</div>}
-
-      {showGallery && (
-        <ImageGallery
-          onSelectImage={(url) => {
-            setCoverImageUrl(url);
-            setShowGallery(false);
-          }}
-          onClose={() => setShowGallery(false)}
-        />
-      )}
     </form>
   );
 }
