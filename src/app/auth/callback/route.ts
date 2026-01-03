@@ -26,16 +26,54 @@ export async function GET(req: Request) {
         return NextResponse.redirect(redirect);
     }
 
-    // If this is a new Google OAuth user from registration (pending_type provided)
-    // set their user type via RPC
-    if (pendingType && sessionData?.user) {
+    // If user exists, ensure profile is active and synced with OAuth metadata
+    if (sessionData?.user) {
         try {
-            await supabase.rpc("rpc_set_user_type", {
-                _user_type: pendingType,
-            });
-        } catch (typeErr) {
-            console.error("Failed to set user type in callback:", typeErr);
-            // Don't fail the auth flow, just log it
+            const user = sessionData.user;
+            const fullName = user.user_metadata?.full_name || user.user_metadata?.name || null;
+
+            // Check if profile exists and needs resurrection or name sync
+            const { data: profile } = await supabase
+                .from("profiles")
+                .select("id, status, full_name")
+                .eq("id", user.id)
+                .maybeSingle();
+
+            if (profile) {
+                const updates: Record<string, unknown> = {};
+
+                // Resurrect deleted profiles when user signs back in
+                if (profile.status === "deleted") {
+                    updates.status = "active";
+                    updates.status_reason = null;
+                    updates.status_changed_at = new Date().toISOString();
+                }
+
+                // Sync name from OAuth if profile has no name
+                if (!profile.full_name && fullName) {
+                    updates.full_name = fullName;
+                }
+
+                if (Object.keys(updates).length > 0) {
+                    await supabase
+                        .from("profiles")
+                        .update(updates)
+                        .eq("id", user.id);
+                }
+            }
+        } catch (profileErr) {
+            console.error("Failed to sync profile in callback:", profileErr);
+        }
+
+        // Set user type if provided (from registration)
+        if (pendingType) {
+            try {
+                await supabase.rpc("rpc_set_user_type", {
+                    _user_type: pendingType,
+                });
+            } catch (typeErr) {
+                console.error("Failed to set user type in callback:", typeErr);
+            }
         }
     }
 
