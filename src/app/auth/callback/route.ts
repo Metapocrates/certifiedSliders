@@ -1,5 +1,6 @@
 // src/app/auth/callback/route.ts
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
 /**
@@ -38,6 +39,9 @@ export async function GET(req: Request) {
         }
     }
 
+    // Invalidate cached pages so navbar and other server components show updated auth state
+    revalidatePath("/", "layout");
+
     // Successful exchange; send the user along to their destination.
     const redirect = new URL(next, url.origin);
     return NextResponse.redirect(redirect);
@@ -63,9 +67,12 @@ export async function POST(req: Request) {
             return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
         }
     } else {
-        // Touch session so helper syncs cookies even if tokens weren’t sent
+        // Touch session so helper syncs cookies even if tokens weren't sent
         await supabase.auth.getSession();
     }
+
+    // Invalidate cached pages so navbar shows updated auth state
+    revalidatePath("/", "layout");
 
     return NextResponse.json({ ok: true });
 }
