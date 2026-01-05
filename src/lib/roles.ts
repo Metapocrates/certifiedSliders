@@ -138,7 +138,7 @@ export function getDefaultRouteForRole(role: UserRole): string {
     case "ncaa_coach":
       return "/ncaa-coach"; // NCAA Coach coming soon page
     case "parent":
-      return "/parent"; // Parent coming soon page
+      return "/parent/dashboard"; // Parent portal dashboard
     case "admin":
       return "/admin"; // Admin dashboard - fully functional
     default:
