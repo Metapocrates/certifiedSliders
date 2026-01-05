@@ -33,21 +33,22 @@ export default async function Header() {
     profile = data ?? null;
   }
 
-  // Determine submit result URL based on user type
-  const submitResultHref = profile?.user_type === 'parent'
-    ? '/parent/submissions/new'
-    : '/submit-result';
+  // Parent users don't submit results in beta - they view athlete activity
+  const isParent = profile?.user_type === 'parent';
+  const submitResultHref = '/submit-result';
 
   // Determine dashboard URL based on user type
   const dashboardHref =
     profile?.user_type === 'ncaa_coach' ? '/coach/portal' :
     profile?.user_type === 'hs_coach' ? '/hs/portal' :
+    profile?.user_type === 'parent' ? '/parent/dashboard' :
     admin ? '/admin/home' :
     '/me';
 
   const dashboardLabel =
     profile?.user_type === 'ncaa_coach' ? 'Coach Portal' :
     profile?.user_type === 'hs_coach' ? 'HS Portal' :
+    profile?.user_type === 'parent' ? 'Parent Portal' :
     admin ? 'Admin' :
     'My Profile';
 
@@ -98,12 +99,14 @@ export default async function Header() {
             </Link>
           ) : (
             <>
-              <Link
-                href={submitResultHref}
-                className="btn whitespace-nowrap text-xs sm:text-sm"
-              >
-                Submit Result
-              </Link>
+              {!isParent && (
+                <Link
+                  href={submitResultHref}
+                  className="btn whitespace-nowrap text-xs sm:text-sm"
+                >
+                  Submit Result
+                </Link>
+              )}
 
               <Link href={dashboardHref} className="btn whitespace-nowrap text-xs sm:text-sm">
                 {dashboardLabel}

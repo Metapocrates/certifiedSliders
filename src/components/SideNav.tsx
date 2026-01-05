@@ -53,7 +53,8 @@ export default function SideNav() {
       } else if (type === 'parent') {
         setNavItems([
           { href: '/parent/dashboard', label: 'Dashboard' },
-          { href: '/parent/submissions/new', label: 'Submit Result' },
+          { href: '/parent/activity', label: 'Activity' },
+          { href: '/parent/onboarding', label: 'Link Athlete' },
         ]);
       } else {
         // Athlete or default

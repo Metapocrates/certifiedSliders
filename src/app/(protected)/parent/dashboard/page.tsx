@@ -58,19 +58,14 @@ export default async function ParentDashboardPage() {
 
   return (
     <div className="container max-w-6xl py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-app">Parent Dashboard</h1>
-          <p className="mt-1 text-sm text-muted">
-            Manage athlete connections and submit results
-          </p>
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-app">Parent Dashboard</h1>
+        <p className="mt-1 text-sm text-muted">
+          View your linked athletes and track their progress
+        </p>
+        <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2 text-xs text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300">
+          Welcome to the Parent Portal. This is a read-only view of your athletes&apos; verified results.
         </div>
-        <Link
-          href="/parent/submissions/new"
-          className="rounded-lg bg-scarlet px-4 py-2 text-sm font-semibold text-white transition hover:bg-scarlet/90"
-        >
-          Submit Result
-        </Link>
       </div>
 
       {/* Linked Athletes */}
@@ -144,25 +139,25 @@ export default async function ParentDashboardPage() {
         <h2 className="mb-4 text-lg font-medium text-app">Quick Actions</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link
-            href="/parent/submissions/new"
+            href="/parent/activity"
             className="group rounded-xl border border-app bg-card p-6 transition hover:border-scarlet hover:shadow-md"
           >
             <svg className="mb-3 h-8 w-8 text-scarlet" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            <h3 className="font-semibold text-app">Submit Result</h3>
-            <p className="mt-1 text-sm text-muted">Add a new PR for your athlete</p>
+            <h3 className="font-semibold text-app">View Activity</h3>
+            <p className="mt-1 text-sm text-muted">See your athletes' verified results</p>
           </Link>
 
           <Link
-            href="/parent/submissions"
+            href="/parent/onboarding"
             className="group rounded-xl border border-app bg-card p-6 transition hover:border-scarlet hover:shadow-md"
           >
             <svg className="mb-3 h-8 w-8 text-scarlet" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
-            <h3 className="font-semibold text-app">View Submissions</h3>
-            <p className="mt-1 text-sm text-muted">Track your submitted results</p>
+            <h3 className="font-semibold text-app">Link Athlete</h3>
+            <p className="mt-1 text-sm text-muted">Connect with another athlete</p>
           </Link>
 
           <Link

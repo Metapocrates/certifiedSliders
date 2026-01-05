@@ -31,10 +31,13 @@ export default async function ParentOnboardingPage() {
   return (
     <div className="container max-w-4xl py-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-app">Parent Onboarding</h1>
+        <h1 className="text-3xl font-semibold text-app">Link Your Athlete</h1>
         <p className="mt-2 text-muted">
-          Link to your athlete&apos;s profile to submit results on their behalf
+          Connect with your athlete to view their verified results and track their progress
         </p>
+        <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50 px-4 py-2 text-xs text-purple-700 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-300">
+          Parent Portal is read-only. Athletes manage their own profiles and submit results.
+        </div>
       </div>
 
       <div className="space-y-6">
