@@ -31,13 +31,21 @@ export default function LoginPage() {
     }
   }
 
-  // Show current session (if already logged in)
+  // Redirect if already logged in
   useEffect(() => {
     const supabase = supabaseBrowser();
     supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) setWho({ id: data.user.id, email: data.user.email ?? null });
+      if (data?.user) {
+        setWho({ id: data.user.id, email: data.user.email ?? null });
+        // Redirect to post-login handler which will route to appropriate dashboard
+        const nextParam = new URLSearchParams(window.location.search).get("next");
+        const postLoginUrl = nextParam
+          ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
+          : "/auth/post-login";
+        router.replace(postLoginUrl);
+      }
     });
-  }, []);
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/utils/supabase/client";
 
@@ -8,6 +8,18 @@ type Mode = "password" | "magic";
 
 export default function SignInPage() {
   const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabaseBrowser.auth.getUser();
+      if (data?.user) {
+        // Already logged in, redirect to post-login handler
+        router.replace("/auth/post-login");
+      }
+    };
+    checkSession();
+  }, [router]);
 
   // shared
   const [mode, setMode] = useState<Mode>("password");
