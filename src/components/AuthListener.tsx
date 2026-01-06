@@ -1,7 +1,7 @@
 // src/components/AuthListener.tsx
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
@@ -30,7 +30,10 @@ export default function AuthListener() {
           refresh_token: sessionData.session?.refresh_token ?? null,
         }),
       });
-      router.refresh();
+      // Use startTransition to avoid blocking UI during refresh
+      startTransition(() => {
+        router.refresh();
+      });
     } finally {
       setTimeout(() => {
         syncingRef.current = false;

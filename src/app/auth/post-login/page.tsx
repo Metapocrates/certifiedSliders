@@ -2,7 +2,7 @@
 // Client-side post-login page that forces router refresh before redirect
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, startTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function PostLoginPage() {
@@ -14,7 +14,10 @@ export default function PostLoginPage() {
     const handlePostLogin = async () => {
       try {
         // Force refresh to pick up new auth state in server components
-        router.refresh();
+        // Use startTransition to avoid blocking UI
+        startTransition(() => {
+          router.refresh();
+        });
 
         // Small delay to let refresh propagate
         await new Promise(resolve => setTimeout(resolve, 100));

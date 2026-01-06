@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import Providers from "@/components/Providers";
 import AuthListener from "@/components/AuthListener";
+import OAuthCodeHandler from "@/components/OAuthCodeHandler";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -69,6 +70,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="min-h-screen bg-app text-app flex flex-col">
         <Providers>
           <AuthListener />
+          <OAuthCodeHandler />
           <SiteHeader />
           <div className="border-b-4 border-accent" />
           <main className="flex-1 mx-auto max-w-6xl px-4 py-10 w-full">{children}</main>
