@@ -136,7 +136,7 @@ export function getDefaultRouteForRole(role: UserRole): string {
     case "hs_coach":
       return "/hs-coach"; // HS Coach coming soon page
     case "ncaa_coach":
-      return "/ncaa-coach"; // NCAA Coach coming soon page
+      return "/coach/portal"; // NCAA Coach portal dashboard
     case "parent":
       return "/parent/dashboard"; // Parent portal dashboard
     case "admin":

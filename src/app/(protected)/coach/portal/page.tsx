@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import CoachPortalTable from "@/components/coach/CoachPortalTable";
 import CoachPortalFilters from "@/components/coach/CoachPortalFilters";
+import CoachDashboardCards from "@/components/coach/CoachDashboardCards";
 
 export default async function CoachPortalPage({
   searchParams,
@@ -92,6 +93,32 @@ export default async function CoachPortalPage({
 
   const athletesList = athletes || [];
 
+  // Get watchlist count and IDs for current coach
+  const { data: watchlistData } = await supabase
+    .from("coach_watchlist")
+    .select("athlete_profile_id")
+    .eq("coach_user_id", user.id);
+
+  const watchlistCount = watchlistData?.length || 0;
+  const watchlistIds = new Set((watchlistData || []).map((w) => w.athlete_profile_id));
+
+  // Get coach interest status for listed athletes
+  const athleteProfileIds = athletesList.map((a: { profile_id: string }) => a.profile_id);
+  let interestStatus: Record<string, string> = {};
+  if (athleteProfileIds.length > 0) {
+    const { data: interestData } = await supabase
+      .from("coach_interest")
+      .select("athlete_profile_id, status")
+      .eq("coach_user_id", user.id)
+      .in("athlete_profile_id", athleteProfileIds);
+
+    if (interestData) {
+      interestData.forEach((i) => {
+        interestStatus[i.athlete_profile_id] = i.status;
+      });
+    }
+  }
+
   // Get all programs for dropdown
   const programs = memberships.map((m) => ({
     id: m.program_id,
@@ -136,18 +163,20 @@ export default async function CoachPortalPage({
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold">Coach Portal</h1>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
             View athletes who have expressed interest in your program
           </p>
         </div>
-        <a
-          href="/me/edit"
-          className="rounded-lg border border-app bg-card px-4 py-2 text-sm font-semibold text-app transition hover:border-scarlet hover:bg-scarlet hover:text-white"
-        >
-          Edit Profile
-        </a>
       </div>
+
+      {/* Dashboard Summary Cards */}
+      <CoachDashboardCards
+        athleteCount={athletesList.length}
+        watchlistCount={watchlistCount}
+        programName={activeProgram?.name || "Your Program"}
+        tier={tier}
+      />
 
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200">
@@ -255,7 +284,13 @@ export default async function CoachPortalPage({
       </div>
 
       {/* Athletes Table */}
-      <CoachPortalTable athletes={athletesList} />
+      <CoachPortalTable
+        athletes={athletesList}
+        watchlistIds={Array.from(watchlistIds)}
+        programId={activeMembership.program_id}
+        programName={activeProgram?.name || "Your Program"}
+        interestStatus={interestStatus}
+      />
 
       {/* Pagination */}
       {athletesList.length >= perPage && (

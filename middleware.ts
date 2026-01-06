@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
   }
 
   // Only create Supabase client for protected routes
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin") || pathname.startsWith("/coach") || pathname.startsWith("/parent")) {
     // Create Supabase client for middleware (Edge-compatible)
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,6 +60,24 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(loginUrl);
       }
     }
+
+    // Protect coach routes - require authentication (role check happens in page)
+    if (pathname.startsWith("/coach")) {
+      if (!user) {
+        const loginUrl = new URL("/login", req.url);
+        loginUrl.searchParams.set("next", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+    }
+
+    // Protect parent routes - require authentication (role check happens in page)
+    if (pathname.startsWith("/parent")) {
+      if (!user) {
+        const loginUrl = new URL("/login", req.url);
+        loginUrl.searchParams.set("next", pathname);
+        return NextResponse.redirect(loginUrl);
+      }
+    }
   }
 
   return res;
@@ -72,5 +90,7 @@ export const config = {
     // Protected routes
     "/admin/:path*",
     "/dashboard/:path*",
+    "/coach/:path*",
+    "/parent/:path*",
   ],
 };

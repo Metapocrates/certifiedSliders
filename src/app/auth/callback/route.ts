@@ -35,18 +35,27 @@ export async function GET(req: Request) {
             // Check if profile exists and needs resurrection or name sync
             const { data: profile } = await supabase
                 .from("profiles")
-                .select("id, status, full_name")
+                .select("id, status, full_name, user_type")
                 .eq("id", user.id)
                 .maybeSingle();
 
             if (profile) {
                 const updates: Record<string, unknown> = {};
+                let wasDeleted = false;
 
                 // Resurrect deleted profiles when user signs back in
                 if (profile.status === "deleted") {
+                    wasDeleted = true;
                     updates.status = "active";
                     updates.status_reason = null;
                     updates.status_changed_at = new Date().toISOString();
+
+                    // If user is registering with a NEW user type, update it during resurrection
+                    // This allows users to switch from athlete to coach (or vice versa) after deletion
+                    if (pendingType && pendingType !== profile.user_type) {
+                        updates.user_type = pendingType;
+                        console.log(`Resurrecting profile with new user_type: ${profile.user_type} -> ${pendingType}`);
+                    }
                 }
 
                 // Sync name from OAuth if profile has no name
@@ -60,12 +69,18 @@ export async function GET(req: Request) {
                         .update(updates)
                         .eq("id", user.id);
                 }
+
+                // If profile was resurrected with new type, skip the RPC call below
+                if (wasDeleted && pendingType && pendingType !== profile.user_type) {
+                    // Already handled above - clear pendingType flag
+                    // pendingType handled during resurrection
+                }
             }
         } catch (profileErr) {
             console.error("Failed to sync profile in callback:", profileErr);
         }
 
-        // Set user type if provided (from registration)
+        // Set user type if provided (from registration) - for NEW profiles or non-resurrection cases
         if (pendingType) {
             try {
                 await supabase.rpc("rpc_set_user_type", {

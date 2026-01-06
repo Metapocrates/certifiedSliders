@@ -19,23 +19,31 @@ export default function PostLoginPage() {
           router.refresh();
         });
 
-        // Small delay to let refresh propagate
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Longer delay to ensure cookies are fully set
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // Get redirect destination from API
         const next = searchParams.get("next");
         const redirectUrl = next ? `/auth/post-login/redirect?next=${encodeURIComponent(next)}` : "/auth/post-login/redirect";
 
         const response = await fetch(redirectUrl);
+
+        if (!response.ok) {
+          console.error("Post-login redirect API error:", response.status);
+          window.location.href = "/me";
+          return;
+        }
+
         const data = await response.json();
+        const destination = data.redirectTo || "/me";
 
         setStatus("Redirecting...");
 
-        // Navigate to the determined route
-        router.push(data.redirectTo || "/me");
+        // Use window.location for more reliable navigation
+        window.location.href = destination;
       } catch (error) {
         console.error("Post-login error:", error);
-        router.push("/me");
+        window.location.href = "/me";
       }
     };
 
