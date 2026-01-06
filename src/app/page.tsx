@@ -299,6 +299,17 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Legal links for Google OAuth verification */}
+      <div className="mx-auto max-w-6xl text-center text-sm text-muted">
+        <SafeLink href="/privacy" className="hover:text-app hover:underline">
+          Privacy Policy
+        </SafeLink>
+        <span className="mx-2">·</span>
+        <SafeLink href="/terms" className="hover:text-app hover:underline">
+          Terms of Service
+        </SafeLink>
+      </div>
     </div>
   );
 }
