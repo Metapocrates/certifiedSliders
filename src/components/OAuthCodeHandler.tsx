@@ -1,6 +1,5 @@
 // src/components/OAuthCodeHandler.tsx
 // Handles OAuth codes that arrive at the root URL instead of /auth/callback
-// Exchanges the code directly instead of redirecting to avoid PKCE state issues
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -20,47 +19,52 @@ export default function OAuthCodeHandler() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
 
-    if (code && !handledRef.current) {
-      handledRef.current = true;
+    if (!code) return;
+    if (handledRef.current) return;
+    handledRef.current = true;
 
-      // Exchange the code directly here
-      const handleOAuthCode = async () => {
-        try {
-          const supabase = supabaseBrowser();
+    console.log("[OAuthCodeHandler] Detected code at root, processing...");
 
-          // Exchange the code for a session
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
+    // Exchange the code directly here
+    const handleOAuthCode = async () => {
+      try {
+        const supabase = supabaseBrowser();
 
-          if (error) {
-            console.error("OAuth code exchange failed:", error.message);
-            // Redirect to signin with error
-            window.location.replace(`/signin?error=${encodeURIComponent(error.message)}`);
-            return;
-          }
+        // Exchange the code for a session
+        console.log("[OAuthCodeHandler] Exchanging code for session...");
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-          // Sync session to server
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData.session) {
-            await fetch("/auth/callback", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({
-                access_token: sessionData.session.access_token,
-                refresh_token: sessionData.session.refresh_token,
-              }),
-            });
-          }
-
-          // Clear the code from URL and redirect to post-login
-          window.location.replace("/auth/post-login");
-        } catch (err) {
-          console.error("OAuth handling error:", err);
-          window.location.replace("/signin?error=OAuth%20failed");
+        if (error) {
+          console.error("[OAuthCodeHandler] Exchange failed:", error.message);
+          window.location.href = `/signin?error=${encodeURIComponent(error.message)}`;
+          return;
         }
-      };
 
-      handleOAuthCode();
-    }
+        console.log("[OAuthCodeHandler] Exchange successful, syncing to server...");
+
+        // Sync session to server
+        if (data.session) {
+          await fetch("/auth/callback", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              access_token: data.session.access_token,
+              refresh_token: data.session.refresh_token,
+            }),
+          });
+        }
+
+        console.log("[OAuthCodeHandler] Redirecting to post-login...");
+        // Use href instead of replace to ensure it works
+        window.location.href = "/auth/post-login";
+      } catch (err) {
+        console.error("[OAuthCodeHandler] Error:", err);
+        window.location.href = "/signin?error=OAuth%20processing%20failed";
+      }
+    };
+
+    // Run immediately
+    handleOAuthCode();
   }, []);
 
   return null;
