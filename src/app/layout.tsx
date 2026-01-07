@@ -7,6 +7,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import Providers from "@/components/Providers";
 import AuthListener from "@/components/AuthListener";
 import OAuthCodeHandler from "@/components/OAuthCodeHandler";
+import AdminPreviewBanner from "@/components/portals/AdminPreviewBanner";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -56,21 +57,33 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const user = authData?.user ?? null;
 
   let isAdmin = false;
+  let userRole: string | null = null;
+
   if (user?.id) {
+    // Check admin status
     const { data: adminRow } = await supabase
       .from("admins")
       .select("user_id")
       .eq("user_id", user.id)
       .maybeSingle();
     isAdmin = Boolean(adminRow?.user_id);
+
+    // Get user's role from profile
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("user_type")
+      .eq("id", user.id)
+      .maybeSingle();
+    userRole = profile?.user_type || null;
   }
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-app text-app flex flex-col">
-        <Providers>
+        <Providers isAdmin={isAdmin} userRole={userRole}>
           <AuthListener />
           <OAuthCodeHandler />
+          <AdminPreviewBanner />
           <SiteHeader />
           <div className="border-b-4 border-accent" />
           <main className="flex-1 mx-auto max-w-6xl px-4 py-10 w-full">{children}</main>

@@ -37,6 +37,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: "/admin/emails", label: "Email Queue" },
   ];
 
+  const devTools = [
+    { href: "/admin/testing", label: "Portal Testing" },
+    { href: "/admin/test-tools", label: "Test University" },
+  ];
+
   return (
     <div className="flex min-h-[calc(100vh-64px)]">
       <aside className="w-72 border-r bg-card/70 px-5 py-8">
@@ -61,6 +66,24 @@ export default async function AdminLayout({ children }: { children: ReactNode })
               </Link>
             ))}
           </nav>
+
+          {/* Dev Tools Section */}
+          <div className="pt-4 border-t border-border">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Dev Tools
+            </p>
+            <nav className="space-y-1">
+              {devTools.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-amber-600 transition hover:border-amber-300 hover:bg-amber-50 dark:text-amber-400 dark:hover:border-amber-700 dark:hover:bg-amber-900/20"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
         </div>
       </aside>
       <main className="flex-1 bg-app px-8 py-10">{children}</main>
