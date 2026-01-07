@@ -1,4 +1,4 @@
-// app/api/athletes/[username]/route.ts
+// app/api/athletes/[profileId]/route.ts
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
@@ -17,11 +17,11 @@ type Athlete = {
 
 export async function GET(
     _req: Request,
-    ctx: { params: Promise<{ username: string }> }
+    ctx: { params: Promise<{ profileId: string }> }
 ) {
     const resolvedParams = await ctx.params;
     const supabase = await createSupabaseServer();
-    const slug = resolvedParams.username; // <— was params.slug; folder is [username]
+    const slug = resolvedParams.profileId;
 
     const { data, error } = await supabase
         .from("athletes")

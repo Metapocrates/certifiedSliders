@@ -2,38 +2,56 @@
   "compilerOptions": {
     /* Modern JS target for Next.js (Node 18+/modern browsers) */
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
-
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     /* Project ergonomics */
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
     "isolatedModules": true,
     "incremental": true,
-
     /* Module + JSX for Next App Router */
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
-
     /* Paths alias for `@/` → `src/` */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     },
-
     /* Keep if you have any .js in src; set to false if everything is TS */
     "allowJs": true,
-
     /* Next plugin for better DX */
-    "plugins": [{ "name": "next" }],
-
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     /* Ambient types */
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "tailwind.config.cjs"],
-  "exclude": ["node_modules", "functions", "archive", "supabase/functions"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "tailwind.config.cjs",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "functions",
+    "archive",
+    "supabase/functions"
+  ]
 }
