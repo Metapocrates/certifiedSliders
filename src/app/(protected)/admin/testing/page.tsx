@@ -42,6 +42,7 @@ export default function AdminTestingPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   // Get preview state from context (single source of truth)
   const previewState = portalContext?.adminPreview ?? DEFAULT_ADMIN_PREVIEW_STATE;
@@ -145,6 +146,57 @@ export default function AdminTestingPage() {
     }
   }
 
+  /**
+   * Test a portal by automatically finding and impersonating a test user with the matching role
+   */
+  async function testPortal() {
+    if (!selectedPortal || !portalContext) return;
+    if (!IMPERSONATION_ENABLED) {
+      setError("Impersonation must be enabled to test portals. Set NEXT_PUBLIC_ENABLE_ADMIN_IMPERSONATION=true");
+      return;
+    }
+
+    setIsTesting(true);
+    setError(null);
+
+    try {
+      const portal = PORTALS[selectedPortal];
+
+      // Search for a test user with the matching role
+      const response = await fetch(`/api/admin/search-users?user_type=${encodeURIComponent(portal.roleKey)}`);
+      if (!response.ok) {
+        throw new Error("Failed to search for test users");
+      }
+
+      const data = await response.json();
+      const users = data.users as TestUser[];
+
+      if (!users || users.length === 0) {
+        setError(`No test users found with role "${portal.roleKey}". Create a test account first.`);
+        return;
+      }
+
+      // Prefer test accounts, otherwise use the first user found
+      const testUser = users.find((u) => u.is_test_account) || users[0];
+
+      // Set portal override first
+      await portalContext.setPortalOverride(selectedPortal);
+
+      // Start impersonation
+      await portalContext.startImpersonation(
+        testUser.id,
+        testUser.full_name || testUser.user_type || testUser.id
+      );
+
+      // Navigate to the portal
+      router.push(portal.basePath);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to test portal");
+    } finally {
+      setIsTesting(false);
+    }
+  }
+
   return (
     <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8">
       {/* Header */}
@@ -232,8 +284,8 @@ export default function AdminTestingPage() {
             Portal Preview
           </h2>
           <p className="text-sm text-muted-foreground">
-            View the app as if you were using a different portal. UI will show the selected portal&apos;s layout and navigation.
-            Server-side authorization still uses your admin account unless impersonation is active.
+            Select a portal and click <strong>&quot;Test Portal&quot;</strong> to automatically impersonate a test user
+            with the matching role and navigate to the portal. This gives you full access to test the portal as that user type.
           </p>
         </div>
 
@@ -256,18 +308,26 @@ export default function AdminTestingPage() {
 
           <div className="flex gap-2">
             <button
+              onClick={testPortal}
+              disabled={!selectedPortal || isTesting || !IMPERSONATION_ENABLED}
+              className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              title={!IMPERSONATION_ENABLED ? "Enable impersonation to test portals" : ""}
+            >
+              {isTesting ? "Loading..." : "Test Portal"}
+            </button>
+            <button
               onClick={enablePortalPreview}
               disabled={!selectedPortal}
               className="rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Enable Preview
+              Preview Only
             </button>
             <button
               onClick={goToPortal}
               disabled={!selectedPortal}
               className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Go to Portal
+              Go (No Auth)
             </button>
           </div>
         </div>
@@ -439,20 +499,22 @@ export default function AdminTestingPage() {
         <h3 className="text-lg font-semibold">How It Works</h3>
         <div className="space-y-3 text-sm text-muted-foreground">
           <div>
-            <strong className="text-foreground">Portal Preview Mode:</strong> Changes the UI to show
-            a different portal&apos;s layout, navigation, and styling. You&apos;ll see a yellow
-            banner at the top indicating you&apos;re in preview mode. Server-side actions still
-            authenticate as your admin account.
+            <strong className="text-foreground">Test Portal (Recommended):</strong> Automatically finds
+            a test user with the matching role (e.g., hs_coach for HS Coach Portal), impersonates them,
+            and navigates to the portal. You get full server-side access as that user type.
           </div>
           <div>
-            <strong className="text-foreground">Impersonation Mode:</strong> Acts as another user
-            for both UI and server-side authorization. You&apos;ll see an orange banner showing
-            who you&apos;re impersonating. All actions are logged for audit purposes.
+            <strong className="text-foreground">Preview Only:</strong> Changes the UI to show
+            the portal&apos;s banner and styling, but server-side authorization still uses your
+            admin account. Use this for UI testing only.
           </div>
           <div>
-            <strong className="text-foreground">Test Accounts:</strong> Look for users tagged with
-            &quot;Test&quot; in the search results - these are designated test accounts that are
-            safe to impersonate without affecting real user data.
+            <strong className="text-foreground">Go (No Auth):</strong> Simply navigates to the portal
+            path. Will likely redirect you away if you don&apos;t have the required role.
+          </div>
+          <div>
+            <strong className="text-foreground">Manual Impersonation:</strong> Search for specific
+            users below to impersonate them directly. Test accounts are marked with a yellow badge.
           </div>
         </div>
       </div>

@@ -32,19 +32,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden - Admin access required" }, { status: 403 });
     }
 
-    // Get search query
+    // Get search query and optional user_type filter
     const url = new URL(req.url);
     const query = url.searchParams.get("q");
+    const userTypeFilter = url.searchParams.get("user_type");
 
-    if (!query || query.trim().length < 2) {
-      return NextResponse.json({ error: "Search query must be at least 2 characters" }, { status: 400 });
+    // Either query or user_type must be provided
+    if ((!query || query.trim().length < 2) && !userTypeFilter) {
+      return NextResponse.json({ error: "Search query must be at least 2 characters, or provide user_type filter" }, { status: 400 });
     }
 
-    const searchTerm = `%${query.trim()}%`;
-
-    // Search profiles by name or email
-    // Include a virtual is_test_account field based on test program membership or profile flag
-    const { data: profiles, error } = await supabase
+    // Build the query
+    let profileQuery = supabase
       .from("profiles")
       .select(`
         id,
@@ -52,9 +51,21 @@ export async function GET(req: Request) {
         user_type,
         status
       `)
-      .or(`full_name.ilike.${searchTerm}`)
-      .eq("status", "active")
-      .limit(20);
+      .eq("status", "active");
+
+    // Apply filters
+    if (query && query.trim().length >= 2) {
+      const searchTerm = `%${query.trim()}%`;
+      profileQuery = profileQuery.or(`full_name.ilike.${searchTerm}`);
+    }
+
+    if (userTypeFilter) {
+      profileQuery = profileQuery.eq("user_type", userTypeFilter);
+    }
+
+    // Search profiles by name or email
+    // Include a virtual is_test_account field based on test program membership or profile flag
+    const { data: profiles, error } = await profileQuery.limit(20);
 
     if (error) {
       throw error;
