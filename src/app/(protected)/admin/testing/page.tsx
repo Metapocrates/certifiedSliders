@@ -12,6 +12,7 @@ import {
   DEFAULT_ADMIN_PREVIEW_STATE,
 } from "@/lib/portals/constants";
 import PortalBadge from "@/components/portals/PortalBadge";
+import { usePortalOptional } from "@/contexts/PortalContext";
 
 interface TestUser {
   id: string;
@@ -33,7 +34,7 @@ interface AuditLogEntry {
 
 export default function AdminTestingPage() {
   const router = useRouter();
-  const [previewState, setPreviewState] = useState<AdminPreviewState>(DEFAULT_ADMIN_PREVIEW_STATE);
+  const portalContext = usePortalOptional();
   const [selectedPortal, setSelectedPortal] = useState<PortalKey | "">("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<TestUser[]>([]);
@@ -42,25 +43,15 @@ export default function AdminTestingPage() {
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load current preview state from cookie
-  useEffect(() => {
-    try {
-      const cookieValue = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith(`${ADMIN_PREVIEW_COOKIE}=`));
+  // Get preview state from context (single source of truth)
+  const previewState = portalContext?.adminPreview ?? DEFAULT_ADMIN_PREVIEW_STATE;
 
-      if (cookieValue) {
-        const value = cookieValue.split("=")[1];
-        const parsed = JSON.parse(decodeURIComponent(value)) as AdminPreviewState;
-        setPreviewState(parsed);
-        if (parsed.portalKey) {
-          setSelectedPortal(parsed.portalKey);
-        }
-      }
-    } catch {
-      // Invalid cookie, ignore
+  // Sync selected portal with context state
+  useEffect(() => {
+    if (previewState.portalKey) {
+      setSelectedPortal(previewState.portalKey);
     }
-  }, []);
+  }, [previewState.portalKey]);
 
   // Load audit logs
   useEffect(() => {
@@ -103,34 +94,12 @@ export default function AdminTestingPage() {
   }
 
   async function enablePortalPreview() {
-    if (!selectedPortal) return;
+    if (!selectedPortal || !portalContext) return;
 
     setError(null);
     try {
-      const newState: AdminPreviewState = {
-        mode: "portal_override",
-        portalKey: selectedPortal,
-        impersonatedUserId: null,
-        impersonatedUserName: null,
-        enabled: true,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Save to cookie
-      const value = encodeURIComponent(JSON.stringify(newState));
-      document.cookie = `${ADMIN_PREVIEW_COOKIE}=${value}; path=/; max-age=86400; samesite=lax`;
-
-      // Log the action
-      await fetch("/api/admin/audit-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "SET_PORTAL_OVERRIDE",
-          portalKey: selectedPortal,
-        }),
-      });
-
-      setPreviewState(newState);
+      // Use context method - this updates state AND persists to cookie
+      await portalContext.setPortalOverride(selectedPortal);
       loadAuditLogs();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to enable preview");
@@ -138,38 +107,18 @@ export default function AdminTestingPage() {
   }
 
   async function startImpersonation(user: TestUser) {
-    if (!IMPERSONATION_ENABLED) {
+    if (!IMPERSONATION_ENABLED || !portalContext) {
       setError("Impersonation is disabled in this environment");
       return;
     }
 
     setError(null);
     try {
-      const newState: AdminPreviewState = {
-        mode: "impersonation",
-        portalKey: previewState.portalKey,
-        impersonatedUserId: user.id,
-        impersonatedUserName: user.full_name || user.email || user.id,
-        enabled: true,
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Save to cookie
-      const value = encodeURIComponent(JSON.stringify(newState));
-      document.cookie = `${ADMIN_PREVIEW_COOKIE}=${value}; path=/; max-age=86400; samesite=lax`;
-
-      // Log the action
-      await fetch("/api/admin/audit-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "START_IMPERSONATION",
-          portalKey: previewState.portalKey,
-          impersonatedUserId: user.id,
-        }),
-      });
-
-      setPreviewState(newState);
+      // Use context method - this updates state AND persists to cookie
+      await portalContext.startImpersonation(
+        user.id,
+        user.full_name || user.email || user.id
+      );
       loadAuditLogs();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to start impersonation");
@@ -177,23 +126,12 @@ export default function AdminTestingPage() {
   }
 
   async function exitPreview() {
+    if (!portalContext) return;
+
     setError(null);
     try {
-      // Log the action
-      await fetch("/api/admin/audit-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: previewState.impersonatedUserId ? "STOP_IMPERSONATION" : "CLEAR_PORTAL_OVERRIDE",
-          portalKey: previewState.portalKey,
-          impersonatedUserId: previewState.impersonatedUserId,
-        }),
-      });
-
-      // Clear cookie
-      document.cookie = `${ADMIN_PREVIEW_COOKIE}=; path=/; max-age=0`;
-
-      setPreviewState(DEFAULT_ADMIN_PREVIEW_STATE);
+      // Use context method - this clears state AND cookie
+      await portalContext.exitPreview();
       setSelectedPortal("");
       loadAuditLogs();
     } catch (err: unknown) {
