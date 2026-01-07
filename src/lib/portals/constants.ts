@@ -55,7 +55,7 @@ export const PORTALS: Record<PortalKey, PortalConfig> = {
     key: "HS_COACH",
     label: "HS Coach Portal",
     shortLabel: "HS Coach",
-    basePath: "/hs-coach",
+    basePath: "/hs/portal",
     accentColor: "emerald",
     badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800",
     bannerClass: "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-300",
