@@ -2,21 +2,24 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import ProgramSelector from "@/components/coach/ProgramSelector";
+import { getEffectiveUser } from "@/lib/admin/impersonation";
 
 export default async function CoachOnboardingPage() {
   const supabase = await createSupabaseServer();
 
-  // Get authenticated user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/login");
+  // Get effective user (supports admin impersonation)
+  const effectiveUser = await getEffectiveUser();
+  if (!effectiveUser) {
+    redirect("/login?next=/coach/onboarding");
   }
+
+  const userId = effectiveUser.id;
 
   // Check if user already has program memberships
   const { data: existingMemberships } = await supabase
     .from("program_memberships")
     .select("id")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .limit(1);
 
   if (existingMemberships && existingMemberships.length > 0) {
