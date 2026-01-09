@@ -5,23 +5,28 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getEffectiveUser } from "@/lib/admin/impersonation";
 
 export default async function ParentPortalLayout({ children }: { children: ReactNode }) {
   const supabase = await createSupabaseServer();
 
-  // Require signed-in user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/parent/dashboard");
+  // Get effective user (supports admin impersonation)
+  const effectiveUser = await getEffectiveUser();
+  if (!effectiveUser) redirect("/login?next=/parent/dashboard");
+
+  const userId = effectiveUser.id;
+  const isImpersonating = effectiveUser.isImpersonating;
 
   // Get user profile (don't redirect - let them see the portal)
   const { data: profile } = await supabase
     .from("profiles")
     .select("user_type, full_name")
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle();
 
   // Show warning if not parent type (but don't redirect - for testing)
-  const isParentUser = profile?.user_type === "parent";
+  // Skip warning if admin is impersonating
+  const isParentUser = isImpersonating || profile?.user_type === "parent";
 
   const navItems = [
     { href: "/parent/dashboard", label: "Dashboard" },

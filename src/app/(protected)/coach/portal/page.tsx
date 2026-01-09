@@ -4,6 +4,7 @@ import { createSupabaseServer } from "@/lib/supabase/compat";
 import CoachPortalTable from "@/components/coach/CoachPortalTable";
 import CoachPortalFilters from "@/components/coach/CoachPortalFilters";
 import CoachDashboardCards from "@/components/coach/CoachDashboardCards";
+import { getEffectiveUser } from "@/lib/admin/impersonation";
 
 export default async function CoachPortalPage({
   searchParams,
@@ -21,23 +22,29 @@ export default async function CoachPortalPage({
   const resolvedSearchParams = await searchParams;
   const supabase = await createSupabaseServer();
 
-  // Get authenticated user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  // Get effective user (supports admin impersonation)
+  const effectiveUser = await getEffectiveUser();
+  if (!effectiveUser) {
     redirect("/login?next=/coach/portal");
   }
 
+  const userId = effectiveUser.id;
+  const isImpersonating = effectiveUser.isImpersonating;
+
   // Check user type - only NCAA coaches can access coach portal
-  const { data: canAccess } = await supabase.rpc("can_access_coach_portal");
-  if (!canAccess) {
-    redirect("/me"); // Redirect to dashboard with error message
+  // Skip check if admin is impersonating (they chose this portal)
+  if (!isImpersonating) {
+    const { data: canAccess } = await supabase.rpc("can_access_coach_portal");
+    if (!canAccess) {
+      redirect("/me"); // Redirect to dashboard with error message
+    }
   }
 
   // Get user's program memberships
   const { data: memberships } = await supabase
     .from("program_memberships")
     .select("id, program_id, programs(id, name, short_name)")
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (!memberships || memberships.length === 0) {
     redirect("/coach/onboarding");
@@ -57,7 +64,7 @@ export default async function CoachPortalPage({
   const { data: verificationData } = await supabase.rpc(
     "rpc_get_coach_verification_status",
     {
-      _user_id: user.id,
+      _user_id: userId,
       _program_id: activeMembership.program_id,
     }
   );
@@ -97,7 +104,7 @@ export default async function CoachPortalPage({
   const { data: watchlistData } = await supabase
     .from("coach_watchlist")
     .select("athlete_profile_id")
-    .eq("coach_user_id", user.id);
+    .eq("coach_user_id", userId);
 
   const watchlistCount = watchlistData?.length || 0;
   const watchlistIds = new Set((watchlistData || []).map((w) => w.athlete_profile_id));
@@ -109,7 +116,7 @@ export default async function CoachPortalPage({
     const { data: interestData } = await supabase
       .from("coach_interest")
       .select("athlete_profile_id, status")
-      .eq("coach_user_id", user.id)
+      .eq("coach_user_id", userId)
       .in("athlete_profile_id", athleteProfileIds);
 
     if (interestData) {

@@ -16,6 +16,7 @@ import MyVideos from "@/components/videos/MyVideos";
 import ParentInvitations from "@/components/athlete/ParentInvitations";
 import ProfileBorder from "@/components/athlete/ProfileBorder";
 import { getStarDisplay } from "@/lib/profileBorder";
+import { getEffectiveUser } from "@/lib/admin/impersonation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -44,11 +45,10 @@ function fmtTime(sec: number | null | undefined, text?: string | null) {
 export default async function MePage() {
   const supabase = await createSupabaseServer();
 
-  // who am I
-  const { data: auth } = await supabase.auth.getUser();
-  const user = auth?.user ?? null;
+  // Get effective user (supports admin impersonation)
+  const effectiveUser = await getEffectiveUser();
 
-  if (!user) {
+  if (!effectiveUser) {
     return (
       <div className="container py-10">
         <h1 className="text-2xl font-semibold mb-4">My Results</h1>
@@ -63,17 +63,22 @@ export default async function MePage() {
     );
   }
 
+  // Use effective user ID for all queries (impersonated user if admin is impersonating)
+  const userId = effectiveUser.id;
+  const isAdmin = effectiveUser.isAdmin;
+  const isImpersonating = effectiveUser.isImpersonating;
+
   // my profile (for header)
   const { data: profile } = await supabase
     .from("profiles")
     .select(
       "id, username, full_name, profile_pic_url, school_name, school_state, class_year, profile_id, user_type, star_rating"
     )
-    .eq("id", user.id)
+    .eq("id", userId)
     .maybeSingle();
 
-  // Redirect non-athletes to their portals IMMEDIATELY before any other data fetching
-  if (profile?.user_type && profile.user_type !== 'athlete') {
+  // Redirect non-athletes to their portals (skip if admin is impersonating - they chose this portal)
+  if (!isImpersonating && profile?.user_type && profile.user_type !== 'athlete') {
     const redirectMap: Record<string, string> = {
       parent: '/parent',
       ncaa_coach: '/ncaa-coach',
@@ -85,20 +90,10 @@ export default async function MePage() {
     }
   }
 
-  // From this point on, we know user_type is 'athlete' or null
-
-  // Check if user is admin
-  const { data: adminRow } = await supabase
-    .from("admins")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-  const isAdmin = !!adminRow?.user_id;
-
   const { data: collegeInterestsData } = await supabase
     .from("athlete_college_interests")
     .select("id, college_name, created_at")
-    .eq("athlete_id", user.id)
+    .eq("athlete_id", userId)
     .order("created_at", { ascending: true });
 
   // my results
@@ -107,7 +102,7 @@ export default async function MePage() {
     .select(
       "id, event, mark, mark_seconds, season, meet_name, meet_date, status, proof_url, rejection_reason"
     )
-    .eq("athlete_id", user.id)
+    .eq("athlete_id", userId)
     .order("meet_date", { ascending: false, nullsFirst: true })
     .order("id", { ascending: false });
 
@@ -128,7 +123,7 @@ export default async function MePage() {
     .select(
       "id, provider, external_id, external_numeric_id, profile_url, status, verified, verified_at, is_primary, nonce, attempts, last_checked_at, error_text"
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("provider", "athleticnet")
     .order("is_primary", { ascending: false })
     .order("verified", { ascending: false })
@@ -155,7 +150,7 @@ export default async function MePage() {
   const { data: submissionsData } = await supabase
     .from("results_submissions")
     .select("id, status, mode, profile_url, result_url, context_url, created_at, decided_at, reason")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(10);
 
@@ -210,7 +205,7 @@ type IdentityRow = {
         try {
           const token = await makeClaimToken({
             row_id: row.id,
-            user_id: user.id,
+            user_id: userId,
             provider: "athleticnet",
             external_id: row.external_id,
             external_numeric_id: row.external_numeric_id,
@@ -273,7 +268,7 @@ type IdentityRow = {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-lg font-semibold text-app">
-                {profile?.full_name || user.email || "Athlete"}
+                {profile?.full_name || "Athlete"}
               </h2>
               {profile?.star_rating != null && profile.star_rating > 0 && (
                 <span className="text-base">

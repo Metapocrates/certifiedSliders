@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServer } from "@/lib/supabase/compat";
+import { getEffectiveUser } from "@/lib/admin/impersonation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -28,26 +29,30 @@ type UserTeam = {
 export default async function HSCoachPortalPage() {
   const supabase = await createSupabaseServer();
 
-  // Auth check
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  // Get effective user (supports admin impersonation)
+  const effectiveUser = await getEffectiveUser();
+  if (!effectiveUser) {
     redirect("/login?next=/hs/portal");
   }
+
+  const userId = effectiveUser.id;
+  const isImpersonating = effectiveUser.isImpersonating;
 
   // Check if user is HS coach
   const { data: profile } = await supabase
     .from("profiles")
     .select("user_type")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
-  if (!profile || profile.user_type !== "hs_coach") {
+  // Skip role check if admin is impersonating (they chose this portal)
+  if (!isImpersonating && (!profile || profile.user_type !== "hs_coach")) {
     redirect("/me");
   }
 
   // Get user's teams
   const { data: teams } = await supabase.rpc("rpc_get_user_teams", {
-    p_user_id: user.id,
+    p_user_id: userId,
   });
 
   const userTeams = (teams || []) as UserTeam[];

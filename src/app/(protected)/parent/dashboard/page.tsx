@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseServer } from '@/lib/supabase/compat';
 import EmptyState from '@/components/portals/EmptyState';
+import { getEffectiveUser } from '@/lib/admin/impersonation';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,11 +22,13 @@ type LinkedAthlete = {
 export default async function ParentDashboardPage() {
   const supabase = await createSupabaseServer();
 
-  // Check auth
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  // Get effective user (supports admin impersonation)
+  const effectiveUser = await getEffectiveUser();
+  if (!effectiveUser) {
     redirect('/login?next=/parent/dashboard');
   }
+
+  const userId = effectiveUser.id;
 
   // Get linked athletes
   const { data: links } = await supabase
@@ -42,7 +45,7 @@ export default async function ParentDashboardPage() {
         class_year
       )
     `)
-    .eq('parent_user_id', user.id)
+    .eq('parent_user_id', userId)
     .order('created_at', { ascending: false });
 
   const linkedAthletes: LinkedAthlete[] = (links ?? []).map((link: any) => ({
