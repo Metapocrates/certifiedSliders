@@ -84,8 +84,8 @@ export default async function FeaturedProfiles({
         );
     }
 
-        return (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+    return (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {rows.map((p) => {
                 const href = `/athletes/${p.id}`;
                 const accent = getStarTierAccent(p.star_rating ?? null);
@@ -177,6 +177,6 @@ export default async function FeaturedProfiles({
                     </SafeLink>
                 );
             })}
-            </div>
+        </div>
     );
 }

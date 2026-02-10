@@ -67,7 +67,7 @@ export const PORTALS: Record<PortalKey, PortalConfig> = {
     key: "PARENT",
     label: "Parent Portal",
     shortLabel: "Parent",
-    basePath: "/parent/dashboard",
+    basePath: "/parent",
     accentColor: "purple",
     badgeClass: "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800",
     bannerClass: "bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800 dark:text-purple-300",
