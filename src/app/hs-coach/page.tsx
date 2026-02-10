@@ -25,7 +25,12 @@ export default async function HSCoachComingSoonPage() {
 
   // If user doesn't have hs_coach role, redirect to their correct dashboard
   if (!roleInfo || !roleInfo.availableRoles.includes("hs_coach")) {
-    redirect(roleInfo?.defaultRoute || "/me");
+    const fallbackRoute = roleInfo?.defaultRoute || "/me";
+    // Prevent redirect loop if defaultRoute is this page
+    if (fallbackRoute === "/hs-coach") {
+      redirect("/me");
+    }
+    redirect(fallbackRoute);
   }
 
   // Get current profile data for pre-filling form
