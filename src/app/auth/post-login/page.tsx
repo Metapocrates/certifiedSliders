@@ -19,14 +19,19 @@ export default function PostLoginPage() {
           router.refresh();
         });
 
-        // Longer delay to ensure cookies are fully set
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Brief delay to ensure cookies are fully set
+        await new Promise(resolve => setTimeout(resolve, 200));
 
-        // Get redirect destination from API
+        // Get redirect destination from API with timeout
         const next = searchParams.get("next");
         const redirectUrl = next ? `/auth/post-login/redirect?next=${encodeURIComponent(next)}` : "/auth/post-login/redirect";
 
-        const response = await fetch(redirectUrl);
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        const response = await fetch(redirectUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           console.error("Post-login redirect API error:", response.status);
@@ -43,6 +48,7 @@ export default function PostLoginPage() {
         window.location.href = destination;
       } catch (error) {
         console.error("Post-login error:", error);
+        // If timeout or other error, default to /me
         window.location.href = "/me";
       }
     };
