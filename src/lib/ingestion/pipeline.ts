@@ -119,7 +119,7 @@ export async function runIngestionPipeline(
     for (const rawRecord of cappedRecords) {
       try {
         // COMPLIANCE: Enforce field allowlist (strip any unexpected fields)
-        const cleanRecord = enforceFieldAllowlist(rawRecord as Record<string, unknown>);
+        const cleanRecord = enforceFieldAllowlist(rawRecord as unknown as Record<string, unknown>);
 
         // COMPLIANCE: Validate record contains only factual data
         const issues = validateRecord(cleanRecord);

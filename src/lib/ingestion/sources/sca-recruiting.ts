@@ -9,6 +9,7 @@
  */
 
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 import type { ParsedAthleteRecord, SourceAdapter } from "../types";
 import { isEditorialContent } from "../compliance";
 
@@ -75,7 +76,7 @@ export const scaRecruitingAdapter: SourceAdapter = {
 
 function parseTableRow(
   $: cheerio.CheerioAPI,
-  row: cheerio.Element
+  row: Element
 ): ParsedAthleteRecord | null {
   const cells = $(row).find("td, th");
   if (cells.length < 2) return null;
@@ -157,7 +158,7 @@ function parseTableRow(
 
 function parseCardElement(
   $: cheerio.CheerioAPI,
-  el: cheerio.Element
+  el: Element
 ): ParsedAthleteRecord | null {
   const text = $(el).text();
 
@@ -274,7 +275,7 @@ function extractEvent(text: string): string | null {
 }
 
 function extractRank(
-  el: cheerio.Cheerio<cheerio.Element>,
+  el: cheerio.Cheerio<Element>,
   $: cheerio.CheerioAPI
 ): number | null {
   // Look for rank in a data attribute or class
