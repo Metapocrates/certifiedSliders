@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/utils/supabase/client";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 
 type Mode = "password" | "magic";
 
@@ -12,7 +12,7 @@ export default function SignInPage() {
   // Redirect if already logged in
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabaseBrowser.auth.getUser();
+      const { data } = await supabaseBrowser().auth.getUser();
       if (data?.user) {
         // Already logged in, redirect to post-login handler
         router.replace("/auth/post-login");
@@ -55,7 +55,7 @@ export default function SignInPage() {
         ? window.location.origin
         : process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || "";
 
-      const { data, error} = await supabaseBrowser.auth.signInWithOAuth({
+      const { data, error} = await supabaseBrowser().auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${origin}/auth/callback?next=/auth/post-login`,
@@ -75,7 +75,7 @@ export default function SignInPage() {
     setPendingPw(true);
     try {
       // Sign in only (signup redirects to /register)
-      const { data, error } = await supabaseBrowser.auth.signInWithPassword({
+      const { data, error } = await supabaseBrowser().auth.signInWithPassword({
         email: emailPw,
         password,
       });
@@ -108,7 +108,7 @@ export default function SignInPage() {
     setErr(null);
     setPendingMagic(true);
     try {
-      const { error } = await supabaseBrowser.auth.signInWithOtp({
+      const { error } = await supabaseBrowser().auth.signInWithOtp({
         email: emailMagic,
         options: { emailRedirectTo: `${window.location.origin}/me` },
       });
@@ -126,7 +126,7 @@ export default function SignInPage() {
     setResetErr(null);
     setPendingReset(true);
     try {
-      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(resetEmail, {
+      const { error } = await supabaseBrowser().auth.resetPasswordForEmail(resetEmail, {
         redirectTo: `${window.location.origin}/auth/update-password`,
       });
       if (error) throw error;

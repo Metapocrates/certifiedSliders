@@ -1,5 +1,5 @@
 import "server-only";
-import { supabaseServer } from "@/utils/supabase-server";
+import { supabaseServer } from "@/lib/supabase/server";
 
 export type RankingRow = {
     athlete_id: string;

@@ -13,14 +13,8 @@ export default function PostLoginPage() {
   useEffect(() => {
     const handlePostLogin = async () => {
       try {
-        // Force refresh to pick up new auth state in server components
-        // Use startTransition to avoid blocking UI
-        startTransition(() => {
-          router.refresh();
-        });
-
-        // Brief delay to ensure cookies are fully set
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Brief delay to ensure cookies are fully set from OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // Get redirect destination from API with timeout
         const next = searchParams.get("next");
@@ -40,7 +34,13 @@ export default function PostLoginPage() {
         }
 
         const data = await response.json();
-        const destination = data.redirectTo || "/me";
+        let destination = data.redirectTo || "/me";
+
+        // CRITICAL: Prevent redirect loop by never redirecting back to /auth/post-login
+        if (destination === "/auth/post-login" || destination.startsWith("/auth/post-login?")) {
+          console.warn("Prevented redirect loop - destination was /auth/post-login, using /me instead");
+          destination = "/me";
+        }
 
         setStatus("Redirecting...");
 
@@ -54,7 +54,7 @@ export default function PostLoginPage() {
     };
 
     handlePostLogin();
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center">

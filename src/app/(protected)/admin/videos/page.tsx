@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { VideoSubmission } from '@/types/video';
+import type { VideoSubmission } from '@/lib/videos/types';
 
 export default function AdminVideosPage() {
   const [videos, setVideos] = useState<VideoSubmission[]>([]);

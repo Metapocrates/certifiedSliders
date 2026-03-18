@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 
 interface Row {
   id: string;
@@ -20,7 +20,7 @@ export default function AdminVerifyPage() {
 
   useEffect(() => {
     (async () => {
-      const supabase = createClient();
+      const supabase = supabaseBrowser();
       const { data } = await supabase
         .from('results')
         .select('id, athlete_id, event, mark, meet_name, meet_date, status, proof_url')
@@ -32,13 +32,13 @@ export default function AdminVerifyPage() {
   }, []);
 
   const verify = async (id: string) => {
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
     await supabase.rpc('verify_result', { p_result_id: id });
     setRows((r) => r.filter((x) => x.id !== id));
   };
 
   const reject = async (id: string) => {
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
     await supabase.from('results').update({ status: 'rejected' }).eq('id', id);
     setRows((r) => r.filter((x) => x.id !== id));
   };

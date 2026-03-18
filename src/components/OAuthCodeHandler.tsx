@@ -23,7 +23,7 @@ export default function OAuthCodeHandler() {
     if (handledRef.current) return;
     handledRef.current = true;
 
-    console.log("[OAuthCodeHandler] Detected code at root, processing...");
+    // console.log("[OAuthCodeHandler] Detected code at root, processing...");
 
     // Exchange the code directly here
     const handleOAuthCode = async () => {
@@ -31,7 +31,7 @@ export default function OAuthCodeHandler() {
         const supabase = supabaseBrowser();
 
         // Exchange the code for a session
-        console.log("[OAuthCodeHandler] Exchanging code for session...");
+        // console.log("[OAuthCodeHandler] Exchanging code for session...");
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
@@ -40,7 +40,7 @@ export default function OAuthCodeHandler() {
           return;
         }
 
-        console.log("[OAuthCodeHandler] Exchange successful, syncing to server...");
+        // console.log("[OAuthCodeHandler] Exchange successful, syncing to server...");
 
         // Sync session to server
         if (data.session) {
@@ -54,7 +54,7 @@ export default function OAuthCodeHandler() {
           });
         }
 
-        console.log("[OAuthCodeHandler] Redirecting to post-login...");
+        // console.log("[OAuthCodeHandler] Redirecting to post-login...");
         // Use href instead of replace to ensure it works
         window.location.href = "/auth/post-login";
       } catch (err) {

@@ -15,14 +15,14 @@ export async function GET(req: Request) {
 
     if (!code) {
         // No code provided — drop back to sign-in with an error hint
-        const redirect = new URL(`/signin?error=missing_code`, url.origin);
+        const redirect = new URL(`/login?error=missing_code`, url.origin);
         return NextResponse.redirect(redirect);
     }
 
     const supabase = await createSupabaseServer();
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
-        const redirect = new URL(`/signin?error=${encodeURIComponent(error.message)}`, url.origin);
+        const redirect = new URL(`/login?error=${encodeURIComponent(error.message)}`, url.origin);
         return NextResponse.redirect(redirect);
     }
 

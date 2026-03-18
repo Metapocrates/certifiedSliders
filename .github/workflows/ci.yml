@@ -16,5 +16,7 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-      - run: npm run build --if-present
+      - run: npm run lint || true  # TODO: fix 289 pre-existing lint issues then enforce
+      - run: npm run typecheck
+      - run: npm run build
       - run: npm test --if-present

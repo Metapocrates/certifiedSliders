@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const next = searchParams.get("next");
 
-  // If next parameter exists and is valid, use it
-  if (next && /^\/(?!\/)/.test(next)) {
+  // If next parameter exists and is valid, use it (but never redirect to /auth/post-login itself)
+  if (next && /^\/(?!\/)/.test(next) && next !== "/auth/post-login" && !next.startsWith("/auth/post-login?")) {
     return NextResponse.json({ redirectTo: next });
   }
 
@@ -36,6 +36,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ redirectTo: "/me" });
   }
 
-  // Return the user's default dashboard route
-  return NextResponse.json({ redirectTo: roleInfo.defaultRoute });
+  // Return the user's default dashboard route (with safety check)
+  let destination = roleInfo.defaultRoute || "/me";
+
+  // CRITICAL: Never redirect back to /auth/post-login to prevent redirect loops
+  if (destination === "/auth/post-login" || destination.startsWith("/auth/post-login?")) {
+    destination = "/me";
+  }
+
+  return NextResponse.json({ redirectTo: destination });
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { supabaseBrowser } from '@/lib/supabase/browser';
 
 interface FollowButtonProps {
   athleteId: string;
@@ -24,7 +24,7 @@ export default function FollowButton({ athleteId, athleteName, currentUserId }: 
   }, [athleteId, currentUserId]);
 
   const loadFollowState = async () => {
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
 
     // Check if current user follows this athlete
     if (currentUserId) {
