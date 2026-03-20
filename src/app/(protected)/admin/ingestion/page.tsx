@@ -94,9 +94,12 @@ export default function AdminIngestionPage() {
     setActionLoading(null);
 
     if (data.ok) {
+      const errDetail = data.errors?.length
+        ? `\n\nSkip reasons:\n${data.errors.join("\n")}`
+        : "";
       setMessage({
-        type: "ok",
-        text: `Ingestion complete: ${data.records_staged} staged, ${data.records_skipped} skipped`,
+        type: data.records_staged > 0 ? "ok" : "error",
+        text: `Ingestion complete: ${data.records_staged} staged, ${data.records_skipped} skipped (${data.records_found} found)${errDetail}`,
       });
       loadStaging();
       loadRuns();
@@ -150,7 +153,7 @@ export default function AdminIngestionPage() {
               : "bg-red-50 text-red-800 border border-red-200"
           }`}
         >
-          {message.text}
+          <pre className="whitespace-pre-wrap font-sans">{message.text}</pre>
         </div>
       )}
 
