@@ -16,6 +16,7 @@ export const ALLOWED_FIELDS = [
   "event",
   "school",
   "state",
+  "source_rating",
 ] as const;
 
 export type AllowedField = (typeof ALLOWED_FIELDS)[number];
@@ -51,6 +52,8 @@ export interface ParsedAthleteRecord {
   school: string | null;
   /** State code if listed (e.g. "CA", "TX") */
   state: string | null;
+  /** Source's star rating (3-5) if present. Reference only — NOT our rating. */
+  source_rating: number | null;
 }
 
 // ─── Staging Record (what gets written to DB) ─────────────────────

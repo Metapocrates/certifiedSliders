@@ -19,6 +19,7 @@ type StagingRecord = {
   event: string | null;
   school: string | null;
   state: string | null;
+  source_rating: number | null;
   source_name: string;
   source_url: string;
   source_fetched_at: string;
@@ -204,6 +205,11 @@ export default function AdminIngestionPage() {
                       {record.raw_rank != null && (
                         <span className="text-xs bg-muted/30 px-2 py-0.5 rounded-full">
                           {record.source_name} Rank: #{record.raw_rank}
+                        </span>
+                      )}
+                      {record.source_rating != null && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                          {"★".repeat(record.source_rating)} ({record.source_name})
                         </span>
                       )}
                     </div>

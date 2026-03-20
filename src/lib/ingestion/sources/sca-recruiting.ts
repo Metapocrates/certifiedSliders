@@ -50,6 +50,7 @@ export const scaRecruitingAdapter: SourceAdapter = {
     // ─── Strategy 1: Squarespace list-item-content pattern ──────
     // SCA uses Squarespace with .list-item-content__title for name
     // and .list-item-content__description for event/details
+    let rankCounter = 0;
     $(".user-items-list-item-container, [class*='list-item']").each((_i, container) => {
       const titleEl = $(container).find(
         ".list-item-content__title, [class*='list-item'] h2, [class*='list-item'] h3"
@@ -61,8 +62,10 @@ export const scaRecruitingAdapter: SourceAdapter = {
       const titleText = titleEl.first().text().trim();
       if (!titleText || titleText.length < 3) return;
 
-      const record = parseScaEntry(titleText, descEl.first().text().trim(), _i + 1, urlGradClass);
+      const record = parseScaEntry(titleText, descEl.first().text().trim(), 0, urlGradClass);
       if (record && !seen.has(record.athlete_name.toLowerCase())) {
+        rankCounter++;
+        record.raw_rank = rankCounter; // Use sequential rank based on parsed athlete order
         seen.add(record.athlete_name.toLowerCase());
         records.push(record);
       }
@@ -101,6 +104,7 @@ export const scaRecruitingAdapter: SourceAdapter = {
               event,
               school: null,
               state: nameStateMatch[2],
+              source_rating: null,
             });
           }
         }
@@ -157,6 +161,7 @@ export const scaRecruitingAdapter: SourceAdapter = {
             event,
             school: null,
             state,
+            source_rating: null,
           });
         }
       }
@@ -215,9 +220,12 @@ function parseScaEntry(
     return null;
   }
 
-  // COMPLIANCE: Extract only the event category from description.
-  // Skip star ratings, numeric ratings — those are SCA's editorial assessment.
+  // Extract event category from description
   const event = extractEventFromDescription(description);
+
+  // Extract star rating (3-5) from description as reference data
+  // Format: "Sprints, 5 star, 92 Rating" → 5
+  const source_rating = extractStarRating(description);
 
   return {
     athlete_name,
@@ -226,7 +234,23 @@ function parseScaEntry(
     event,
     school: null,
     state,
+    source_rating,
   };
+}
+
+/**
+ * Extract star rating from SCA description.
+ * Input: "Sprints / Football, 5 star, 92 Rating" → 5
+ * Stored as reference data — NOT used as our rating.
+ */
+function extractStarRating(text: string): number | null {
+  if (!text) return null;
+  const match = text.match(/(\d)\s*star/i);
+  if (match) {
+    const rating = Number(match[1]);
+    if (rating >= 1 && rating <= 5) return rating;
+  }
+  return null;
 }
 
 /**
@@ -370,5 +394,6 @@ function parseTableCells(
     event,
     school: null,
     state,
+    source_rating: null,
   };
 }

@@ -50,6 +50,7 @@ export function enforceFieldAllowlist(
     event: clean.event != null ? String(clean.event) : null,
     school: clean.school != null ? String(clean.school) : null,
     state: clean.state != null ? String(clean.state) : null,
+    source_rating: clean.source_rating != null ? Number(clean.source_rating) : null,
   };
 }
 
