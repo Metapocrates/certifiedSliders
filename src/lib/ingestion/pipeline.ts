@@ -161,23 +161,29 @@ export async function runIngestionPipeline(
           insertData.match_method = match.method;
         }
 
+        // Check for existing record with same hash (dedup)
+        const { data: existing } = await supabase
+          .from("ingestion_staging")
+          .select("id")
+          .eq("source_id", source.id)
+          .eq("record_hash", stagingRecord.record_hash)
+          .not("status", "in", '("rejected","duplicate")')
+          .maybeSingle();
+
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
         const { error: insertError } = await supabase
           .from("ingestion_staging")
-          .upsert(insertData, {
-            onConflict: "source_id,record_hash",
-            ignoreDuplicates: true,
-          });
+          .insert(insertData);
 
         if (insertError) {
-          // Duplicate records are expected and safe to skip
-          if (insertError.code === "23505") {
-            skipped++;
-          } else {
-            errors.push(
-              `Failed to stage ${cleanRecord.athlete_name}: ${insertError.message}`
-            );
-            skipped++;
-          }
+          errors.push(
+            `Failed to stage ${cleanRecord.athlete_name}: ${insertError.message}`
+          );
+          skipped++;
         } else {
           staged++;
         }
