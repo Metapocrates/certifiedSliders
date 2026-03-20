@@ -163,17 +163,25 @@ export async function runIngestionPipeline(
         }
 
         // Check for existing record with same hash (dedup)
-        const { data: existing } = await supabase
+        const { data: existingRows, error: dedupError } = await supabase
           .from("ingestion_staging")
-          .select("id")
+          .select("id, status")
           .eq("source_id", source.id)
-          .eq("record_hash", stagingRecord.record_hash)
-          .not("status", "in", '("rejected","duplicate")')
-          .maybeSingle();
+          .eq("record_hash", stagingRecord.record_hash);
 
-        if (existing) {
-          skipped++;
-          continue;
+        if (dedupError) {
+          errors.push(`Dedup query failed for ${cleanRecord.athlete_name}: ${dedupError.message} — inserting anyway`);
+          // Don't skip — try the insert
+        } else {
+          const hasDuplicate = (existingRows ?? []).some(
+            (r) => r.status !== "rejected" && r.status !== "duplicate"
+          );
+
+          if (hasDuplicate) {
+            errors.push(`Dedup skip: ${cleanRecord.athlete_name} (hash ${stagingRecord.record_hash} already exists)`);
+            skipped++;
+            continue;
+          }
         }
 
         const { error: insertError } = await supabase
