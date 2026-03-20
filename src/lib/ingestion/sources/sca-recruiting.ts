@@ -1,6 +1,9 @@
 /**
  * SCA Recruiting — Source Adapter
  *
+ * Site: scarecruiting.com (Squarespace-based)
+ * Structure: Squarespace user-items-list with list-item-content elements
+ *
  * COMPLIANCE:
  * - Extracts ONLY factual fields: name, grad class, rank, event, school, state
  * - NO editorial text, descriptions, blurbs, or page structure
@@ -9,19 +12,18 @@
  */
 
 import * as cheerio from "cheerio";
-import type { Element } from "domhandler";
 import type { ParsedAthleteRecord, SourceAdapter } from "../types";
-import { isEditorialContent } from "../compliance";
 
 export const SCA_SOURCE_KEY = "sca_recruiting";
 
-/**
- * SCA Recruiting adapter.
- *
- * This adapter parses public ranking pages from SCA Recruiting to extract
- * factual athlete identification data for discovery purposes only.
- * It does NOT recreate the ranking page or copy editorial content.
- */
+// US state codes for validation
+const US_STATES = new Set([
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY","DC",
+]);
+
 export const scaRecruitingAdapter: SourceAdapter = {
   sourceKey: SCA_SOURCE_KEY,
 
@@ -29,8 +31,8 @@ export const scaRecruitingAdapter: SourceAdapter = {
     try {
       const u = new URL(url);
       return (
-        u.hostname.includes("scarecruitingranking") ||
-        u.hostname.includes("scarecruiting")
+        u.hostname.includes("scarecruiting") ||
+        u.hostname.includes("scarecruitingranking")
       );
     } catch {
       return false;
@@ -40,252 +42,333 @@ export const scaRecruitingAdapter: SourceAdapter = {
   parse(html: string, url: string): ParsedAthleteRecord[] {
     const $ = cheerio.load(html);
     const records: ParsedAthleteRecord[] = [];
+    const seen = new Set<string>();
 
-    // Strategy: Look for table rows or structured list items containing athlete data.
-    // SCA pages typically list athletes in tables or card-like structures.
-    // We try multiple selector strategies for robustness.
+    // Extract grad class from URL if present (e.g. rankings-2028 → 2028)
+    const urlGradClass = extractGradClassFromUrl(url);
 
-    // Strategy 1: Table-based rankings (most common)
-    $("table tbody tr, table tr").each((_i, row) => {
-      const record = parseTableRow($, row);
-      if (record) records.push(record);
+    // ─── Strategy 1: Squarespace list-item-content pattern ──────
+    // SCA uses Squarespace with .list-item-content__title for name
+    // and .list-item-content__description for event/details
+    $(".user-items-list-item-container, [class*='list-item']").each((_i, container) => {
+      const titleEl = $(container).find(
+        ".list-item-content__title, [class*='list-item'] h2, [class*='list-item'] h3"
+      );
+      const descEl = $(container).find(
+        ".list-item-content__description, [class*='list-item'] p"
+      );
+
+      const titleText = titleEl.first().text().trim();
+      if (!titleText || titleText.length < 3) return;
+
+      const record = parseScaEntry(titleText, descEl.first().text().trim(), _i + 1, urlGradClass);
+      if (record && !seen.has(record.athlete_name.toLowerCase())) {
+        seen.add(record.athlete_name.toLowerCase());
+        records.push(record);
+      }
     });
 
-    // Strategy 2: If no table rows found, try list/card structures
+    // ─── Strategy 2: Squarespace summary/grid blocks ────────────
     if (records.length === 0) {
-      $("[class*='ranking'], [class*='player'], [class*='athlete'], [class*='recruit']").each(
-        (_i, el) => {
-          const record = parseCardElement($, el);
-          if (record) records.push(record);
+      $(".summary-title, .summary-excerpt, .sqs-block-summary-v2 .summary-item").each((_i, el) => {
+        const text = $(el).text().trim();
+        const record = parseScaEntry(text, "", _i + 1, urlGradClass);
+        if (record && !seen.has(record.athlete_name.toLowerCase())) {
+          seen.add(record.athlete_name.toLowerCase());
+          records.push(record);
         }
-      );
+      });
     }
 
-    // Strategy 3: Generic structured data extraction
+    // ─── Strategy 3: Generic heading + paragraph pairs ──────────
     if (records.length === 0) {
-      // Look for any repeated structure with names and numbers
-      const record = parseGenericStructure($);
-      records.push(...record);
+      $("h2, h3, h4").each((_i, heading) => {
+        const text = $(heading).text().trim();
+        // Look for "Name (STATE)" pattern
+        const nameStateMatch = text.match(/^([A-Z][a-zA-Z'. -]+?)\s*\(([A-Z]{2})\)\s*$/);
+        if (nameStateMatch && US_STATES.has(nameStateMatch[2])) {
+          const name = nameStateMatch[1].trim();
+          if (name.split(/\s+/).length >= 2 && !seen.has(name.toLowerCase())) {
+            // Get next sibling text for event info
+            const nextText = $(heading).next().text().trim();
+            const event = extractEventFromDescription(nextText);
+
+            seen.add(name.toLowerCase());
+            records.push({
+              athlete_name: name,
+              grad_class: urlGradClass,
+              raw_rank: _i + 1,
+              event,
+              school: null,
+              state: nameStateMatch[2],
+            });
+          }
+        }
+      });
+    }
+
+    // ─── Strategy 4: Table-based (fallback for non-Squarespace) ─
+    if (records.length === 0) {
+      $("table tbody tr, table tr").each((_i, row) => {
+        const cells = $(row).find("td");
+        if (cells.length < 2) return;
+
+        const cellTexts = cells.map((_j, c) => $(c).text().trim()).get();
+        const record = parseTableCells(cellTexts, urlGradClass);
+        if (record && !seen.has(record.athlete_name.toLowerCase())) {
+          seen.add(record.athlete_name.toLowerCase());
+          records.push(record);
+        }
+      });
+    }
+
+    // ─── Strategy 5: Any text block with "Name (STATE)" pattern ─
+    if (records.length === 0) {
+      // Scan all text nodes for the pattern: "Name (ST)" followed by event info
+      const bodyText = $("body").text();
+      const pattern = /([A-Z][a-zA-Z'. -]+?)\s*\(([A-Z]{2})\)/g;
+      let match;
+      let rank = 0;
+
+      while ((match = pattern.exec(bodyText)) !== null) {
+        const name = match[1].trim();
+        const state = match[2];
+
+        if (
+          US_STATES.has(state) &&
+          name.split(/\s+/).length >= 2 &&
+          name.length >= 5 &&
+          name.length <= 50 &&
+          !seen.has(name.toLowerCase())
+        ) {
+          rank++;
+          // Look at surrounding text for event
+          const surrounding = bodyText.slice(
+            Math.max(0, match.index - 20),
+            Math.min(bodyText.length, match.index + match[0].length + 100)
+          );
+          const event = extractEventFromDescription(surrounding);
+
+          seen.add(name.toLowerCase());
+          records.push({
+            athlete_name: name,
+            grad_class: urlGradClass,
+            raw_rank: rank,
+            event,
+            school: null,
+            state,
+          });
+        }
+      }
     }
 
     return records;
   },
 };
 
-// ─── Internal Parsers ──────────────────────────────────────────────
+// ─── SCA-Specific Parsing ──────────────────────────────────────────
 
-function parseTableRow(
-  $: cheerio.CheerioAPI,
-  row: Element
+/**
+ * Parse a single SCA entry from title + description text.
+ * Title format: "Athlete Name (ST)" e.g. "Dillon Mitchell (TX)"
+ * Description format: "Sprints / Football, 5 star, 92 Rating"
+ *
+ * COMPLIANCE: We extract only name, state, event, and rank position.
+ * We do NOT store the star rating or editorial rating number from SCA —
+ * those are their proprietary assessment, not factual data.
+ */
+function parseScaEntry(
+  title: string,
+  description: string,
+  position: number,
+  urlGradClass: number | null
 ): ParsedAthleteRecord | null {
-  const cells = $(row).find("td, th");
-  if (cells.length < 2) return null;
+  if (!title || title.length < 3) return null;
 
-  // Extract text from all cells
-  const cellTexts = cells
-    .map((_i, cell) => $(cell).text().trim())
-    .get()
-    .filter((t) => t.length > 0);
+  // Parse "Name (STATE)" pattern
+  const nameStateMatch = title.match(/^(.+?)\s*\(([A-Z]{2})\)\s*$/);
 
-  if (cellTexts.length < 2) return null;
-
-  // Try to identify factual fields from cell content
-  let athlete_name: string | null = null;
-  let grad_class: number | null = null;
-  let raw_rank: number | null = null;
-  let event: string | null = null;
-  let school: string | null = null;
+  let athlete_name: string;
   let state: string | null = null;
 
-  for (const text of cellTexts) {
-    // COMPLIANCE: Skip any cell that looks editorial
-    if (isEditorialContent(text)) continue;
+  if (nameStateMatch && US_STATES.has(nameStateMatch[2])) {
+    athlete_name = nameStateMatch[1].trim();
+    state = nameStateMatch[2];
+  } else {
+    // Name without state
+    athlete_name = title.trim();
+    // Try to find state elsewhere
+    const stateMatch = title.match(/\b([A-Z]{2})\b/);
+    if (stateMatch && US_STATES.has(stateMatch[1])) {
+      state = stateMatch[1];
+      athlete_name = title.replace(`(${state})`, "").trim();
+    }
+  }
 
-    // Rank: small integer at start, often first column
+  // Validate name looks like a person's name
+  if (
+    athlete_name.length < 3 ||
+    athlete_name.length > 60 ||
+    athlete_name.split(/\s+/).length < 2 ||
+    !/[A-Za-z]/.test(athlete_name)
+  ) {
+    return null;
+  }
+
+  // COMPLIANCE: Extract only the event category from description.
+  // Skip star ratings, numeric ratings — those are SCA's editorial assessment.
+  const event = extractEventFromDescription(description);
+
+  return {
+    athlete_name,
+    grad_class: urlGradClass,
+    raw_rank: position,
+    event,
+    school: null,
+    state,
+  };
+}
+
+/**
+ * Extract event category from SCA description text.
+ * Input examples: "Sprints / Football, 5 star, 92 Rating"
+ *                 "Hurdles, 4 star, 88 Rating"
+ *                 "Jumps, 4 star, 87 Rating"
+ *
+ * COMPLIANCE: We extract ONLY the event name (factual).
+ * We intentionally skip star/rating numbers (editorial assessment).
+ */
+function extractEventFromDescription(text: string): string | null {
+  if (!text) return null;
+
+  // Common SCA event categories
+  const eventPatterns = [
+    /\b(sprints?)\b/i,
+    /\b(hurdles?)\b/i,
+    /\b(jumps?)\b/i,
+    /\b(throws?)\b/i,
+    /\b(distance)\b/i,
+    /\b(mid[- ]?distance)\b/i,
+    /\b(pole\s*vault)\b/i,
+    /\b(high\s*jump)\b/i,
+    /\b(long\s*jump)\b/i,
+    /\b(triple\s*jump)\b/i,
+    /\b(shot\s*put)\b/i,
+    /\b(discus)\b/i,
+    /\b(javelin)\b/i,
+    /\b(decathlon)\b/i,
+    /\b(heptathlon)\b/i,
+    /\b(multi[- ]?events?)\b/i,
+    /\b(relays?)\b/i,
+    /\b(\d{2,4}\s*m(?:eters?)?(?:\s*hurdles?)?)\b/i,
+    /\b(mile|two\s*mile|5k|10k|steeple(?:chase)?|xc|cross\s*country)\b/i,
+  ];
+
+  for (const pattern of eventPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      // Capitalize first letter
+      const event = match[1].trim();
+      return event.charAt(0).toUpperCase() + event.slice(1).toLowerCase();
+    }
+  }
+
+  // Try extracting the first word/phrase before a comma
+  // e.g. "Sprints / Football, 5 star" → "Sprints"
+  const beforeComma = text.split(",")[0]?.trim();
+  if (beforeComma) {
+    const beforeSlash = beforeComma.split("/")[0]?.trim();
+    if (
+      beforeSlash &&
+      beforeSlash.length >= 3 &&
+      beforeSlash.length <= 30 &&
+      /^[A-Za-z\s-]+$/.test(beforeSlash)
+    ) {
+      return beforeSlash;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Extract grad class year from URL.
+ * e.g. "track-boys-recruit-rankings-2028" → 2028
+ */
+function extractGradClassFromUrl(url: string): number | null {
+  const match = url.match(/(?:rankings?|class|recruit)[^\d]*(20[2-3]\d)/i);
+  if (match) return Number(match[1]);
+
+  // Also try just a year at the end of the path
+  const pathMatch = url.match(/-(20[2-3]\d)(?:\/?$|\?)/);
+  if (pathMatch) return Number(pathMatch[1]);
+
+  return null;
+}
+
+/**
+ * Parse a table row's cells into a record (fallback strategy).
+ */
+function parseTableCells(
+  cells: string[],
+  urlGradClass: number | null
+): ParsedAthleteRecord | null {
+  if (cells.length < 2) return null;
+
+  let athlete_name: string | null = null;
+  let raw_rank: number | null = null;
+  let state: string | null = null;
+  let event: string | null = null;
+
+  for (const text of cells) {
+    if (!text) continue;
+
+    // Rank: small integer
     if (!raw_rank && /^\d{1,4}$/.test(text) && Number(text) <= 5000) {
       raw_rank = Number(text);
       continue;
     }
 
-    // Grad class: 4-digit year
-    if (!grad_class && /^20[2-3]\d$/.test(text)) {
-      grad_class = Number(text);
-      continue;
-    }
-
     // State: 2-letter code
-    if (!state && /^[A-Z]{2}$/.test(text)) {
+    if (!state && /^[A-Z]{2}$/.test(text) && US_STATES.has(text)) {
       state = text;
       continue;
     }
 
-    // Event: common track & field event patterns
-    if (!event && isTrackEvent(text)) {
-      event = text;
-      continue;
+    // Name: "Name (ST)" or just a name
+    if (!athlete_name) {
+      const nameState = text.match(/^(.+?)\s*\(([A-Z]{2})\)\s*$/);
+      if (nameState && US_STATES.has(nameState[2])) {
+        athlete_name = nameState[1].trim();
+        state = nameState[2];
+        continue;
+      }
+      if (
+        text.length >= 5 &&
+        text.length <= 60 &&
+        text.split(/\s+/).length >= 2 &&
+        /^[A-Za-z'. -]+$/.test(text)
+      ) {
+        athlete_name = text;
+        continue;
+      }
     }
 
-    // Name: likely a name if 2-4 words, not a number, not an event
-    if (
-      !athlete_name &&
-      text.length >= 3 &&
-      text.length <= 60 &&
-      /^[A-Za-z'. -]+$/.test(text) &&
-      text.split(/\s+/).length >= 2
-    ) {
-      athlete_name = text;
-      continue;
-    }
-
-    // School: multi-word text that isn't a name or event
-    if (
-      !school &&
-      athlete_name &&
-      text.length >= 3 &&
-      text.length <= 80 &&
-      !isTrackEvent(text) &&
-      text.split(/\s+/).length >= 1
-    ) {
-      school = text;
-      continue;
+    // Event
+    if (!event) {
+      const ev = extractEventFromDescription(text);
+      if (ev) { event = ev; continue; }
     }
   }
 
   if (!athlete_name) return null;
 
-  return { athlete_name, grad_class, raw_rank, event, school, state };
-}
-
-function parseCardElement(
-  $: cheerio.CheerioAPI,
-  el: Element
-): ParsedAthleteRecord | null {
-  const text = $(el).text();
-
-  // COMPLIANCE: Skip elements that are primarily editorial
-  if (isEditorialContent(text)) return null;
-
-  // Try to extract structured data from card-like element
-  const nameEl = $(el).find(
-    "[class*='name'], h2, h3, h4, a[href*='profile'], a[href*='player']"
-  );
-  const athlete_name = nameEl.first().text().trim();
-
-  if (!athlete_name || athlete_name.length < 3) return null;
-  if (isEditorialContent(athlete_name)) return null;
-
-  // Extract other fields from surrounding text
-  const fullText = $(el).text();
-  const grad_class = extractGradClass(fullText);
-  const state = extractState(fullText);
-  const event = extractEvent(fullText);
-  const raw_rank = extractRank($(el), $);
-
-  // Try to find school
-  const schoolEl = $(el).find("[class*='school'], [class*='team']");
-  let school = schoolEl.first().text().trim() || null;
-  if (school && isEditorialContent(school)) school = null;
-
-  return { athlete_name, grad_class, raw_rank, event, school, state };
-}
-
-function parseGenericStructure(
-  $: cheerio.CheerioAPI
-): ParsedAthleteRecord[] {
-  // Fallback: Look for repeated elements that look like athlete entries
-  // This is intentionally conservative — better to miss data than ingest editorial
-  const records: ParsedAthleteRecord[] = [];
-
-  // Find elements that contain what looks like a name + class year pattern
-  $("*")
-    .filter(function () {
-      const text = $(this).text().trim();
-      // Must contain what looks like a name (2+ words, letters only)
-      // and a grad class year
-      return (
-        text.length < 200 && // Not too long (would be editorial)
-        /[A-Z][a-z]+ [A-Z][a-z]+/.test(text) && // Name-like pattern
-        /20[2-3]\d/.test(text) && // Year-like pattern
-        !isEditorialContent(text) // Not editorial
-      );
-    })
-    .each((_i, el) => {
-      // Only process leaf-ish elements (not containers of many athletes)
-      const childCount = $(el).children().length;
-      if (childCount > 10) return; // Too many children = container
-
-      const text = $(el).text().trim();
-      const nameMatch = text.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z'.]+){1,3})/);
-      const classMatch = text.match(/(20[2-3]\d)/);
-
-      if (nameMatch) {
-        records.push({
-          athlete_name: nameMatch[1],
-          grad_class: classMatch ? Number(classMatch[1]) : null,
-          raw_rank: null,
-          event: extractEvent(text),
-          school: null,
-          state: extractState(text),
-        });
-      }
-    });
-
-  return records;
-}
-
-// ─── Field Extraction Helpers ──────────────────────────────────────
-
-function isTrackEvent(text: string): boolean {
-  const eventPatterns = [
-    /^\d{2,4}m?$/i, // 100, 200, 400, 800, 1500, 100m
-    /^\d+(?:m|meter)\s*(?:hurdles?|h)?$/i, // 110m Hurdles
-    /^(?:shot\s*put|discus|javelin|hammer|pole\s*vault|high\s*jump|long\s*jump|triple\s*jump)$/i,
-    /^(?:4x\d+|4\s*x\s*\d+)(?:m?\s*relay)?$/i, // 4x100, 4x400 relay
-    /^(?:mile|two\s*mile|5k|10k|xc|cross\s*country|steeple(?:chase)?)$/i,
-    /^(?:decathlon|heptathlon|pentathlon)$/i,
-    /^\d+(?:m|meter)\s*(?:dash|run|race)?$/i,
-    /^(?:sp|dt|jt|hj|lj|tj|pv)$/i, // Abbreviations
-  ];
-  return eventPatterns.some((p) => p.test(text.trim()));
-}
-
-function extractGradClass(text: string): number | null {
-  const match = text.match(/(?:class\s+of\s+|c\/o\s+|'?)?(20[2-3]\d)/i);
-  return match ? Number(match[1]) : null;
-}
-
-function extractState(text: string): string | null {
-  const match = text.match(/\b([A-Z]{2})\b/);
-  // Validate it's a real US state code
-  const states = new Set([
-    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
-    "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-    "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
-    "VA","WA","WV","WI","WY","DC",
-  ]);
-  return match && states.has(match[1]) ? match[1] : null;
-}
-
-function extractEvent(text: string): string | null {
-  // Look for common track events in text
-  const eventMatch = text.match(
-    /\b(\d{2,4}m?\s*(?:hurdles?|h)?|shot\s*put|discus|javelin|pole\s*vault|high\s*jump|long\s*jump|triple\s*jump|4x\d+m?\s*relay?)\b/i
-  );
-  return eventMatch ? eventMatch[1].trim() : null;
-}
-
-function extractRank(
-  el: cheerio.Cheerio<Element>,
-  $: cheerio.CheerioAPI
-): number | null {
-  // Look for rank in a data attribute or class
-  const rankAttr = el.attr("data-rank") || el.attr("data-position");
-  if (rankAttr && /^\d+$/.test(rankAttr)) return Number(rankAttr);
-
-  // Look for a rank number in a child element
-  const rankEl = el.find("[class*='rank'], [class*='position'], [class*='number']");
-  const rankText = rankEl.first().text().trim();
-  if (/^\d{1,4}$/.test(rankText)) return Number(rankText);
-
-  return null;
+  return {
+    athlete_name,
+    grad_class: urlGradClass,
+    raw_rank,
+    event,
+    school: null,
+    state,
+  };
 }
