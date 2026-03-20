@@ -190,8 +190,12 @@ function parseScaEntry(
 ): ParsedAthleteRecord | null {
   if (!title || title.length < 3) return null;
 
+  // Strip leading rank number if present (e.g. "1. Dillon Mitchell (TX)" → "Dillon Mitchell (TX)")
+  let cleanTitle = title.replace(/^\d+[\.\)\-\s]+\s*/, "").trim();
+  if (!cleanTitle) cleanTitle = title;
+
   // Parse "Name (STATE)" pattern
-  const nameStateMatch = title.match(/^(.+?)\s*\(([A-Z]{2})\)\s*$/);
+  const nameStateMatch = cleanTitle.match(/^(.+?)\s*\(([A-Z]{2})\)\s*$/);
 
   let athlete_name: string;
   let state: string | null = null;
@@ -201,12 +205,12 @@ function parseScaEntry(
     state = nameStateMatch[2];
   } else {
     // Name without state
-    athlete_name = title.trim();
+    athlete_name = cleanTitle;
     // Try to find state elsewhere
-    const stateMatch = title.match(/\b([A-Z]{2})\b/);
+    const stateMatch = cleanTitle.match(/\b([A-Z]{2})\b/);
     if (stateMatch && US_STATES.has(stateMatch[1])) {
       state = stateMatch[1];
-      athlete_name = title.replace(`(${state})`, "").trim();
+      athlete_name = cleanTitle.replace(`(${state})`, "").trim();
     }
   }
 
