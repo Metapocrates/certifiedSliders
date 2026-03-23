@@ -156,6 +156,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ staging: data ?? [], _ts: Date.now(), _count: (data ?? []).length }, { headers: NO_CACHE_HEADERS });
     }
 
+    if (view === "purge") {
+      // Admin-only: delete all staging and run records using service role
+      const adminSupabase = createSupabaseAdmin();
+      const { error: e1 } = await adminSupabase.from("ingestion_staging").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      const { error: e2 } = await adminSupabase.from("ingestion_runs").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      return NextResponse.json({
+        ok: true,
+        staging_error: e1?.message ?? null,
+        runs_error: e2?.message ?? null,
+        _ts: Date.now(),
+      }, { headers: NO_CACHE_HEADERS });
+    }
+
     return NextResponse.json({ error: "Invalid view parameter" }, { status: 400 });
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Internal error";
