@@ -153,7 +153,7 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false })
         .limit(limit);
 
-      return NextResponse.json({ staging: data ?? [] }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ staging: data ?? [], _ts: Date.now(), _count: (data ?? []).length }, { headers: NO_CACHE_HEADERS });
     }
 
     return NextResponse.json({ error: "Invalid view parameter" }, { status: 400 });
