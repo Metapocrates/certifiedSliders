@@ -147,7 +147,6 @@ export async function runIngestionPipeline(
           event: stagingRecord.event,
           school: stagingRecord.school,
           state: stagingRecord.state,
-          source_rating: stagingRecord.source_rating,
           source_url: stagingRecord.source_url,
           source_name: stagingRecord.source_name,
           source_fetched_at: stagingRecord.source_fetched_at,
