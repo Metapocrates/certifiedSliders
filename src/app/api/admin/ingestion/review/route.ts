@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -90,13 +91,17 @@ export async function POST(req: NextRequest) {
     if (action === "approve") {
       // Create a new profile seed from staging data
       // This creates a minimal profile that can be claimed by the athlete later
+      // profiles.id is normally tied to auth.users.id, but seeded profiles
+      // have no auth user yet — generate a UUID as placeholder until claimed
       const profileData: Record<string, unknown> = {
+        id: randomUUID(),
         full_name: staging.athlete_name,
         class_year: staging.grad_class,
         school_name: staging.school,
         school_state: staging.state,
         user_type: "athlete",
         status: "active",
+        is_seed: true,  // marks this as ingestion-seeded, not user-created
       };
 
       const { data: newProfile, error: profileError } = await adminSupabase
