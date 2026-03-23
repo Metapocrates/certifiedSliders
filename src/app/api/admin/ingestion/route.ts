@@ -4,6 +4,11 @@ import { createSupabaseAdmin } from "@/lib/supabase/admin";
 import { runIngestionPipeline } from "@/lib/ingestion/pipeline";
 import type { IngestionSource } from "@/lib/ingestion/types";
 
+const NO_CACHE_HEADERS = {
+  "Cache-Control": "no-store, no-cache, must-revalidate",
+  "Pragma": "no-cache",
+};
+
 /**
  * POST /api/admin/ingestion — Trigger an ingestion run
  * GET  /api/admin/ingestion — List sources, runs, and staging records
@@ -83,6 +88,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createSupabaseServer();
@@ -116,7 +123,7 @@ export async function GET(req: NextRequest) {
         .select("*")
         .order("created_at", { ascending: false });
 
-      return NextResponse.json({ sources: data ?? [] });
+      return NextResponse.json({ sources: data ?? [] }, { headers: NO_CACHE_HEADERS });
     }
 
     if (view === "runs") {
@@ -130,7 +137,7 @@ export async function GET(req: NextRequest) {
       if (sourceId) query = query.eq("source_id", sourceId);
 
       const { data } = await query;
-      return NextResponse.json({ runs: data ?? [] });
+      return NextResponse.json({ runs: data ?? [] }, { headers: NO_CACHE_HEADERS });
     }
 
     if (view === "staging") {
@@ -146,7 +153,7 @@ export async function GET(req: NextRequest) {
         .order("created_at", { ascending: false })
         .limit(limit);
 
-      return NextResponse.json({ staging: data ?? [] });
+      return NextResponse.json({ staging: data ?? [] }, { headers: NO_CACHE_HEADERS });
     }
 
     return NextResponse.json({ error: "Invalid view parameter" }, { status: 400 });
