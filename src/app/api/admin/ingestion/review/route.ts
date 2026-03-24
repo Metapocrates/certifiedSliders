@@ -101,7 +101,6 @@ export async function POST(req: NextRequest) {
         school_state: staging.state,
         user_type: "athlete",
         status: "active",
-        is_seed: true,  // marks this as ingestion-seeded, not user-created
       };
 
       const { data: newProfile, error: profileError } = await adminSupabase
