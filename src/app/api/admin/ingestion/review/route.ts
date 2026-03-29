@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 import { createSupabaseAdmin } from "@/lib/supabase/admin";
 
@@ -89,29 +88,32 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "approve") {
-      // Create a new profile seed from staging data
-      // This creates a minimal profile that can be claimed by the athlete later
-      // profiles.id is normally tied to auth.users.id, but seeded profiles
-      // have no auth user yet — generate a UUID as placeholder until claimed
-      const profileData: Record<string, unknown> = {
-        id: randomUUID(),
+      // Create an athlete seed record — NOT a full profile.
+      // profiles.id requires auth.users.id (FK constraint), so discovered
+      // athletes go into athlete_seeds until they sign up and claim.
+      const seedData = {
         full_name: staging.athlete_name,
-        class_year: staging.grad_class,
+        grad_class: staging.grad_class,
         school_name: staging.school,
         school_state: staging.state,
-        user_type: "athlete",
-        status: "active",
+        event: staging.event,
+        source_name: staging.source_name,
+        source_url: staging.source_url,
+        source_rank: staging.raw_rank,
+        source_fetched_at: staging.source_fetched_at,
+        staging_id: staging.id,
+        approved_by: user.id,
       };
 
-      const { data: newProfile, error: profileError } = await adminSupabase
-        .from("profiles")
-        .insert(profileData)
+      const { data: newSeed, error: seedError } = await adminSupabase
+        .from("athlete_seeds")
+        .insert(seedData)
         .select("id")
         .single();
 
-      if (profileError) {
+      if (seedError) {
         return NextResponse.json(
-          { error: `Failed to create profile: ${profileError.message}` },
+          { error: `Failed to create athlete seed: ${seedError.message}` },
           { status: 500 }
         );
       }
@@ -121,31 +123,16 @@ export async function POST(req: NextRequest) {
         .from("ingestion_staging")
         .update({
           status: "approved",
-          matched_profile_id: newProfile.id,
           reviewed_by: user.id,
           reviewed_at: new Date().toISOString(),
           review_notes: notes ?? null,
         })
         .eq("id", staging_id);
 
-      // Audit log
-      await adminSupabase.from("audit_log").insert({
-        actor_user_id: user.id,
-        action: "ingestion_staging_approved",
-        entity: "profile",
-        entity_id: newProfile.id,
-        context: {
-          staging_id,
-          source_name: staging.source_name,
-          athlete_name: staging.athlete_name,
-          source_url: staging.source_url,
-        },
-      });
-
       return NextResponse.json({
         ok: true,
         action: "approved",
-        profile_id: newProfile.id,
+        seed_id: newSeed.id,
       });
     }
 
