@@ -68,10 +68,10 @@ export default async function HomePage() {
   return (
     <div className="space-y-20 pb-20">
       {/* ─── HERO ─── */}
-      <section className="relative -mx-4 -mt-10 overflow-hidden bg-foreground sm:-mx-6 lg:-mx-8">
-        {/* Diagonal accent stripe */}
-        <div className="absolute -right-20 -top-20 h-80 w-80 rotate-12 bg-primary/20 blur-3xl" />
-        <div className="absolute -bottom-10 -left-10 h-60 w-60 bg-accent/15 blur-3xl" />
+      <section className="relative -mx-4 -mt-10 overflow-hidden sm:-mx-6 lg:-mx-8" style={{ background: 'hsl(220 26% 10%)' }}>
+        {/* Subtle accent glow */}
+        <div className="absolute -right-20 -top-20 h-80 w-80 rotate-12 rounded-full bg-red-900/20 blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 h-60 w-60 rounded-full bg-yellow-700/10 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-24 lg:px-8">
           <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-20">
@@ -81,12 +81,12 @@ export default async function HomePage() {
                 <span className="relative h-10 w-10">
                   <Image src="/logo.svg" alt="Certified Sliders" fill sizes="40px" priority />
                 </span>
-                <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-foreground/90">
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/80">
                   Certified Sliders
                 </span>
               </div>
 
-              <h1 className="font-display text-5xl leading-[0.95] text-primary-foreground sm:text-6xl lg:text-7xl">
+              <h1 className="font-display text-5xl leading-[0.95] text-white sm:text-6xl lg:text-7xl">
                 THE PREMIER
                 <br />
                 <span className="text-primary">HS TRACK &amp; FIELD</span>
@@ -94,20 +94,20 @@ export default async function HomePage() {
                 PLATFORM
               </h1>
 
-              <p className="max-w-md text-base leading-relaxed text-primary-foreground/90 sm:text-lg">
+              <p className="max-w-md text-base leading-relaxed text-white/80 sm:text-lg">
                 Submit marks with proof, get verified by our admin team, earn star ratings, and get discovered by college coaches.
               </p>
 
               <div className="flex flex-wrap gap-4">
                 <SafeLink
                   href={primaryCta.href}
-                  className="inline-flex h-12 items-center rounded-lg bg-primary px-7 text-sm font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110"
+                  className="inline-flex h-12 items-center rounded-lg bg-primary px-7 text-sm font-bold uppercase tracking-wider text-white transition hover:brightness-110"
                 >
                   {primaryCta.label}
                 </SafeLink>
                 <SafeLink
                   href="/rankings"
-                  className="inline-flex h-12 items-center rounded-lg border border-primary-foreground/40 px-7 text-sm font-bold uppercase tracking-wider text-primary-foreground transition hover:border-primary-foreground/70 hover:bg-primary-foreground/10"
+                  className="inline-flex h-12 items-center rounded-lg border border-white/30 px-7 text-sm font-bold uppercase tracking-wider text-white transition hover:border-white/60 hover:bg-white/10"
                 >
                   Browse Rankings
                 </SafeLink>
@@ -119,12 +119,12 @@ export default async function HomePage() {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                 className="rounded-xl border border-primary-foreground/20 bg-primary-foreground/10 px-6 py-5 backdrop-blur"
+                 className="rounded-xl border border-white/15 bg-white/10 px-6 py-5 backdrop-blur"
                 >
-                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-foreground/80">
+                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70">
                     {stat.label}
                   </p>
-                  <p className="font-display text-4xl text-primary-foreground">
+                  <p className="font-display text-4xl text-white">
                     {stat.value}
                   </p>
                 </div>
