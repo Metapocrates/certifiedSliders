@@ -17,7 +17,6 @@ if (supabaseHost) {
 remotePatterns.push({ protocol: "https", hostname: "picsum.photos" });
 
 const nextConfig = {
-  distDir: "dist",
   images: {
     remotePatterns,
   },
