@@ -50,20 +50,19 @@ export default function SignInPage() {
   async function onGoogleSignIn() {
     setErr(null);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const origin = typeof window !== "undefined"
+        ? window.location.origin
+        : process.env.NEXT_PUBLIC_SUPABASE_SITE_URL || "";
+
+      const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/auth/post-login`,
+        },
       });
 
-      if (result.error) {
-        throw result.error;
-      }
-
-      if (result.redirected) {
-        return;
-      }
-
-      // Session set — redirect to post-login
-      window.location.href = "/auth/post-login";
+      if (error) throw error;
+      if (data?.url) window.location.assign(data.url);
     } catch (e: any) {
       setErr(e?.message ?? "Google sign-in failed.");
     }
