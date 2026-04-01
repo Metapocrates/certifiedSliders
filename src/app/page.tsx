@@ -81,7 +81,7 @@ export default async function HomePage() {
                 <span className="relative h-10 w-10">
                   <Image src="/logo.svg" alt="Certified Sliders" fill sizes="40px" priority />
                 </span>
-                <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-foreground/90">
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-white/80">
                   Certified Sliders
                 </span>
               </div>
