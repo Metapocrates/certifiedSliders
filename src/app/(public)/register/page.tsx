@@ -70,7 +70,8 @@ export default function RegisterPage() {
       if (!authData.user) throw new Error("Signup succeeded but no user returned");
 
       // Set user type via RPC
-      await supabase.rpc("rpc_set_user_type", { _user_type: selectedType }).catch(console.error);
+      const { error: typeError } = await supabase.rpc("rpc_set_user_type", { _user_type: selectedType });
+      if (typeError) console.error("Failed to set user type:", typeError);
 
       // Sync server session
       await fetch("/auth/callback", {
