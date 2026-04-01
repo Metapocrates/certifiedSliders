@@ -87,7 +87,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <SiteHeader />
           <main className="flex-1 mx-auto max-w-6xl px-4 py-10 w-full">{children}</main>
           <Footer />
-          <Footer />
         </Providers>
       </body>
     </html>
