@@ -68,10 +68,10 @@ export default async function HomePage() {
   return (
     <div className="space-y-20 pb-20">
       {/* ─── HERO ─── */}
-      <section className="relative -mx-4 -mt-10 overflow-hidden bg-foreground sm:-mx-6 lg:-mx-8">
-        {/* Diagonal accent stripe */}
-        <div className="absolute -right-20 -top-20 h-80 w-80 rotate-12 bg-primary/20 blur-3xl" />
-        <div className="absolute -bottom-10 -left-10 h-60 w-60 bg-accent/15 blur-3xl" />
+      <section className="relative -mx-4 -mt-10 overflow-hidden sm:-mx-6 lg:-mx-8" style={{ background: 'hsl(220 26% 10%)' }}>
+        {/* Subtle accent glow */}
+        <div className="absolute -right-20 -top-20 h-80 w-80 rotate-12 rounded-full bg-red-900/20 blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 h-60 w-60 rounded-full bg-yellow-700/10 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl px-6 py-16 sm:py-24 lg:px-8">
           <div className="flex flex-col gap-12 lg:flex-row lg:items-center lg:gap-20">
