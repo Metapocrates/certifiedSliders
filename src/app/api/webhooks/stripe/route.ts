@@ -94,8 +94,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   console.log(`Upgrading program ${program_id} to premium (subscription: ${subscriptionId})`);
 
-  // Update or create program entitlements
-  const { error: upsertError } = await getSupabase()
+  const db = getSupabase();
+
+  const { error: upsertError } = await db
     .from("program_entitlements")
     .upsert(
       {
@@ -104,7 +105,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         features: PRICING_TIERS.PREMIUM.features,
         stripe_subscription_id: subscriptionId,
         stripe_customer_id: customerId,
-        expires_at: null, // Active subscription, no expiry
+        expires_at: null,
         updated_at: new Date().toISOString(),
       },
       {
@@ -117,8 +118,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     throw upsertError;
   }
 
-  // Log to audit trail
-  await getSupabase().from("audit_log").insert({
+  await db.from("audit_log").insert({
     actor_user_id: user_id,
     action: "subscription_created",
     entity: "program",
@@ -147,9 +147,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   console.log(`Subscription ${subscription.id} status: ${status}`);
 
-  // If subscription is canceled/unpaid, downgrade to free
+  const db = getSupabase();
+
   if (["canceled", "unpaid", "past_due"].includes(status)) {
-    const { error } = await getSupabase()
+    const { error } = await db
       .from("program_entitlements")
       .update({
         tier: PRICING_TIERS.FREE.tier,
@@ -163,7 +164,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       throw error;
     }
 
-    await getSupabase().from("audit_log").insert({
+    await db.from("audit_log").insert({
       actor_user_id: user_id || null,
       action: "subscription_downgraded",
       entity: "program",
@@ -177,9 +178,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     console.log(`✅ Program ${program_id} downgraded to free tier`);
   }
 
-  // If subscription is active again, upgrade to premium
   if (status === "active") {
-    const { error } = await getSupabase()
+    const { error } = await db
       .from("program_entitlements")
       .update({
         tier: PRICING_TIERS.PREMIUM.tier,
@@ -211,7 +211,9 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
   console.log(`Subscription ${subscription.id} deleted, downgrading program ${program_id}`);
 
-  const { error } = await getSupabase()
+  const db = getSupabase();
+
+  const { error } = await db
     .from("program_entitlements")
     .update({
       tier: PRICING_TIERS.FREE.tier,
@@ -226,7 +228,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     throw error;
   }
 
-  await getSupabase().from("audit_log").insert({
+  await db.from("audit_log").insert({
     actor_user_id: user_id || null,
     action: "subscription_canceled",
     entity: "program",
