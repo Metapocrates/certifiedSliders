@@ -3,17 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../lib/supabase/browser";
-
-type Mode = "signin" | "signup";
+import { lovable } from "@/integrations/lovable/index";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
-  const [who, setWho] = useState<{ id: string; email: string | null } | null>(null);
 
   async function syncServerSession(sb: ReturnType<typeof supabaseBrowser>) {
     try {
@@ -36,8 +33,6 @@ export default function LoginPage() {
     const supabase = supabaseBrowser();
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
-        setWho({ id: data.user.id, email: data.user.email ?? null });
-        // Redirect to post-login handler which will route to appropriate dashboard
         const nextParam = new URLSearchParams(window.location.search).get("next");
         const postLoginUrl = nextParam
           ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
@@ -49,25 +44,17 @@ export default function LoginPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (busy) return; // guard against double-fire
+    if (busy) return;
     setMsg("");
     setBusy(true);
 
     try {
       const supabase = supabaseBrowser();
-
-      // Sign in only (signup redirects to /register)
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      setMsg("Signed in.");
-
-      // Refresh session indicator
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) setWho({ id: data.user.id, email: data.user.email ?? null });
 
       await syncServerSession(supabase);
 
-      // ✅ Redirect: use post-login handler to determine dashboard based on role
       const nextParam = new URLSearchParams(window.location.search).get("next");
       const postLoginUrl = nextParam
         ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
@@ -81,83 +68,52 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogleSignIn(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
+  async function handleGoogleSignIn() {
     if (busy) return;
     setBusy(true);
     setMsg("");
 
     try {
-      const supabase = supabaseBrowser();
-      // Use window.location.origin directly to ensure correct redirect in dev
-      const origin = window.location.origin;
-      const nextParam = new URLSearchParams(window.location.search).get("next");
-      const redirectPath = nextParam || "/auth/post-login";
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(redirectPath)}`,
-        },
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
 
-      if (error) throw error;
-      if (data?.url) window.location.assign(data.url);
+      if (error) {
+        setMsg(error.message || "Google sign-in failed");
+        setBusy(false);
+      }
+      // If successful, the page will redirect automatically
     } catch (err: any) {
       setMsg(err?.message || "Google sign-in failed");
       setBusy(false);
     }
   }
 
-  async function handleGoogleSignUp(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault();
-    // Redirect to registration page for user type selection
-    const nextParam = new URLSearchParams(window.location.search).get("next");
-    const url = nextParam ? `/register?next=${encodeURIComponent(nextParam)}` : '/register';
-    router.push(url);
-  }
-
-  async function handleSignOut() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const supabase = supabaseBrowser();
-      await supabase.auth.signOut().catch(() => { });
-      // Clear server cookies too so SSR sees signed-out state
-      await fetch("/api/auth/signout", { method: "POST" }).catch(() => { });
-      setWho(null);
-      setMsg("Signed out.");
-      router.refresh();
-    } catch {
-      setMsg("Sign-out error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <section className="mx-auto w-full max-w-5xl">
-      <div className="overflow-hidden rounded-3xl border border-app bg-card shadow-2xl">
-        <div className="flex flex-col lg:grid lg:grid-cols-[1.15fr_minmax(320px,380px)]">
-          <div className="relative bg-gradient-to-br from-[#C8102E] via-[#E63B2E] to-[#F5C518] p-8 text-white lg:hidden">
-            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/80">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex flex-col lg:grid lg:grid-cols-[1.15fr_minmax(320px,400px)]">
+          {/* Left brand panel - mobile */}
+          <div className="relative bg-gradient-to-br from-primary via-primary/90 to-accent p-8 text-white lg:hidden">
+            <p className="font-display text-xs uppercase tracking-[0.4em] text-white/80">
               Certified Sliders
             </p>
-            <h1 className="mt-4 text-3xl font-semibold leading-tight">
-              Are you a slider?
+            <h1 className="mt-4 font-display text-3xl leading-tight">
+              ARE YOU A SLIDER?
             </h1>
             <p className="mt-3 max-w-sm text-sm text-white/85">
               Sign in to manage verified marks, submit results, and follow other athletes.
             </p>
           </div>
 
-          <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[#C8102E] via-[#E63B2E] to-[#F5C518] px-10 py-12 text-white lg:flex">
+          {/* Left brand panel - desktop */}
+          <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-primary via-primary/90 to-accent px-10 py-12 text-white lg:flex">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.45em] text-white/70">
+              <p className="font-display text-xs uppercase tracking-[0.45em] text-white/70">
                 Certified Sliders
               </p>
-              <h1 className="mt-6 max-w-sm text-4xl font-semibold leading-tight">
-                Certified Results. Certified Ratings.
+              <h1 className="mt-6 max-w-sm font-display text-4xl leading-tight">
+                CERTIFIED RESULTS. CERTIFIED RATINGS.
               </h1>
               <p className="mt-4 max-w-sm text-base text-white/80">
                 Create your account, claim your profile, and post your PRs!
@@ -179,122 +135,55 @@ export default function LoginPage() {
             </ul>
           </div>
 
+          {/* Right form panel */}
           <div className="px-6 py-9 sm:px-10 lg:px-12">
             <div className="space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-muted">
+              <p className="font-display text-xs uppercase tracking-[0.3em] text-muted-foreground">
                 Welcome back
               </p>
-              <h2 className="text-3xl font-semibold text-app">
-                Sign in to Certified Sliders
+              <h2 className="font-display text-3xl text-foreground">
+                SIGN IN
               </h2>
-              <p className="text-sm text-muted">
-                Use Google for a quick sign-in or your email and password below.
+              <p className="text-sm text-muted-foreground">
+                Use Google for a quick sign-in or enter your email below.
               </p>
             </div>
 
-            {who ? (
-              <div className="mt-6 rounded-2xl border border-app bg-muted px-4 py-4 text-sm text-app shadow-inner">
-                <div>
-                  Signed in as <b>{who.email ?? who.id}</b>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="mt-3 inline-flex items-center justify-center rounded-full bg-scarlet px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-white hover:text-scarlet"
-                  disabled={busy}
-                >
-                  {busy ? "…" : "Sign out"}
-                </button>
-              </div>
-            ) : null}
-
-            <div className="mt-8 space-y-4">
+            <div className="mt-8 space-y-5">
+              {/* Google Sign In */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={busy}
-                className="flex h-12 w-full items-center justify-center gap-3 rounded-full border border-app bg-card text-sm font-semibold text-app transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-card text-sm font-semibold text-foreground transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
-                  <span className="text-sm font-bold text-[#4285F4]">G</span>
-                </span>
-                {busy ? "Redirecting…" : "Sign in with Google"}
+                <svg className="h-5 w-5" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                {busy ? "Redirecting…" : "Continue with Google"}
               </button>
-              <p className="text-xs text-center text-muted -mt-2">
-                Existing users: Sign in with your Google account
-              </p>
-
-              <div className="relative my-4">
-                <span className="block h-px w-full bg-muted" />
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="rounded-full bg-card px-3 text-xs font-semibold uppercase tracking-[0.3em] text-muted">
-                    Or create new account
-                  </span>
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                disabled={busy}
-                className="flex h-12 w-full items-center justify-center gap-3 rounded-full border-2 border-scarlet bg-card text-sm font-semibold text-scarlet transition hover:bg-scarlet hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-sm">
-                  <span className="text-sm font-bold text-[#4285F4]">G</span>
-                </span>
-                Sign up with Google
-              </button>
-              <p className="text-xs text-center text-muted -mt-2">
-                New users: Select your account type on the next page
-              </p>
 
               <div className="relative">
-                <span className="block h-px w-full bg-muted" />
+                <span className="block h-px w-full bg-border" />
                 <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="rounded-full bg-card px-3 text-xs font-semibold uppercase tracking-[0.3em] text-muted">
-                    Or continue with email
+                  <span className="bg-card px-3 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+                    Or use email
                   </span>
                 </span>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="inline-flex rounded-full bg-muted p-1 text-sm font-medium">
-                  <button
-                    type="button"
-                    onClick={() => setMode("signin")}
-                    className={`flex-1 rounded-full px-4 py-1.5 transition ${mode === "signin"
-                      ? "bg-card text-app shadow-sm"
-                      : "text-muted"
-                      }`}
-                    disabled={busy}
-                  >
-                    Email sign in
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Redirect to registration page with user type selection
-                      const nextParam = new URLSearchParams(window.location.search).get("next");
-                      const url = nextParam ? `/register?next=${encodeURIComponent(nextParam)}` : '/register';
-                      router.push(url);
-                    }}
-                    className={`flex-1 rounded-full px-4 py-1.5 transition ${mode === "signup"
-                      ? "bg-card text-app shadow-sm"
-                      : "text-muted"
-                      }`}
-                    disabled={busy}
-                  >
-                    Create account
-                  </button>
-                </div>
-
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-app">Email</label>
+                  <label className="block text-sm font-medium text-foreground">Email</label>
                   <input
                     type="email"
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-2xl border border-app bg-card px-4 py-3 text-app shadow-sm outline-none focus:border-scarlet focus:ring-2 focus:ring-scarlet/40"
+                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
                     placeholder="you@example.com"
                     required
                     disabled={busy}
@@ -302,14 +191,14 @@ export default function LoginPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-sm font-medium text-app">Password</label>
+                  <label className="block text-sm font-medium text-foreground">Password</label>
                   <input
                     type="password"
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-2xl border border-app bg-card px-4 py-3 text-app shadow-sm outline-none focus:border-scarlet focus:ring-2 focus:ring-scarlet/40"
-                    placeholder="Minimum 6 characters"
+                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                    placeholder="Your password"
                     required
                     disabled={busy}
                   />
@@ -317,28 +206,24 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  className="btn h-12 w-full rounded-full text-base font-semibold disabled:opacity-60"
+                  className="h-12 w-full rounded-xl bg-primary text-base font-bold uppercase tracking-wide text-primary-foreground transition hover:brightness-110 disabled:opacity-60"
                   disabled={busy}
                 >
-                  {busy ? "Working…" : "Sign in"}
+                  {busy ? "Signing in…" : "Sign In"}
                 </button>
 
-                <div className="flex items-center justify-between text-sm text-muted">
-                  <a href="/reset" className="font-semibold text-scarlet hover:text-scarlet/80">
+                <div className="flex items-center justify-between text-sm">
+                  <a href="/reset" className="font-semibold text-primary hover:text-primary/80">
                     Forgot password?
                   </a>
-                  <a href="/" className="hover:text-app">
-                    Back to home
+                  <a href="/register" className="font-semibold text-primary hover:text-primary/80">
+                    Create account
                   </a>
                 </div>
 
-                {msg ? <p className="text-sm text-scarlet">{msg}</p> : null}
+                {msg ? <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{msg}</p> : null}
               </form>
             </div>
-
-            <p className="mt-8 text-xs text-muted">
-              After signing in, you&apos;ll be redirected back if you came from a protected page.
-            </p>
           </div>
         </div>
       </div>
