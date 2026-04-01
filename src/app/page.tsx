@@ -81,7 +81,7 @@ export default async function HomePage() {
                 <span className="relative h-10 w-10">
                   <Image src="/logo.svg" alt="Certified Sliders" fill sizes="40px" priority />
                 </span>
-                <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-foreground/60">
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-foreground/90">
                   Certified Sliders
                 </span>
               </div>
@@ -94,7 +94,7 @@ export default async function HomePage() {
                 PLATFORM
               </h1>
 
-              <p className="max-w-md text-base leading-relaxed text-primary-foreground/70 sm:text-lg">
+              <p className="max-w-md text-base leading-relaxed text-primary-foreground/90 sm:text-lg">
                 Submit marks with proof, get verified by our admin team, earn star ratings, and get discovered by college coaches.
               </p>
 
@@ -107,7 +107,7 @@ export default async function HomePage() {
                 </SafeLink>
                 <SafeLink
                   href="/rankings"
-                  className="inline-flex h-12 items-center rounded-lg border border-primary-foreground/20 px-7 text-sm font-bold uppercase tracking-wider text-primary-foreground transition hover:border-primary-foreground/50 hover:bg-primary-foreground/5"
+                  className="inline-flex h-12 items-center rounded-lg border border-primary-foreground/40 px-7 text-sm font-bold uppercase tracking-wider text-primary-foreground transition hover:border-primary-foreground/70 hover:bg-primary-foreground/10"
                 >
                   Browse Rankings
                 </SafeLink>
@@ -119,9 +119,9 @@ export default async function HomePage() {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-xl border border-primary-foreground/10 bg-primary-foreground/5 px-6 py-5 backdrop-blur"
+                 className="rounded-xl border border-primary-foreground/20 bg-primary-foreground/10 px-6 py-5 backdrop-blur"
                 >
-                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-foreground/50">
+                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-foreground/80">
                     {stat.label}
                   </p>
                   <p className="font-display text-4xl text-primary-foreground">
