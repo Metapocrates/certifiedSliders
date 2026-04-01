@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import { lovable } from "@/integrations/lovable/index";
 
 type Mode = "password" | "magic";
 
