@@ -86,7 +86,7 @@ export default async function HomePage() {
                 </span>
               </div>
 
-              <h1 className="font-display text-5xl leading-[0.95] text-primary-foreground sm:text-6xl lg:text-7xl">
+              <h1 className="font-display text-5xl leading-[0.95] text-white sm:text-6xl lg:text-7xl">
                 THE PREMIER
                 <br />
                 <span className="text-primary">HS TRACK &amp; FIELD</span>
