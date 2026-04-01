@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { lovable } from "@/integrations/lovable/index";
+
 
 const userTypes = [
   {
