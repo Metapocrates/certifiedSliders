@@ -101,7 +101,7 @@ export default async function HomePage() {
               <div className="flex flex-wrap gap-4">
                 <SafeLink
                   href={primaryCta.href}
-                  className="inline-flex h-12 items-center rounded-lg bg-primary px-7 text-sm font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110"
+                  className="inline-flex h-12 items-center rounded-lg bg-primary px-7 text-sm font-bold uppercase tracking-wider text-white transition hover:brightness-110"
                 >
                   {primaryCta.label}
                 </SafeLink>
