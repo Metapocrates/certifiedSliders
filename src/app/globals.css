@@ -5,177 +5,114 @@
 /* ---------- Brand tokens ---------- */
 :root {
   /* Brand core */
-  --cs-scarlet: #C8102E;
-  --cs-yellow: #F5C518;
+  --cs-scarlet: 350 90% 42%;
+  --cs-scarlet-hex: #C8102E;
+  --cs-yellow: 46 92% 53%;
+  --cs-yellow-hex: #F5C518;
 
-  /* Neutral palette */
-  --cs-charcoal-950: #0b0d10;
-  --cs-charcoal-900: #111827;
-  --cs-charcoal-800: #1f2937;
-  --cs-gray-500: #6b7280;
-  --cs-gray-300: #d4d4d8;
-
-  /* Light theme (beige) */
-  --bg: #fdfcfa;
-  --bg-muted: #f0ebe4;
-  --text: #111827;
-  --text-muted: #374151;
-  --border: #d4d4d8;
-  --card: #ffffff;
-  --link: var(--cs-scarlet);
+  /* Light theme — warm editorial */
+  --background: 40 20% 98%;
+  --foreground: 220 26% 14%;
+  --muted: 35 15% 92%;
+  --muted-foreground: 220 10% 42%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 26% 14%;
+  --border: 220 10% 85%;
+  --input: 220 10% 85%;
+  --primary: var(--cs-scarlet);
+  --primary-foreground: 0 0% 100%;
+  --secondary: 35 15% 92%;
+  --secondary-foreground: 220 26% 14%;
   --accent: var(--cs-yellow);
+  --accent-foreground: 220 26% 14%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: var(--cs-scarlet);
+  --radius: 0.625rem;
 
-  /* Buttons */
-  --btn-bg: #ffffff;
-  --btn-border: #d4d4d8;
-  --btn-text: #111827;
-  --btn-hover-bg: var(--cs-yellow);
-  --btn-hover-text: #101010;
+  /* Editorial extras */
+  --surface-elevated: 0 0% 100%;
+  --divider: 220 10% 88%;
+  --highlight: 46 92% 53%;
 }
 
-/* Dark mode (charcoal) */
 .dark {
-  --bg: var(--cs-charcoal-950);
-  --bg-muted: #141c27;
-  --text: #f4f4f5;
-  --text-muted: #c7c9d1;
-  --border: #27272a;
-  --card: var(--cs-charcoal-900);
-  --link: #ff7289;
+  --background: 220 20% 7%;
+  --foreground: 0 0% 96%;
+  --muted: 220 15% 14%;
+  --muted-foreground: 220 10% 65%;
+  --card: 220 18% 11%;
+  --card-foreground: 0 0% 96%;
+  --border: 220 12% 20%;
+  --input: 220 12% 20%;
+  --primary: 350 85% 55%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 15% 18%;
+  --secondary-foreground: 0 0% 96%;
   --accent: var(--cs-yellow);
+  --accent-foreground: 220 26% 14%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 350 85% 55%;
 
-  --btn-bg: #1f2937;
-  --btn-border: #3f3f46;
-  --btn-text: #f4f4f5;
-  --btn-hover-bg: var(--cs-yellow);
-  --btn-hover-text: #111;
+  --surface-elevated: 220 18% 13%;
+  --divider: 220 12% 22%;
+  --highlight: 46 92% 53%;
 }
 
-/* Base elements */
-html,
-body {
-  background: var(--bg);
-  color: var(--text);
+/* ---------- Base ---------- */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
 }
 
-/* Utility layer */
+/* ---------- Utility layer ---------- */
 @layer utilities {
-  .bg-app {
-    background: var(--bg);
-  }
-
-  .bg-muted {
-    background: var(--bg-muted);
-  }
-
-  .bg-card {
-    background: var(--card);
-  }
-
-  .text-app {
-    color: var(--text);
-  }
-
-  .text-muted {
-    color: var(--text-muted);
-  }
-
-  .border-app {
-    border-color: var(--border);
-  }
+  /* Legacy compat — maps old token names to new system */
+  .bg-app { background: hsl(var(--background)); }
+  .bg-muted { background: hsl(var(--muted)); }
+  .bg-card { background: hsl(var(--card)); }
+  .text-app { color: hsl(var(--foreground)); }
+  .text-muted { color: hsl(var(--muted-foreground)); }
+  .border-app { border-color: hsl(var(--border)); }
+  .bg-accent { background-color: hsl(var(--accent)); }
+  .bg-scarlet { background-color: var(--cs-scarlet-hex); }
+  .text-scarlet { color: var(--cs-scarlet-hex); }
 
   .link {
-    color: var(--link);
+    color: var(--cs-scarlet-hex);
+    transition: color 0.15s;
   }
+  .link:hover { color: var(--cs-yellow-hex); }
 
-  .accent {
-    color: var(--accent);
-  }
-
-  .bg-accent {
-    background-color: var(--accent);
-  }
-
-  .bg-scarlet {
-    background-color: var(--cs-scarlet);
-  }
-
-  .text-scarlet {
-    color: var(--cs-scarlet);
-  }
-
-  /* Link styles */
-  a.link,
-  .link {
-    color: var(--link);
-    transition: color 0.2s ease;
-  }
-
-  a.link:hover,
-  .link:hover {
-    color: var(--accent);
-  }
-
-  /* Button base */
+  /* Editorial button */
   .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    border: 1px solid var(--btn-border);
-    background: var(--btn-bg);
-    color: var(--btn-text);
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-    box-shadow: 0 8px 24px -18px rgba(17, 24, 39, 0.65);
+    @apply inline-flex items-center justify-center font-semibold transition-all duration-150;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
   }
-
   .btn:hover {
-    background: var(--btn-hover-bg);
-    color: var(--btn-hover-text);
-    border-color: var(--btn-hover-bg);
+    background: var(--cs-yellow-hex);
+    color: hsl(220, 26%, 14%);
+    border-color: var(--cs-yellow-hex);
   }
+  .btn:active { transform: scale(0.97); }
 
-  .btn:active {
-    transform: scale(0.97);
-  }
-
-  /* Custom scrollbar styles */
-  .scrollbar-thin::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
+  /* Scrollbar */
+  .scrollbar-thin::-webkit-scrollbar { height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(209 213 219);
+    background-color: hsl(var(--border));
     border-radius: 4px;
-  }
-
-  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
-    background-color: rgb(156 163 175);
-  }
-
-  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgb(75 85 99);
-  }
-
-  .dark .scrollbar-thin:hover::-webkit-scrollbar-thumb {
-    background-color: rgb(107 114 128);
-  }
-
-  .scrollbar-track-transparent::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
-    background-color: rgb(209 213 219);
-  }
-
-  .scrollbar-thumb-gray-400::-webkit-scrollbar-thumb {
-    background-color: rgb(156 163 175);
   }
 }
