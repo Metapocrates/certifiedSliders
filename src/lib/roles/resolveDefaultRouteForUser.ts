@@ -64,7 +64,7 @@ export async function detectUserRole(userId: string): Promise<UserRole> {
     return {
       role: 'admin',
       verified: true,
-      defaultRoute: '/admin'
+      defaultRoute: '/admin/home'
     };
   }
 
