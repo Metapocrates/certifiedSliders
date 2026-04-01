@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
+import { lovable } from "@/integrations/lovable/index";
 
 
 const userTypes = [
@@ -101,17 +102,21 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${origin}/auth/callback?next=/auth/post-login`,
-          queryParams: { prompt: "select_account" },
-        },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
 
-      if (error) throw error;
-      if (data?.url) window.location.assign(data.url);
+      if (result.error) {
+        throw result.error;
+      }
+
+      if (result.redirected) {
+        return;
+      }
+
+      // Session set — redirect to post-login
+      window.location.href = "/auth/post-login";
     } catch (err: any) {
       setError(err?.message || "Google signup failed");
       setLoading(false);
