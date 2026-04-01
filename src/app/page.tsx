@@ -119,12 +119,12 @@ export default async function HomePage() {
               {stats.map((stat) => (
                 <div
                   key={stat.label}
-                 className="rounded-xl border border-primary-foreground/20 bg-primary-foreground/10 px-6 py-5 backdrop-blur"
+                 className="rounded-xl border border-white/15 bg-white/10 px-6 py-5 backdrop-blur"
                 >
-                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary-foreground/80">
+                  <p className="text-xs font-bold uppercase tracking-[0.25em] text-white/70">
                     {stat.label}
                   </p>
-                  <p className="font-display text-4xl text-primary-foreground">
+                  <p className="font-display text-4xl text-white">
                     {stat.value}
                   </p>
                 </div>
