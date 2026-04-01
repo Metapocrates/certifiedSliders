@@ -107,7 +107,7 @@ export default async function HomePage() {
                 </SafeLink>
                 <SafeLink
                   href="/rankings"
-                  className="inline-flex h-12 items-center rounded-lg border border-primary-foreground/40 px-7 text-sm font-bold uppercase tracking-wider text-primary-foreground transition hover:border-primary-foreground/70 hover:bg-primary-foreground/10"
+                  className="inline-flex h-12 items-center rounded-lg border border-white/30 px-7 text-sm font-bold uppercase tracking-wider text-white transition hover:border-white/60 hover:bg-white/10"
                 >
                   Browse Rankings
                 </SafeLink>
