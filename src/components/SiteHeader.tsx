@@ -6,6 +6,7 @@ import { getSessionUser, isAdmin } from "@/lib/auth";
 import { signOut } from "@/app/actions/auth";
 import ThemeToggle from "@/components/ThemeToggle";
 import UserAvatar from "@/components/UserAvatar";
+import MobileMenu from "@/components/MobileMenu";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -44,71 +45,88 @@ export default async function Header() {
     admin ? "Admin" :
     "My Profile";
 
-  return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="container flex h-14 items-center justify-between gap-4">
-        {/* Logo + Primary nav */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 font-display text-xl tracking-tight">
-            <span className="relative h-8 w-8">
-              <Image src="/logo.svg" alt="Certified Sliders" fill sizes="32px" priority />
-            </span>
-            <span className="hidden sm:inline">CERTIFIED SLIDERS</span>
-          </Link>
+  const navLinks = [
+    { href: "/rankings", label: "Rankings" },
+    { href: "/athletes", label: "Athletes" },
+    { href: "/rated-athletes", label: "Rated" },
+    { href: "/blog", label: "Blog" },
+    ...(admin ? [{ href: "/admin/home", label: "Admin" }] : []),
+  ];
 
-          <nav className="hidden items-center gap-1 md:flex">
-            <NavItem href="/rankings">Rankings</NavItem>
-            <NavItem href="/athletes">Athletes</NavItem>
-            <NavItem href="/rated-athletes">Rated</NavItem>
-            <NavItem href="/blog">Blog</NavItem>
-            {admin && <NavItem href="/admin/home">Admin</NavItem>}
-          </nav>
-        </div>
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <span className="relative h-9 w-9">
+            <Image src="/logo.svg" alt="Certified Sliders" fill sizes="36px" priority />
+          </span>
+          <span className="hidden font-display text-lg tracking-tight text-foreground sm:inline">
+            CERTIFIED SLIDERS
+          </span>
+        </Link>
+
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-0.5 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <ThemeToggle />
 
           {!user ? (
             <Link
               href="/login"
-              className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground transition hover:brightness-110"
+              className="inline-flex h-9 items-center rounded-lg bg-primary px-4 text-sm font-bold uppercase tracking-wide text-primary-foreground transition hover:brightness-110"
             >
               Sign In
             </Link>
           ) : (
-            <>
+            <div className="hidden items-center gap-2 md:flex">
               {!isParent && (
-                <Link href="/submit-result" className="btn text-xs sm:text-sm">
+                <Link
+                  href="/submit-result"
+                  className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-semibold text-foreground transition hover:bg-accent"
+                >
                   Submit
                 </Link>
               )}
-              <Link href={dashboardHref} className="btn text-xs sm:text-sm">
+              <Link
+                href={dashboardHref}
+                className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm font-semibold text-foreground transition hover:bg-accent"
+              >
                 {dashboardLabel}
               </Link>
               <form action={signOut}>
-                <button type="submit" className="btn text-xs sm:text-sm">
+                <button
+                  type="submit"
+                  className="inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                >
                   Sign Out
                 </button>
               </form>
               <Link href={dashboardHref} title={dashboardLabel}>
                 <UserAvatar src={profile?.profile_pic_url} alt="Avatar" size={32} unoptimized />
               </Link>
-            </>
+            </div>
           )}
+
+          {/* Mobile hamburger */}
+          <MobileMenu
+            navLinks={navLinks}
+            user={user ? { dashboardHref, dashboardLabel, isParent, profilePic: profile?.profile_pic_url ?? null } : null}
+          />
         </div>
       </div>
     </header>
-  );
-}
-
-function NavItem({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-    >
-      {children}
-    </Link>
   );
 }
