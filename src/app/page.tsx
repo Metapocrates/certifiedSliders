@@ -94,7 +94,7 @@ export default async function HomePage() {
                 PLATFORM
               </h1>
 
-              <p className="max-w-md text-base leading-relaxed text-primary-foreground/70 sm:text-lg">
+              <p className="max-w-md text-base leading-relaxed text-primary-foreground/90 sm:text-lg">
                 Submit marks with proof, get verified by our admin team, earn star ratings, and get discovered by college coaches.
               </p>
 
