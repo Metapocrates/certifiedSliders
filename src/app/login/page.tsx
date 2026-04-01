@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../lib/supabase/browser";
-import { lovable } from "@/integrations/lovable/index";
+
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,15 +74,19 @@ export default function LoginPage() {
     setMsg("");
 
     try {
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const origin = typeof window !== "undefined"
+        ? window.location.origin
+        : "";
+
+      const { data, error } = await supabaseBrowser().auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${origin}/auth/callback?next=/auth/post-login`,
+        },
       });
 
-      if (error) {
-        setMsg(error.message || "Google sign-in failed");
-        setBusy(false);
-      }
-      // If successful, the page will redirect automatically
+      if (error) throw error;
+      if (data?.url) window.location.assign(data.url);
     } catch (err: any) {
       setMsg(err?.message || "Google sign-in failed");
       setBusy(false);
