@@ -44,6 +44,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "tailwind.config.cjs",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "dist/types/**/*.ts",
+    "dist/dev/types/**/*.ts"
   ]
 }
