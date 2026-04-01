@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../lib/supabase/browser";
-import { lovable } from "@/integrations/lovable/index";
+
 
 export default function LoginPage() {
   const router = useRouter();
