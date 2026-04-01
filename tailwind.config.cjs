@@ -1,43 +1,64 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: "class", // toggle with <html class="dark">
+  darkMode: "class",
   content: [
     "./src/app/**/*.{ts,tsx}",
     "./src/components/**/*.{ts,tsx}",
     "./src/lib/**/*.{ts,tsx}",
   ],
   theme: {
+    container: {
+      center: true,
+      padding: "1rem",
+      screens: { "2xl": "1280px" },
+    },
     extend: {
-      colors: {
-        // semantic surfaces bound to CSS vars (see globals.css)
-        bg: "var(--bg)",
-        "bg-muted": "var(--bg-muted)",
-        card: "var(--card)",
-        ink: "var(--text)",
-        "ink-muted": "var(--text-muted)",
-        border: "var(--border)",
-
-        // brand
-        scarlet: "var(--cs-scarlet)",
-        accent: "var(--accent)",
-
-        // optional neutrals aligned to brand
-        gray: {
-          950: "var(--cs-gray-950)",
-          900: "var(--cs-gray-900)",
-          800: "var(--cs-gray-800)",
-          700: "var(--cs-gray-700)",
-          500: "var(--cs-gray-500)",
-          300: "var(--cs-gray-300)",
-          100: "var(--cs-gray-100)",
-        },
+      fontFamily: {
+        display: ['"Bebas Neue"', '"Impact"', 'sans-serif'],
+        sans: ['"Inter"', 'system-ui', 'sans-serif'],
       },
-      boxShadow: {
-        card: "0 6px 24px rgba(0,0,0,0.08)",
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        scarlet: "var(--cs-scarlet-hex)",
+        highlight: "hsl(var(--highlight))",
+        "surface-elevated": "hsl(var(--surface-elevated))",
       },
       borderRadius: {
-        xl: "1rem",
-        "2xl": "1.25rem",
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        card: "0 4px 24px -8px rgba(0,0,0,0.10)",
+        editorial: "0 8px 40px -12px rgba(0,0,0,0.15)",
       },
     },
   },

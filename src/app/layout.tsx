@@ -79,14 +79,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-app text-app flex flex-col">
+      <body className="min-h-screen flex flex-col bg-background text-foreground antialiased">
         <Providers isAdmin={isAdmin} userRole={userRole}>
           <AuthListener />
           <OAuthCodeHandler />
           <AdminPreviewBanner />
           <SiteHeader />
-          <div className="border-b-4 border-accent" />
           <main className="flex-1 mx-auto max-w-6xl px-4 py-10 w-full">{children}</main>
+          <Footer />
           <Footer />
         </Providers>
       </body>
