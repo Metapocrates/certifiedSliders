@@ -12,17 +12,19 @@ import { constructWebhookEvent, PRICING_TIERS } from "@/lib/stripe/server";
 import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
-// Create Supabase admin client for webhook operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+// Lazy-init Supabase admin client to avoid build-time env var errors
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
