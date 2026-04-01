@@ -4,106 +4,69 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border bg-muted/30">
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="mt-auto border-t border-border bg-muted/40">
+      <div className="container mx-auto px-4 py-10">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {/* About */}
-          <div>
-            <h3 className="font-semibold mb-3">Certified Sliders</h3>
-            <p className="text-sm text-muted-foreground">
-              The premier platform for track & field athletes to showcase verified results and connect with college programs.
+          <div className="col-span-2 md:col-span-1">
+            <h3 className="font-display text-lg">CERTIFIED SLIDERS</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              The premier platform for HS track &amp; field athletes to showcase verified results and connect with college coaches.
             </p>
           </div>
 
           {/* Resources */}
           <div>
-            <h3 className="font-semibold mb-3">Resources</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/guides" className="text-muted-foreground hover:text-foreground">
-                  Guides
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-muted-foreground hover:text-foreground">
-                  FAQs
-                </Link>
-              </li>
-              <li>
-                <Link href="/rankings" className="text-muted-foreground hover:text-foreground">
-                  Rankings
-                </Link>
-              </li>
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              Resources
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm">
+              <FooterLink href="/guides">Guides</FooterLink>
+              <FooterLink href="/faq">FAQs</FooterLink>
+              <FooterLink href="/rankings">Rankings</FooterLink>
             </ul>
           </div>
 
           {/* How To */}
           <div>
-            <h3 className="font-semibold mb-3">How To</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/guides/claim-profile" className="text-muted-foreground hover:text-foreground">
-                  Claim Your Profile
-                </Link>
-              </li>
-              <li>
-                <Link href="/guides/submit-result" className="text-muted-foreground hover:text-foreground">
-                  Submit a Result
-                </Link>
-              </li>
-              <li>
-                <Link href="/guides/verify-profile" className="text-muted-foreground hover:text-foreground">
-                  Verify Your Profile
-                </Link>
-              </li>
-              <li>
-                <Link href="/guides/star-ratings" className="text-muted-foreground hover:text-foreground">
-                  Star Ratings
-                </Link>
-              </li>
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              How To
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm">
+              <FooterLink href="/guides/claim-profile">Claim Profile</FooterLink>
+              <FooterLink href="/guides/submit-result">Submit a Result</FooterLink>
+              <FooterLink href="/guides/verify-profile">Verify Profile</FooterLink>
+              <FooterLink href="/guides/star-ratings">Star Ratings</FooterLink>
             </ul>
           </div>
 
           {/* Legal */}
           <div>
-            <h3 className="font-semibold mb-3">Legal</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <Link href="/privacy" className="text-muted-foreground hover:text-foreground">
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link href="/terms" className="text-muted-foreground hover:text-foreground">
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/blog" className="text-muted-foreground hover:text-foreground">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/anthropics/claude-code/issues"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Report Issue
-                </a>
-              </li>
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              Legal
+            </h4>
+            <ul className="mt-3 space-y-2 text-sm">
+              <FooterLink href="/privacy">Privacy Policy</FooterLink>
+              <FooterLink href="/terms">Terms of Service</FooterLink>
+              <FooterLink href="/blog">Blog</FooterLink>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-8 pt-6 border-t border-border text-center text-sm text-muted-foreground">
-          <p>
-            &copy; {currentYear} Certified Sliders. All rights reserved.
-          </p>
+        <div className="mt-10 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+          &copy; {currentYear} Certified Sliders. All rights reserved.
         </div>
       </div>
     </footer>
+  );
+}
+
+function FooterLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <li>
+      <Link href={href} className="text-muted-foreground transition hover:text-foreground">
+        {children}
+      </Link>
+    </li>
   );
 }
