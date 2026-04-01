@@ -19,6 +19,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "3.927.0",
     "@aws-sdk/s3-request-presigner": "3.927.0",
+    "@lovable.dev/cloud-auth-js": "1.0.1",
     "@sanity/client": "7.11.2",
     "@stripe/stripe-js": "8.4.0",
     "@supabase/ssr": "0.7.0",
