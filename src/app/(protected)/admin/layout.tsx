@@ -36,6 +36,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { href: "/admin/blog", label: "Blog" },
     { href: "/admin/emails", label: "Email Queue" },
     { href: "/admin/ingestion", label: "Ranking Ingestion" },
+    { href: "/admin/duplicates", label: "Duplicate Queue" },
   ];
 
   const devTools = [
