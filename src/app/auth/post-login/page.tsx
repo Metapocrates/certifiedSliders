@@ -2,7 +2,7 @@
 // Client-side post-login page that retries until the server session is available
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
@@ -47,21 +47,33 @@ async function syncServerSession() {
 
 export default function PostLoginPage() {
   const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
+  const handledFlowRef = useRef<string | null>(null);
   const [status, setStatus] = useState("Completing sign in...");
 
   useEffect(() => {
+    const flowKey = nextParam ?? "__default__";
+
+    if (handledFlowRef.current === flowKey) {
+      return;
+    }
+
+    handledFlowRef.current = flowKey;
+
     let cancelled = false;
 
     const handlePostLogin = async () => {
-      const next = searchParams.get("next");
-      const redirectUrl = next
-        ? `/auth/post-login/redirect?next=${encodeURIComponent(next)}`
+      const redirectUrl = nextParam
+        ? `/auth/post-login/redirect?next=${encodeURIComponent(nextParam)}`
         : "/auth/post-login/redirect";
 
       for (let attempt = 1; attempt <= MAX_REDIRECT_ATTEMPTS; attempt += 1) {
         if (cancelled) return;
 
-        setStatus(attempt === 1 ? "Completing sign in..." : "Finishing sign in...");
+        if (attempt > 1) {
+          setStatus("Finishing sign in...");
+        }
+
         await syncServerSession();
 
         const response = await fetch(
@@ -93,7 +105,7 @@ export default function PostLoginPage() {
 
       const { data: sessionData } = await supabaseBrowser().auth.getSession();
       const fallbackDestination = sessionData.session
-        ? getSafeDestination(searchParams.get("next") || "/me")
+        ? getSafeDestination(nextParam || "/me")
         : "/login";
 
       if (!cancelled) {
@@ -106,14 +118,14 @@ export default function PostLoginPage() {
       const { data: sessionData } = await supabaseBrowser().auth.getSession();
 
       if (!cancelled) {
-        window.location.replace(sessionData.session ? getSafeDestination(searchParams.get("next") || "/me") : "/login");
+        window.location.replace(sessionData.session ? getSafeDestination(nextParam || "/me") : "/login");
       }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [nextParam]);
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center">

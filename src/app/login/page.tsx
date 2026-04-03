@@ -20,21 +20,39 @@ export default function LoginPage() {
       : "/auth/post-login";
   }
 
-  async function syncServerSession(sb: ReturnType<typeof supabaseBrowser>) {
+  async function syncServerSession(
+    sb: ReturnType<typeof supabaseBrowser>,
+    tokens?: { accessToken?: string | null; refreshToken?: string | null }
+  ) {
     try {
-      const { data: sessionData } = await sb.auth.getSession();
-      await fetch("/auth/callback", {
+      let accessToken = tokens?.accessToken ?? null;
+      let refreshToken = tokens?.refreshToken ?? null;
+
+      if (!accessToken || !refreshToken) {
+        const { data: sessionData } = await sb.auth.getSession();
+        accessToken = sessionData.session?.access_token ?? null;
+        refreshToken = sessionData.session?.refresh_token ?? null;
+      }
+
+      if (!accessToken || !refreshToken) {
+        return false;
+      }
+
+      const response = await fetch("/auth/callback", {
         method: "POST",
         credentials: "include",
         cache: "no-store",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          access_token: sessionData.session?.access_token ?? null,
-          refresh_token: sessionData.session?.refresh_token ?? null,
+          access_token: accessToken,
+          refresh_token: refreshToken,
         }),
       });
+
+      return response.ok;
     } catch {
       // Ignore sync errors; AuthListener will retry shortly.
+      return false;
     }
   }
 
@@ -67,10 +85,14 @@ export default function LoginPage() {
 
     try {
       const supabase = supabaseBrowser();
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      await syncServerSession(supabase);
+      await syncServerSession(supabase, {
+        accessToken: data.session?.access_token ?? null,
+        refreshToken: data.session?.refresh_token ?? null,
+      });
+
       window.location.replace(getPostLoginUrl());
       return;
     } catch (err: any) {
