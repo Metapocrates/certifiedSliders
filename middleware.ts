@@ -2,95 +2,78 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
+const PROTECTED_PREFIXES = ["/dashboard", "/admin", "/coach", "/parent"];
+
+type MiddlewareCookie = {
+  name: string;
+  value: string;
+  options?: CookieOptions;
+};
+
 export async function middleware(req: NextRequest) {
-  const res = NextResponse.next();
   const pathname = req.nextUrl.pathname;
 
-  // Handle OAuth codes at root - redirect to /auth/callback
-  // This runs BEFORE any page renders, avoiding PKCE state issues
   if (pathname === "/" && req.nextUrl.searchParams.has("code")) {
     const callbackUrl = new URL("/auth/callback", req.url);
-    // Copy all search params
     req.nextUrl.searchParams.forEach((value, key) => {
       callbackUrl.searchParams.set(key, value);
     });
     return NextResponse.redirect(callbackUrl);
   }
 
-  // Only create Supabase client for protected routes
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin") || pathname.startsWith("/coach") || pathname.startsWith("/parent")) {
-    // Create Supabase client for middleware (Edge-compatible)
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return req.cookies.get(name)?.value;
+  if (!PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return NextResponse.next();
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !anon) {
+    return NextResponse.next();
+  }
+
+  let res = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  });
+
+  const supabase = createServerClient(url, anon, {
+    cookies: {
+      getAll() {
+        return req.cookies.getAll();
+      },
+      setAll(cookiesToSet: MiddlewareCookie[]) {
+        cookiesToSet.forEach(({ name, value }) => {
+          req.cookies.set(name, value);
+        });
+
+        res = NextResponse.next({
+          request: {
+            headers: req.headers,
           },
-          set(name: string, value: string, options: CookieOptions) {
-            res.cookies.set({ name, value, ...options });
-          },
-          remove(name: string, options: CookieOptions) {
-            res.cookies.set({ name, value: "", ...options });
-          },
-        },
-      }
-    );
+        });
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+        cookiesToSet.forEach(({ name, value, options }) => {
+          res.cookies.set({ name, value, ...(options ?? {}) });
+        });
+      },
+    },
+  });
 
-    // Protect dashboard routes - require authentication
-    if (pathname.startsWith("/dashboard")) {
-      if (!user) {
-        const loginUrl = new URL("/login", req.url);
-        loginUrl.searchParams.set("next", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    // Protect admin routes - require authentication (role check happens in page)
-    if (pathname.startsWith("/admin")) {
-      if (!user) {
-        const loginUrl = new URL("/login", req.url);
-        loginUrl.searchParams.set("next", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    }
-
-    // Protect coach routes - require authentication (role check happens in page)
-    if (pathname.startsWith("/coach")) {
-      if (!user) {
-        const loginUrl = new URL("/login", req.url);
-        loginUrl.searchParams.set("next", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    }
-
-    // Protect parent routes - require authentication (role check happens in page)
-    if (pathname.startsWith("/parent")) {
-      if (!user) {
-        const loginUrl = new URL("/login", req.url);
-        loginUrl.searchParams.set("next", pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-    }
+  if (!user) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return res;
 }
 
 export const config = {
-  matcher: [
-    // Match root path for OAuth code handling
-    "/",
-    // Protected routes
-    "/admin/:path*",
-    "/dashboard/:path*",
-    "/coach/:path*",
-    "/parent/:path*",
-  ],
+  matcher: ["/", "/admin/:path*", "/dashboard/:path*", "/coach/:path*", "/parent/:path*"],
 };
