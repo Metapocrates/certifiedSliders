@@ -2,7 +2,7 @@
 /** @type {import('next').NextConfig} */
 
 // Pull the Supabase host from your env so it works across environments
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
 let supabaseHost = "";
 try {
   supabaseHost = new URL(supabaseUrl).host; // e.g. sczxkekhouglmvjoukdb.supabase.co
