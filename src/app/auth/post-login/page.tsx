@@ -1,59 +1,118 @@
 // src/app/auth/post-login/page.tsx
-// Client-side post-login page that forces router refresh before redirect
+// Client-side post-login page that retries until the server session is available
 "use client";
 
-import { useEffect, useState, startTransition } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { supabaseBrowser } from "@/lib/supabase/browser";
+
+const MAX_REDIRECT_ATTEMPTS = 6;
+const REDIRECT_RETRY_DELAY_MS = 350;
+
+function getSafeDestination(destination?: string | null) {
+  if (!destination || destination === "/auth/post-login" || destination.startsWith("/auth/post-login?")) {
+    return "/me";
+  }
+
+  return destination;
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function syncServerSession() {
+  const sb = supabaseBrowser();
+  const { data: sessionData } = await sb.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  const refreshToken = sessionData.session?.refresh_token;
+
+  if (!accessToken || !refreshToken) {
+    return false;
+  }
+
+  const response = await fetch("/auth/callback", {
+    method: "POST",
+    credentials: "include",
+    cache: "no-store",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    }),
+  });
+
+  return response.ok;
+}
 
 export default function PostLoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState("Completing sign in...");
 
   useEffect(() => {
+    let cancelled = false;
+
     const handlePostLogin = async () => {
-      try {
-        // Brief delay to ensure cookies are fully set from OAuth callback
-        await new Promise(resolve => setTimeout(resolve, 300));
+      const next = searchParams.get("next");
+      const redirectUrl = next
+        ? `/auth/post-login/redirect?next=${encodeURIComponent(next)}`
+        : "/auth/post-login/redirect";
 
-        // Get redirect destination from API with timeout
-        const next = searchParams.get("next");
-        const redirectUrl = next ? `/auth/post-login/redirect?next=${encodeURIComponent(next)}` : "/auth/post-login/redirect";
+      for (let attempt = 1; attempt <= MAX_REDIRECT_ATTEMPTS; attempt += 1) {
+        if (cancelled) return;
 
-        // Add timeout to prevent hanging
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        setStatus(attempt === 1 ? "Completing sign in..." : "Finishing sign in...");
+        await syncServerSession();
 
-        const response = await fetch(redirectUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
+        const response = await fetch(
+          `${redirectUrl}${redirectUrl.includes("?") ? "&" : "?"}attempt=${attempt}`,
+          {
+            credentials: "include",
+            cache: "no-store",
+            headers: { "cache-control": "no-store" },
+          }
+        );
 
-        if (!response.ok) {
-          console.error("Post-login redirect API error:", response.status);
-          window.location.href = "/me";
+        if (response.ok) {
+          const data = await response.json();
+          const destination = getSafeDestination(data.redirectTo);
+
+          if (!cancelled) {
+            setStatus("Redirecting...");
+            window.location.replace(destination);
+          }
           return;
         }
 
-        const data = await response.json();
-        let destination = data.redirectTo || "/me";
-
-        // CRITICAL: Prevent redirect loop by never redirecting back to /auth/post-login
-        if (destination === "/auth/post-login" || destination.startsWith("/auth/post-login?")) {
-          console.warn("Prevented redirect loop - destination was /auth/post-login, using /me instead");
-          destination = "/me";
+        if (response.status !== 401) {
+          break;
         }
 
-        setStatus("Redirecting...");
+        await wait(REDIRECT_RETRY_DELAY_MS * attempt);
+      }
 
-        // Use window.location for more reliable navigation
-        window.location.href = destination;
-      } catch (error) {
-        console.error("Post-login error:", error);
-        // If timeout or other error, default to /me
-        window.location.href = "/me";
+      const { data: sessionData } = await supabaseBrowser().auth.getSession();
+      const fallbackDestination = sessionData.session
+        ? getSafeDestination(searchParams.get("next") || "/me")
+        : "/login";
+
+      if (!cancelled) {
+        window.location.replace(fallbackDestination);
       }
     };
 
-    handlePostLogin();
+    handlePostLogin().catch(async (error) => {
+      console.error("Post-login error:", error);
+      const { data: sessionData } = await supabaseBrowser().auth.getSession();
+
+      if (!cancelled) {
+        window.location.replace(sessionData.session ? getSafeDestination(searchParams.get("next") || "/me") : "/login");
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams]);
 
   return (

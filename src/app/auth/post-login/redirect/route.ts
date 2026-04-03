@@ -8,41 +8,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserRole } from "@/lib/roles";
 import { createSupabaseServer } from "@/lib/supabase/compat";
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+};
+
 export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServer();
 
-  // Check if user is authenticated
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ redirectTo: "/login" });
+    return NextResponse.json({ pendingSession: true }, { status: 401, headers: NO_STORE_HEADERS });
   }
 
-  // Check for explicit next parameter
   const searchParams = request.nextUrl.searchParams;
   const next = searchParams.get("next");
 
-  // If next parameter exists and is valid, use it (but never redirect to /auth/post-login itself)
   if (next && /^\/(?!\/)/.test(next) && next !== "/auth/post-login" && !next.startsWith("/auth/post-login?")) {
-    return NextResponse.json({ redirectTo: next });
+    return NextResponse.json({ redirectTo: next }, { headers: NO_STORE_HEADERS });
   }
 
-  // Get user's role and default route
   const roleInfo = await getUserRole(user.id);
+  let destination = roleInfo?.defaultRoute || "/me";
 
-  if (!roleInfo) {
-    return NextResponse.json({ redirectTo: "/me" });
-  }
-
-  // Return the user's default dashboard route (with safety check)
-  let destination = roleInfo.defaultRoute || "/me";
-
-  // CRITICAL: Never redirect back to /auth/post-login to prevent redirect loops
   if (destination === "/auth/post-login" || destination.startsWith("/auth/post-login?")) {
     destination = "/me";
   }
 
-  return NextResponse.json({ redirectTo: destination });
+  return NextResponse.json({ redirectTo: destination }, { headers: NO_STORE_HEADERS });
 }

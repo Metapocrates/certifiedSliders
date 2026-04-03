@@ -1,22 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "../../lib/supabase/browser";
 
-
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string>("");
   const [busy, setBusy] = useState(false);
+
+  function getPostLoginUrl() {
+    if (typeof window === "undefined") {
+      return "/auth/post-login";
+    }
+
+    const nextParam = new URLSearchParams(window.location.search).get("next");
+    return nextParam
+      ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
+      : "/auth/post-login";
+  }
 
   async function syncServerSession(sb: ReturnType<typeof supabaseBrowser>) {
     try {
       const { data: sessionData } = await sb.auth.getSession();
       await fetch("/auth/callback", {
         method: "POST",
+        credentials: "include",
+        cache: "no-store",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           access_token: sessionData.session?.access_token ?? null,
@@ -28,19 +38,26 @@ export default function LoginPage() {
     }
   }
 
-  // Redirect if already logged in
   useEffect(() => {
-    const supabase = supabaseBrowser();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user) {
-        const nextParam = new URLSearchParams(window.location.search).get("next");
-        const postLoginUrl = nextParam
-          ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
-          : "/auth/post-login";
-        router.replace(postLoginUrl);
+    let cancelled = false;
+
+    void (async () => {
+      const supabase = supabaseBrowser();
+      const { data } = await supabase.auth.getUser();
+
+      if (!data?.user || cancelled) return;
+
+      await syncServerSession(supabase);
+
+      if (!cancelled) {
+        window.location.replace(getPostLoginUrl());
       }
-    });
-  }, [router]);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -54,12 +71,7 @@ export default function LoginPage() {
       if (error) throw error;
 
       await syncServerSession(supabase);
-
-      const nextParam = new URLSearchParams(window.location.search).get("next");
-      const postLoginUrl = nextParam
-        ? `/auth/post-login?next=${encodeURIComponent(nextParam)}`
-        : "/auth/post-login";
-      router.replace(postLoginUrl);
+      window.location.replace(getPostLoginUrl());
       return;
     } catch (err: any) {
       setMsg(err?.message || "Auth error");

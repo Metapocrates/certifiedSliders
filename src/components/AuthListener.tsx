@@ -24,6 +24,8 @@ export default function AuthListener() {
       // Send tokens so the server can set the HTTP-only cookies for RLS
       await fetch("/auth/callback", {
         method: "POST",
+        credentials: "include",
+        cache: "no-store",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           access_token: sessionData.session?.access_token ?? null,
